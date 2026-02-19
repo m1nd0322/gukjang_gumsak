@@ -1,0 +1,7 @@
+flask>=3.0.0
+apscheduler>=3.10.0
+beautifulsoup4>=4.12.0
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+pykrx>=1.0.0
+duckdb>=0.10.0
