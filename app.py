@@ -726,6 +726,52 @@ def api_backtest_csv():
 
 
 # ============================================================
+# DuckDB 데이터 뷰어
+# ============================================================
+@app.route('/db')
+def db_viewer():
+    return render_template_string(DB_VIEWER_TEMPLATE)
+
+@app.route('/api/db/tables')
+def api_db_tables():
+    """테이블 목록 및 DB 통계"""
+    tables = stock_db.get_table_list()
+    stats = stock_db.get_db_stats()
+    return jsonify({'tables': tables, 'stats': stats})
+
+@app.route('/api/db/schema/<table_name>')
+def api_db_schema(table_name):
+    """테이블 스키마 조회"""
+    schema = stock_db.get_table_schema(table_name)
+    if schema is None:
+        return jsonify({'error': '존재하지 않는 테이블'}), 404
+    return jsonify({'schema': schema})
+
+@app.route('/api/db/query/<table_name>')
+def api_db_query(table_name):
+    """테이블 데이터 조회 (페이지네이션)"""
+    page = int(request.args.get('page', 1))
+    page_size = int(request.args.get('page_size', 50))
+    order_by = request.args.get('order_by')
+    order_dir = request.args.get('order_dir', 'DESC')
+    filter_col = request.args.get('filter_col')
+    filter_val = request.args.get('filter_val')
+
+    result = stock_db.query_table(
+        table_name, page, page_size,
+        order_by, order_dir, filter_col, filter_val
+    )
+    if result is None:
+        return jsonify({'error': '존재하지 않는 테이블'}), 404
+    return jsonify(result)
+
+@app.route('/api/db/ticker-summary')
+def api_db_ticker_summary():
+    """종목별 데이터 요약"""
+    return jsonify({'summary': stock_db.get_ticker_summary()})
+
+
+# ============================================================
 # HTML 템플릿 - 메인 스크리닝
 # ============================================================
 HTML_TEMPLATE = r'''<!DOCTYPE html>
@@ -815,6 +861,7 @@ tr:hover{background:#f8fafc}.c{text-align:center}
         </div>
         <div class="hd-right">
             <a href="/backtest" style="padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;background:rgba(255,255,255,.15);color:#fff;text-decoration:none;transition:all .3s">📊 백테스트</a>
+            <a href="/db" style="padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;background:rgba(255,255,255,.15);color:#fff;text-decoration:none;transition:all .3s">💾 DB 뷰어</a>
             <div class="schedule-badge">
                 <span class="dot"></span>
                 매일 08:00 자동 갱신
@@ -1534,6 +1581,522 @@ function renderTradeRows(trades) {
 
 function downloadCSV() {
     window.location.href = '/api/backtest/csv';
+}
+</script>
+</body>
+</html>'''
+
+
+# ============================================================
+# HTML 템플릿 - DuckDB 뷰어
+# ============================================================
+DB_VIEWER_TEMPLATE = r'''<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DB 뷰어 - 한국 증시 스크리닝</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#f0f2f5;color:#1a1a2e;line-height:1.6}
+.wrap{max-width:1440px;margin:0 auto;padding:20px}
+.hd{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;padding:30px 40px;border-radius:16px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.hd-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+.hd h1{font-size:24px}.hd p{opacity:.8;font-size:13px;margin-top:4px}
+.hd-nav{display:flex;gap:10px;align-items:center}
+.hd-nav a{padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;transition:all .3s;background:rgba(255,255,255,.15);color:#fff}
+.hd-nav a:hover{background:rgba(255,255,255,.25)}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+.sc{background:#fff;border-radius:12px;padding:18px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:transform .2s}
+.sc:hover{transform:translateY(-2px)}
+.sc .n{font-size:26px;font-weight:700;color:#302b63}.sc .l{font-size:12px;color:#666;margin-top:3px}
+.main-grid{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start}
+.sidebar{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden}
+.sidebar h3{padding:14px 16px;font-size:13px;font-weight:700;color:#374151;background:#f8f9fa;border-bottom:1px solid #e5e7eb}
+.tbl-item{padding:10px 16px;font-size:13px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f3f4f6;transition:background .15s}
+.tbl-item:hover{background:#f0f2f5}
+.tbl-item.active{background:#ede9fe;color:#4c1d95;font-weight:600}
+.tbl-item .tbl-name{font-weight:500}
+.tbl-item .row-cnt{font-size:11px;color:#9ca3af;background:#f3f4f6;padding:2px 7px;border-radius:10px}
+.tbl-item.active .row-cnt{background:#ddd6fe;color:#5b21b6}
+.content-panel{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden}
+.panel-header{padding:14px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:#f8f9fa}
+.panel-header h3{font-size:14px;font-weight:700;color:#374151}
+.tab-bar{display:flex;gap:4px;background:#f3f4f6;border-radius:8px;padding:3px}
+.tab-btn{padding:6px 16px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;color:#6b7280;border-radius:6px;transition:all .2s}
+.tab-btn.active{background:#fff;color:#302b63;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.filter-bar{padding:12px 20px;border-bottom:1px solid #f3f4f6;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fafafa}
+.filter-bar select,.filter-bar input{padding:7px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none}
+.filter-bar select:focus,.filter-bar input:focus{border-color:#302b63}
+.filter-bar input{min-width:200px}
+.filter-bar button{padding:7px 16px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#302b63;color:#fff}.btn-primary:hover{background:#1e1a45}
+.btn-clear{background:#f3f4f6;color:#374151}.btn-clear:hover{background:#e5e7eb}
+.tbl-wrap{overflow-x:auto;min-height:300px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{background:#f8f9fa;position:sticky;top:0;z-index:5}
+th{padding:10px 14px;text-align:left;font-weight:600;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{background:#e9ecf0}
+th .sort-icon{margin-left:4px;color:#9ca3af;font-size:10px}
+th.sort-asc .sort-icon::after{content:'▲';color:#302b63}
+th.sort-desc .sort-icon::after{content:'▼';color:#302b63}
+th:not(.sort-asc):not(.sort-desc) .sort-icon::after{content:'⇅'}
+td{padding:8px 14px;border-bottom:1px solid #f3f4f6;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+tr:hover{background:#f8fafc}
+.pagination{padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #f3f4f6;flex-wrap:wrap;gap:8px}
+.page-info{font-size:13px;color:#6b7280}
+.page-controls{display:flex;gap:6px;align-items:center}
+.page-btn{padding:6px 12px;border:1.5px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;transition:all .2s}
+.page-btn:hover:not(:disabled){border-color:#302b63;color:#302b63}
+.page-btn:disabled{opacity:.4;cursor:not-allowed}
+.page-size-sel{padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none}
+.schema-wrap{padding:16px 20px}
+.schema-table{width:100%;border-collapse:collapse;font-size:13px}
+.schema-table th{padding:9px 14px;text-align:left;font-weight:600;color:#374151;background:#f8f9fa;border-bottom:2px solid #e5e7eb}
+.schema-table td{padding:8px 14px;border-bottom:1px solid #f3f4f6;font-family:monospace;font-size:12px}
+.schema-table tr:hover{background:#f8fafc}
+.type-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#dbeafe;color:#1e40af}
+.summary-wrap{padding:16px 20px;overflow-x:auto}
+.summary-table{width:100%;border-collapse:collapse;font-size:13px}
+.summary-table th{padding:9px 14px;text-align:left;font-weight:600;color:#374151;background:#f8f9fa;border-bottom:2px solid #e5e7eb;white-space:nowrap}
+.summary-table td{padding:8px 14px;border-bottom:1px solid #f3f4f6}
+.summary-table tr:hover{background:#f8fafc}
+.empty-state{padding:60px 20px;text-align:center;color:#9ca3af}
+.empty-state .icon{font-size:40px;margin-bottom:12px}
+.empty-state p{font-size:15px}
+.empty-state .sub{font-size:13px;margin-top:4px}
+.loading-row td{text-align:center;padding:40px;color:#6b7280;font-size:13px}
+.toast{position:fixed;top:20px;right:20px;padding:14px 24px;border-radius:10px;color:#fff;font-size:14px;font-weight:600;z-index:2000;transform:translateX(120%);transition:transform .4s;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.toast.show{transform:translateX(0)}.toast.success{background:#16a34a}.toast.error{background:#dc2626}.toast.info{background:#2563eb}
+.ft{text-align:center;padding:20px;color:#9ca3af;font-size:11px}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr}.hd{padding:18px;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="hd">
+        <div class="hd-top">
+            <div>
+                <h1>💾 DuckDB 데이터 뷰어</h1>
+                <p>로컬 DuckDB에 저장된 주가 데이터를 조회합니다</p>
+            </div>
+            <div class="hd-nav">
+                <a href="/">← 스크리닝 대시보드</a>
+                <a href="/backtest">📊 백테스트</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="sg" id="statsGrid">
+        <div class="sc"><div class="n" id="statSize">-</div><div class="l">DB 크기</div></div>
+        <div class="sc"><div class="n" id="statRows">-</div><div class="l">총 레코드 수</div></div>
+        <div class="sc"><div class="n" id="statTickers">-</div><div class="l">종목 수</div></div>
+        <div class="sc"><div class="n" id="statDates">-</div><div class="l">데이터 기간</div></div>
+    </div>
+
+    <div class="main-grid">
+        <div class="sidebar">
+            <h3>테이블 목록</h3>
+            <div id="tableList">
+                <div class="empty-state" style="padding:30px 16px">
+                    <div class="icon">⏳</div>
+                    <p style="font-size:13px">로딩 중...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-panel">
+            <div class="panel-header">
+                <h3 id="panelTitle">테이블을 선택하세요</h3>
+                <div class="tab-bar" id="tabBar" style="display:none">
+                    <button class="tab-btn active" onclick="switchTab('data', this)">데이터</button>
+                    <button class="tab-btn" onclick="switchTab('schema', this)">스키마</button>
+                    <button class="tab-btn" onclick="switchTab('summary', this)" id="summaryTabBtn">종목 요약</button>
+                </div>
+            </div>
+
+            <!-- 데이터 탭 -->
+            <div id="dataTab">
+                <div class="filter-bar" id="filterBar" style="display:none">
+                    <select id="filterCol"><option value="">-- 컬럼 선택 --</option></select>
+                    <input type="text" id="filterVal" placeholder="필터 값 입력..." onkeydown="if(event.key==='Enter')applyFilter()">
+                    <select id="orderDirSel">
+                        <option value="DESC">내림차순</option>
+                        <option value="ASC">오름차순</option>
+                    </select>
+                    <button class="btn-primary" onclick="applyFilter()">적용</button>
+                    <button class="btn-clear" onclick="clearFilter()">초기화</button>
+                </div>
+                <div class="tbl-wrap">
+                    <table id="dataTable">
+                        <thead id="dataHead"></thead>
+                        <tbody id="dataBody">
+                            <tr><td colspan="99" class="loading-row" style="text-align:center;padding:60px;color:#9ca3af">
+                                <div style="font-size:32px;margin-bottom:8px">🗄️</div>
+                                <div style="font-size:15px">왼쪽에서 테이블을 선택하세요</div>
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="pagination" style="display:none">
+                    <div class="page-info" id="pageInfo"></div>
+                    <div class="page-controls">
+                        <select class="page-size-sel" id="pageSizeSel" onchange="changePageSize()">
+                            <option value="20">20행</option>
+                            <option value="50" selected>50행</option>
+                            <option value="100">100행</option>
+                            <option value="200">200행</option>
+                        </select>
+                        <button class="page-btn" id="btnFirst" onclick="goPage(1)">«</button>
+                        <button class="page-btn" id="btnPrev" onclick="goPage(state.page - 1)">‹</button>
+                        <span id="pageNumDisplay" style="font-size:13px;color:#374151;padding:0 4px"></span>
+                        <button class="page-btn" id="btnNext" onclick="goPage(state.page + 1)">›</button>
+                        <button class="page-btn" id="btnLast" onclick="goPage(state.totalPages)">»</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 스키마 탭 -->
+            <div id="schemaTab" style="display:none">
+                <div class="schema-wrap">
+                    <table class="schema-table">
+                        <thead><tr><th>#</th><th>컬럼명</th><th>데이터 타입</th></tr></thead>
+                        <tbody id="schemaBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 종목 요약 탭 -->
+            <div id="summaryTab" style="display:none">
+                <div class="summary-wrap">
+                    <table class="summary-table">
+                        <thead><tr>
+                            <th>종목코드</th><th>종목명</th>
+                            <th>시작일</th><th>종료일</th>
+                            <th style="text-align:right">레코드</th>
+                            <th style="text-align:right">최근 종가</th>
+                        </tr></thead>
+                        <tbody id="summaryBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ft">DuckDB 로컬 저장소 | 투자 참고용이며, 투자의 최종 책임은 투자자 본인에게 있습니다.</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const state = {
+    table: null,
+    page: 1,
+    pageSize: 50,
+    orderBy: null,
+    orderDir: 'DESC',
+    filterCol: null,
+    filterVal: null,
+    totalPages: 1,
+    schema: [],
+    activeTab: 'data',
+};
+
+function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast ' + type + ' show';
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function fmt(n) {
+    if (n == null) return '-';
+    if (typeof n === 'number') return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return n;
+}
+
+// ---- 초기화 ----
+window.addEventListener('DOMContentLoaded', () => {
+    loadTables();
+    loadTickerSummary();
+});
+
+function loadTables() {
+    fetch('/api/db/tables')
+        .then(r => r.json())
+        .then(d => {
+            renderStats(d.stats);
+            renderTableList(d.tables);
+        })
+        .catch(e => {
+            showToast('테이블 목록 로드 실패: ' + e.message, 'error');
+            document.getElementById('tableList').innerHTML =
+                '<div class="empty-state" style="padding:30px 16px"><p style="font-size:13px;color:#dc2626">로드 실패</p></div>';
+        });
+}
+
+function renderStats(stats) {
+    if (!stats) return;
+    document.getElementById('statSize').textContent = (stats.db_size_mb || 0) + ' MB';
+    document.getElementById('statRows').textContent = fmt(stats.total_rows || 0);
+    document.getElementById('statTickers').textContent = fmt(stats.ticker_count || 0);
+    const minDate = stats.min_date || '-';
+    const maxDate = stats.max_date || '-';
+    document.getElementById('statDates').textContent = minDate === '-' ? '-' : minDate + ' ~ ' + maxDate;
+}
+
+function renderTableList(tables) {
+    const el = document.getElementById('tableList');
+    if (!tables || !tables.length) {
+        el.innerHTML = '<div class="empty-state" style="padding:30px 16px"><div class="icon">📭</div><p style="font-size:13px">테이블 없음</p></div>';
+        return;
+    }
+    el.innerHTML = tables.map(t => `
+        <div class="tbl-item" id="titem_${t.table_name}" onclick="selectTable('${t.table_name}')">
+            <span class="tbl-name">${t.table_name}</span>
+            <span class="row-cnt">${fmt(t.row_count)}</span>
+        </div>
+    `).join('');
+}
+
+// ---- 테이블 선택 ----
+function selectTable(name) {
+    if (state.table === name) return;
+
+    // 사이드바 하이라이트
+    document.querySelectorAll('.tbl-item').forEach(el => el.classList.remove('active'));
+    const item = document.getElementById('titem_' + name);
+    if (item) item.classList.add('active');
+
+    state.table = name;
+    state.page = 1;
+    state.orderBy = null;
+    state.orderDir = 'DESC';
+    state.filterCol = null;
+    state.filterVal = null;
+
+    document.getElementById('panelTitle').textContent = '📋 ' + name;
+    document.getElementById('tabBar').style.display = '';
+    document.getElementById('filterBar').style.display = '';
+    document.getElementById('pagination').style.display = '';
+
+    // 필터 초기화 UI
+    document.getElementById('filterVal').value = '';
+    document.getElementById('orderDirSel').value = 'DESC';
+
+    // 스키마 로드 → 필터 컬럼 채우기 → 데이터 로드
+    loadSchema(name).then(() => {
+        loadData();
+    });
+
+    // 활성 탭이 data 아니면 data로 전환
+    switchTab('data', document.querySelector('.tab-btn'));
+}
+
+function loadSchema(name) {
+    return fetch('/api/db/schema/' + name)
+        .then(r => r.json())
+        .then(d => {
+            state.schema = d.schema || [];
+            renderSchema(state.schema);
+            populateFilterCols(state.schema);
+        })
+        .catch(e => {
+            showToast('스키마 로드 실패: ' + e.message, 'error');
+        });
+}
+
+function renderSchema(schema) {
+    const body = document.getElementById('schemaBody');
+    if (!schema || !schema.length) {
+        body.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:#9ca3af">스키마 정보 없음</td></tr>';
+        return;
+    }
+    body.innerHTML = schema.map((col, i) => `
+        <tr>
+            <td style="color:#9ca3af">${i + 1}</td>
+            <td><b>${col.column_name}</b></td>
+            <td><span class="type-badge">${col.column_type}</span></td>
+        </tr>
+    `).join('');
+}
+
+function populateFilterCols(schema) {
+    const sel = document.getElementById('filterCol');
+    sel.innerHTML = '<option value="">-- 컬럼 선택 --</option>' +
+        (schema || []).map(col => `<option value="${col.column_name}">${col.column_name}</option>`).join('');
+}
+
+// ---- 데이터 로드 ----
+function loadData() {
+    if (!state.table) return;
+
+    // 로딩 표시
+    document.getElementById('dataBody').innerHTML =
+        '<tr class="loading-row"><td colspan="99">⏳ 데이터 로딩 중...</td></tr>';
+
+    const params = new URLSearchParams({
+        page: state.page,
+        page_size: state.pageSize,
+        order_dir: state.orderDir,
+    });
+    if (state.orderBy) params.set('order_by', state.orderBy);
+    if (state.filterCol && state.filterVal) {
+        params.set('filter_col', state.filterCol);
+        params.set('filter_val', state.filterVal);
+    }
+
+    fetch('/api/db/query/' + state.table + '?' + params.toString())
+        .then(r => {
+            if (!r.ok) return r.json().then(e => { throw new Error(e.error || r.status); });
+            return r.json();
+        })
+        .then(d => {
+            state.totalPages = d.total_pages || 1;
+            state.page = d.page || 1;
+            renderDataTable(d.rows, d.total, d.page, d.page_size, d.total_pages);
+        })
+        .catch(e => {
+            showToast('데이터 로드 실패: ' + e.message, 'error');
+            document.getElementById('dataBody').innerHTML =
+                '<tr class="loading-row"><td colspan="99" style="color:#dc2626">오류: ' + e.message + '</td></tr>';
+        });
+}
+
+function renderDataTable(rows, total, page, pageSize, totalPages) {
+    const head = document.getElementById('dataHead');
+    const body = document.getElementById('dataBody');
+
+    if (!rows || !rows.length) {
+        head.innerHTML = '';
+        body.innerHTML = '<tr><td colspan="99" class="loading-row"><div style="font-size:28px;margin-bottom:8px">📭</div><div>데이터가 없습니다</div></td></tr>';
+        document.getElementById('pageInfo').textContent = '0건';
+        updatePageButtons(1, 1);
+        return;
+    }
+
+    const cols = Object.keys(rows[0]);
+
+    // 헤더 (정렬 아이콘 포함)
+    head.innerHTML = '<tr>' + cols.map(col => {
+        const isActive = state.orderBy === col;
+        const cls = isActive ? ('sort-' + state.orderDir.toLowerCase()) : '';
+        return `<th class="${cls}" onclick="sortBy('${col}')">
+            ${col}<span class="sort-icon"></span>
+        </th>`;
+    }).join('') + '</tr>';
+
+    // 바디
+    body.innerHTML = rows.map(row =>
+        '<tr>' + cols.map(col => {
+            const v = row[col];
+            const display = v == null ? '<span style="color:#d1d5db">NULL</span>' :
+                (typeof v === 'number' ? fmt(v) : String(v));
+            return `<td title="${v != null ? String(v).replace(/"/g, '&quot;') : ''}">${display}</td>`;
+        }).join('') + '</tr>'
+    ).join('');
+
+    // 페이지 정보
+    const from = (page - 1) * pageSize + 1;
+    const to = Math.min(page * pageSize, total);
+    document.getElementById('pageInfo').textContent =
+        `${fmt(total)}건 중 ${fmt(from)}–${fmt(to)}건 (${page} / ${totalPages} 페이지)`;
+    document.getElementById('pageNumDisplay').textContent = page + ' / ' + totalPages;
+    updatePageButtons(page, totalPages);
+}
+
+function updatePageButtons(page, totalPages) {
+    document.getElementById('btnFirst').disabled = page <= 1;
+    document.getElementById('btnPrev').disabled = page <= 1;
+    document.getElementById('btnNext').disabled = page >= totalPages;
+    document.getElementById('btnLast').disabled = page >= totalPages;
+}
+
+// ---- 페이지 이동 ----
+function goPage(p) {
+    p = Math.max(1, Math.min(p, state.totalPages));
+    if (p === state.page) return;
+    state.page = p;
+    loadData();
+}
+
+function changePageSize() {
+    state.pageSize = +document.getElementById('pageSizeSel').value;
+    state.page = 1;
+    loadData();
+}
+
+// ---- 정렬 ----
+function sortBy(col) {
+    if (state.orderBy === col) {
+        state.orderDir = state.orderDir === 'DESC' ? 'ASC' : 'DESC';
+    } else {
+        state.orderBy = col;
+        state.orderDir = 'DESC';
+    }
+    document.getElementById('orderDirSel').value = state.orderDir;
+    state.page = 1;
+    loadData();
+}
+
+// ---- 필터 ----
+function applyFilter() {
+    const col = document.getElementById('filterCol').value;
+    const val = document.getElementById('filterVal').value.trim();
+    const dir = document.getElementById('orderDirSel').value;
+    state.filterCol = col || null;
+    state.filterVal = val || null;
+    state.orderDir = dir;
+    state.page = 1;
+    loadData();
+}
+
+function clearFilter() {
+    document.getElementById('filterCol').value = '';
+    document.getElementById('filterVal').value = '';
+    document.getElementById('orderDirSel').value = 'DESC';
+    state.filterCol = null;
+    state.filterVal = null;
+    state.orderDir = 'DESC';
+    state.page = 1;
+    loadData();
+}
+
+// ---- 탭 전환 ----
+function switchTab(tab, btn) {
+    state.activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    document.getElementById('dataTab').style.display = tab === 'data' ? '' : 'none';
+    document.getElementById('schemaTab').style.display = tab === 'schema' ? '' : 'none';
+    document.getElementById('summaryTab').style.display = tab === 'summary' ? '' : 'none';
+    document.getElementById('filterBar').style.display = tab === 'data' ? '' : 'none';
+    document.getElementById('pagination').style.display = tab === 'data' ? '' : 'none';
+}
+
+// ---- 종목 요약 ----
+function loadTickerSummary() {
+    fetch('/api/db/ticker-summary')
+        .then(r => r.json())
+        .then(d => renderTickerSummary(d.summary || []))
+        .catch(() => {});
+}
+
+function renderTickerSummary(summary) {
+    const body = document.getElementById('summaryBody');
+    if (!summary.length) {
+        body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#9ca3af">종목 데이터 없음</td></tr>';
+        return;
+    }
+    body.innerHTML = summary.map(s => `
+        <tr>
+            <td style="font-family:monospace;color:#6b7280">${s.ticker}</td>
+            <td><b>${s.name || '-'}</b></td>
+            <td>${s.min_date || '-'}</td>
+            <td>${s.max_date || '-'}</td>
+            <td style="text-align:right">${fmt(s.count)}</td>
+            <td style="text-align:right">${s.latest_close != null ? fmt(s.latest_close) + '원' : '-'}</td>
+        </tr>
+    `).join('');
 }
 </script>
 </body>

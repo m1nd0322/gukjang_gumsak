@@ -73,6 +73,13 @@ class StockDB:
                     PRIMARY KEY (index_code, date)
                 )
             """)
+            # Indexes for faster reads
+            con.execute("CREATE INDEX IF NOT EXISTS idx_daily_ticker ON daily_prices(ticker)")
+            con.execute("CREATE INDEX IF NOT EXISTS idx_daily_date ON daily_prices(date)")
+            con.execute("CREATE INDEX IF NOT EXISTS idx_daily_ticker_date ON daily_prices(ticker, date)")
+            con.execute("CREATE INDEX IF NOT EXISTS idx_index_code ON index_prices(index_code)")
+            con.execute("CREATE INDEX IF NOT EXISTS idx_index_code_date ON index_prices(index_code, date)")
+            con.execute("CREATE INDEX IF NOT EXISTS idx_ticker_map_name ON ticker_map(name)")
         finally:
             con.close()
         logger.info(f"DuckDB 초기화 완료: {self.db_path}")
@@ -439,5 +446,144 @@ class StockDB:
                 'db_size_mb': round(os.path.getsize(self.db_path) / 1024 / 1024, 2)
                     if os.path.exists(self.db_path) else 0,
             }
+        finally:
+            con.close()
+
+    # ----------------------------------------------------------
+    # DB 뷰어용 조회 메서드
+    # ----------------------------------------------------------
+
+    _ALLOWED_TABLES = {'daily_prices', 'ticker_map', 'index_prices'}
+
+    def get_table_list(self) -> List[dict]:
+        """Get list of all tables with row counts"""
+        con = self._connect()
+        try:
+            result = []
+            for table_name in sorted(self._ALLOWED_TABLES):
+                count = con.execute(
+                    f"SELECT COUNT(*) FROM {table_name}"
+                ).fetchone()[0]
+                result.append({'table_name': table_name, 'row_count': count})
+            return result
+        finally:
+            con.close()
+
+    def get_table_schema(self, table_name: str) -> List[dict]:
+        """Get column info for a table"""
+        if table_name not in self._ALLOWED_TABLES:
+            raise ValueError(f"Unknown table: {table_name!r}")
+        con = self._connect()
+        try:
+            rows = con.execute(f"PRAGMA table_info('{table_name}')").fetchall()
+            # PRAGMA table_info columns: cid, name, type, notnull, dflt_value, pk
+            return [{'column_name': r[1], 'column_type': r[2]} for r in rows]
+        finally:
+            con.close()
+
+    def query_table(self, table_name: str, page: int = 1, page_size: int = 50,
+                    order_by: str = None, order_dir: str = 'DESC',
+                    filter_col: str = None, filter_val: str = None) -> dict:
+        """Paginated table query with optional filtering
+
+        Args:
+            table_name: One of daily_prices, ticker_map, index_prices
+            page: 1-based page number
+            page_size: rows per page
+            order_by: column name to sort by (whitelisted against schema)
+            order_dir: 'ASC' or 'DESC'
+            filter_col: column to apply LIKE filter on (whitelisted against schema)
+            filter_val: value for LIKE filter
+
+        Returns:
+            {'rows': [...], 'total': int, 'page': int, 'page_size': int, 'total_pages': int}
+        """
+        if table_name not in self._ALLOWED_TABLES:
+            raise ValueError(f"Unknown table: {table_name!r}")
+
+        # Whitelist order_dir
+        order_dir = 'DESC' if order_dir not in ('ASC', 'DESC') else order_dir
+
+        # Get valid column names for this table
+        schema = self.get_table_schema(table_name)
+        valid_cols = {col['column_name'] for col in schema}
+
+        # Whitelist order_by and filter_col against actual schema
+        if order_by and order_by not in valid_cols:
+            order_by = None
+        if filter_col and filter_col not in valid_cols:
+            filter_col = None
+
+        con = self._connect()
+        try:
+            # Build WHERE clause
+            params: list = []
+            where_clause = ""
+            if filter_col and filter_val is not None:
+                where_clause = f"WHERE CAST({filter_col} AS VARCHAR) LIKE ?"
+                params.append(f"%{filter_val}%")
+
+            # Total count
+            total = con.execute(
+                f"SELECT COUNT(*) FROM {table_name} {where_clause}", params
+            ).fetchone()[0]
+
+            # Build ORDER BY clause
+            order_clause = ""
+            if order_by:
+                order_clause = f"ORDER BY {order_by} {order_dir}"
+
+            # Pagination
+            offset = (max(1, page) - 1) * page_size
+            rows_raw = con.execute(
+                f"SELECT * FROM {table_name} {where_clause} {order_clause} LIMIT ? OFFSET ?",
+                params + [page_size, offset]
+            ).fetchall()
+
+            col_names = [col['column_name'] for col in schema]
+            rows = [dict(zip(col_names, r)) for r in rows_raw]
+
+            total_pages = max(1, (total + page_size - 1) // page_size)
+            return {
+                'rows': rows,
+                'total': total,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': total_pages,
+            }
+        finally:
+            con.close()
+
+    def get_ticker_summary(self) -> List[dict]:
+        """Get summary per ticker: ticker, name, min_date, max_date, count, latest_close"""
+        con = self._connect()
+        try:
+            rows = con.execute("""
+                SELECT
+                    dp.ticker,
+                    tm.name,
+                    CAST(MIN(dp.date) AS VARCHAR) AS min_date,
+                    CAST(MAX(dp.date) AS VARCHAR) AS max_date,
+                    COUNT(*) AS count,
+                    dp.close AS latest_close
+                FROM daily_prices dp
+                LEFT JOIN ticker_map tm ON dp.ticker = tm.ticker
+                INNER JOIN (
+                    SELECT ticker, MAX(date) AS max_d FROM daily_prices GROUP BY ticker
+                ) latest ON dp.ticker = latest.ticker AND dp.date = latest.max_d
+                GROUP BY dp.ticker, tm.name, dp.close
+                ORDER BY dp.ticker
+            """).fetchall()
+            return [
+                {
+                    'ticker': r[0],
+                    'name': r[1],
+                    'min_date': r[2],
+                    'max_date': r[3],
+                    'count': r[4],
+                    'latest_close': r[5],
+                }
+                for r in rows
+            ]
         finally:
             con.close()
