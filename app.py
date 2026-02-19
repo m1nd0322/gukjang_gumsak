@@ -1259,12 +1259,27 @@ tr:hover{background:#f8fafc}
         <div class="tbl-box" id="tradeHistoryBox">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
                 <h3 style="margin:0">종목별 매수/매도 상세 이력</h3>
-                <div style="display:flex;gap:8px;align-items:center">
-                    <select id="tradeStockFilter" onchange="filterTrades()" style="padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px">
-                        <option value="all">전체 종목</option>
-                    </select>
-                    <button onclick="downloadCSV()" style="background:#16a34a;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">CSV 다운로드</button>
-                </div>
+                <button onclick="downloadCSV()" style="background:#16a34a;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">CSV 다운로드</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding:10px 14px;background:#f8f9fa;border-radius:8px">
+                <select id="tradeStockFilter" onchange="filterTrades()" style="padding:5px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px">
+                    <option value="all">전체 종목</option>
+                </select>
+                <select id="tradeStatusFilter" onchange="filterTrades()" style="padding:5px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px">
+                    <option value="all">전체 상태</option>
+                    <option value="closed">청산</option>
+                    <option value="open">보유중</option>
+                </select>
+                <select id="tradePnlFilter" onchange="filterTrades()" style="padding:5px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px">
+                    <option value="all">손익 전체</option>
+                    <option value="profit">수익 (실현손익 +)</option>
+                    <option value="loss">손실 (실현손익 -)</option>
+                </select>
+                <input type="date" id="tradeDateFrom" onchange="filterTrades()" placeholder="시작일" style="padding:5px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px" title="매수일 시작">
+                <span style="font-size:12px;color:#999">~</span>
+                <input type="date" id="tradeDateTo" onchange="filterTrades()" placeholder="종료일" style="padding:5px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px" title="매수일 종료">
+                <button onclick="resetTradeFilters()" style="padding:5px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;background:#fff;cursor:pointer">초기화</button>
+                <span id="tradeFilterCount" style="font-size:11px;color:#6b7280;margin-left:auto"></span>
             </div>
             <div style="overflow-x:auto">
             <table id="tradeTable" style="font-size:12px">
@@ -1533,9 +1548,33 @@ function renderTradeHistory(r) {
 }
 
 function filterTrades() {
-    const sel = document.getElementById('tradeStockFilter').value;
-    if (sel === 'all') renderTradeRows(_allTrades);
-    else renderTradeRows(_allTrades.filter(t => t.ticker === sel));
+    const stock = document.getElementById('tradeStockFilter').value;
+    const status = document.getElementById('tradeStatusFilter').value;
+    const pnl = document.getElementById('tradePnlFilter').value;
+    const dateFrom = document.getElementById('tradeDateFrom').value;
+    const dateTo = document.getElementById('tradeDateTo').value;
+
+    let filtered = _allTrades;
+    if (stock !== 'all') filtered = filtered.filter(t => t.ticker === stock);
+    if (status !== 'all') filtered = filtered.filter(t => t.status === status);
+    if (pnl === 'profit') filtered = filtered.filter(t => t.realized_pnl != null && t.realized_pnl > 0);
+    if (pnl === 'loss') filtered = filtered.filter(t => t.realized_pnl != null && t.realized_pnl < 0);
+    if (dateFrom) filtered = filtered.filter(t => t.entry_date >= dateFrom);
+    if (dateTo) filtered = filtered.filter(t => t.entry_date <= dateTo);
+
+    document.getElementById('tradeFilterCount').textContent =
+        filtered.length === _allTrades.length ? '' : filtered.length + '/' + _allTrades.length + '건';
+    renderTradeRows(filtered);
+}
+
+function resetTradeFilters() {
+    document.getElementById('tradeStockFilter').value = 'all';
+    document.getElementById('tradeStatusFilter').value = 'all';
+    document.getElementById('tradePnlFilter').value = 'all';
+    document.getElementById('tradeDateFrom').value = '';
+    document.getElementById('tradeDateTo').value = '';
+    document.getElementById('tradeFilterCount').textContent = '';
+    renderTradeRows(_allTrades);
 }
 
 function renderTradeRows(trades) {
