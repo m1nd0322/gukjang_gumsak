@@ -1,0 +1,49 @@
+name: 일일 국장검색 리포트
+
+on:
+  schedule:
+    # 매일 한국시간 오전 8시 (UTC 23:00 전일)
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+    # 수동 실행 지원
+
+jobs:
+  daily-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Chrome 설치
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: 'stable'
+
+      - name: 의존성 설치
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install requests
+
+      - name: 일일 리포트 실행
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python daily_report.py
+
+      - name: CSV 아티팩트 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-csv-${{ github.run_number }}
+          path: backtest_*.csv
+          retention-days: 30
+          if-no-files-found: ignore
