@@ -107,14 +107,31 @@ class StockDB:
         Returns:
             (name_to_code, code_to_name)
         """
-        today = datetime.now().strftime('%Y%m%d')
+        # KRX API는 장 개장 전이나 휴일에 당일 데이터가 없으므로
+        # 최근 7일 내 유효한 거래일을 찾아서 사용
         name_to_code = {}
         code_to_name = {}
         rows = []
 
+        query_date = None
+        for days_back in range(0, 8):
+            candidate = (datetime.now() - timedelta(days=days_back)).strftime('%Y%m%d')
+            try:
+                test_tickers = krx_module.get_market_ticker_list(candidate, market='KOSPI')
+                if test_tickers:
+                    query_date = candidate
+                    logger.info(f"KRX 유효 거래일: {candidate} (오늘-{days_back}일)")
+                    break
+            except Exception:
+                continue
+
+        if not query_date:
+            logger.warning("최근 7일 내 유효한 KRX 거래일을 찾을 수 없음")
+            return name_to_code, code_to_name
+
         for market in ['KOSPI', 'KOSDAQ']:
             try:
-                tickers = krx_module.get_market_ticker_list(today, market=market)
+                tickers = krx_module.get_market_ticker_list(query_date, market=market)
                 for code in tickers:
                     name = krx_module.get_market_ticker_name(code)
                     name_to_code[name] = code
