@@ -23,9 +23,9 @@ import traceback
 from datetime import datetime, timedelta
 
 import requests
+import yfinance as yf
 
 from backtester import BacktestEngine
-from stock_db import StockDB
 
 # app.py에서 크롤링/스코어링 함수 가져오기
 # (scheduler.start()는 __main__ 블록 안에 있으므로 안전)
@@ -303,17 +303,20 @@ def main():
     stock_names = [r['종목명'] for r in high_score]
     logger.info(f"  백테스트 대상: {len(stock_names)}개 종목")
 
-    # ── 3단계: 종목코드 매핑 + 가격 데이터 수집 ──
+    # ── 3단계: 종목코드 매핑 + 가격 데이터 수집 (yfinance) ──
     logger.info("[3/5] 종목코드 매핑 및 가격 데이터 수집...")
-    try:
-        from pykrx import stock as krx
-    except ImportError:
-        logger.error("pykrx 미설치")
-        send_telegram("❌ <b>국장검색 리포트 실패</b>\npykrx 미설치")
+
+    # ticker_map.json 로드 (pykrx 대신 - KRX API는 해외 IP 차단)
+    ticker_map_path = os.path.join(OUTPUT_DIR, 'ticker_map.json')
+    if not os.path.exists(ticker_map_path):
+        msg = "ticker_map.json 파일이 없습니다. 로컬에서 생성 후 커밋하세요."
+        logger.error(msg)
+        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{msg}")
         sys.exit(1)
 
-    stock_db = StockDB()
-    name_to_code, code_to_name = stock_db.get_or_refresh_ticker_map(krx)
+    with open(ticker_map_path, 'r', encoding='utf-8') as f:
+        name_to_code = json.load(f)
+    logger.info(f"  ticker_map.json 로드: {len(name_to_code)}개 종목")
 
     matched = {}
     unmatched = []
@@ -333,20 +336,22 @@ def main():
     if unmatched:
         logger.warning(f"코드 매핑 실패: {', '.join(unmatched)}")
 
+    logger.info(f"  매핑 성공: {len(matched)}개 | 실패: {len(unmatched)}개")
+
     # 기간 설정
     end_dt = datetime.now()
     start_dt = end_dt - timedelta(days=BACKTEST_PERIOD_MONTHS * 30)
-    start_str = start_dt.strftime('%Y%m%d')
-    end_str = end_dt.strftime('%Y%m%d')
     start_iso = start_dt.strftime('%Y-%m-%d')
     end_iso = end_dt.strftime('%Y-%m-%d')
 
-    # DuckDB 증분 수집
-    ticker_list = list(matched.keys())
-    fetch_stats = stock_db.ensure_price_data(
-        ticker_list, start_str, end_str, krx_module=krx,
-    )
-    logger.info(f"  API 호출: {fetch_stats['fetched']}종목 | 신규: {fetch_stats['new_days']}일")
+    # yfinance로 가격 데이터 수집 (KRX API 해외 차단 우회)
+    # KOSPI: 종목코드 + ".KS", KOSDAQ: 종목코드 + ".KQ"
+    logger.info(f"  yfinance로 가격 데이터 수집 중... ({len(matched)}종목)")
+
+    def get_yf_ticker(code: str) -> str:
+        """종목코드를 yfinance 심볼로 변환 (KOSPI=.KS, KOSDAQ=.KQ)"""
+        # 6자리 숫자 코드 → .KS 시도 후 실패시 .KQ
+        return f"{code}.KS"
 
     # ── 4단계: 백테스트 실행 ──
     logger.info("[4/5] 백테스트 실행...")
@@ -357,12 +362,44 @@ def main():
         tax_pct=TAX_PCT,
     )
 
-    for code, name in matched.items():
-        prices = stock_db.get_prices(code, start_iso, end_iso)
-        if prices:
-            engine.add_price_data(code, prices, name=name)
-        else:
-            logger.warning(f"  {name}({code}): 데이터 없음")
+    failed_tickers = []
+    for i, (code, name) in enumerate(matched.items()):
+        yf_symbol = get_yf_ticker(code)
+        try:
+            df = yf.download(yf_symbol, start=start_iso, end=end_iso,
+                             progress=False, auto_adjust=True)
+            if df.empty:
+                # KOSPI 실패 → KOSDAQ 시도
+                yf_symbol = f"{code}.KQ"
+                df = yf.download(yf_symbol, start=start_iso, end=end_iso,
+                                 progress=False, auto_adjust=True)
+
+            if not df.empty:
+                # yfinance DataFrame → BacktestEngine 형식 변환
+                # MultiIndex columns 처리 (yfinance 0.2.31+)
+                if isinstance(df.columns, __import__('pandas').MultiIndex):
+                    df.columns = df.columns.get_level_values(0)
+                prices = []
+                for date_idx, row in df.iterrows():
+                    prices.append({
+                        'date': date_idx.strftime('%Y-%m-%d'),
+                        'open': float(row['Open']),
+                        'high': float(row['High']),
+                        'low': float(row['Low']),
+                        'close': float(row['Close']),
+                        'volume': int(row['Volume']),
+                    })
+                engine.add_price_data(code, prices, name=name)
+                logger.info(f"  [{i+1}/{len(matched)}] {name}({yf_symbol}): {len(prices)}일")
+            else:
+                failed_tickers.append(name)
+                logger.warning(f"  [{i+1}/{len(matched)}] {name}({yf_symbol}): 데이터 없음")
+        except Exception as e:
+            failed_tickers.append(name)
+            logger.warning(f"  [{i+1}/{len(matched)}] {name}({code}): 오류 - {e}")
+
+    if failed_tickers:
+        logger.warning(f"  가격 수집 실패: {', '.join(failed_tickers)}")
 
     if not engine.price_data:
         msg = "가격 데이터를 수집한 종목이 없습니다"
@@ -370,11 +407,19 @@ def main():
         send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{msg}")
         sys.exit(1)
 
-    # KOSPI 벤치마크
-    stock_db.ensure_index_data("1001", start_str, end_str, krx_module=krx)
-    kospi = stock_db.get_index_prices("1001", start_iso, end_iso)
-    if kospi:
-        engine.set_benchmark(kospi)
+    # KOSPI 벤치마크 (yfinance: ^KS11)
+    try:
+        kospi_df = yf.download("^KS11", start=start_iso, end=end_iso,
+                               progress=False, auto_adjust=True)
+        if isinstance(kospi_df.columns, __import__('pandas').MultiIndex):
+            kospi_df.columns = kospi_df.columns.get_level_values(0)
+        if not kospi_df.empty:
+            kospi = [{'date': d.strftime('%Y-%m-%d'), 'close': float(r['Close'])}
+                     for d, r in kospi_df.iterrows()]
+            engine.set_benchmark(kospi)
+            logger.info(f"  KOSPI 벤치마크: {len(kospi)}일")
+    except Exception as e:
+        logger.warning(f"  KOSPI 벤치마크 수집 실패: {e}")
 
     # 전략 실행
     tickers = list(engine.price_data.keys())

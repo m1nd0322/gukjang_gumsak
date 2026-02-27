@@ -31,7 +31,6 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install requests
 
       - name: 일일 리포트 실행
         env:
