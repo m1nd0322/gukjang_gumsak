@@ -1,150 +1,162 @@
 # 국장검색 (gukjang_gumsak)
 
-한국 증시 종합 스크리닝 시스템 — FnGuide 데이터 기반 종목 점수화 및 백테스트
+한국 증시 종합 스크리닝, 백테스트, 일일 텔레그램 리포트를 한 저장소에서 실행하는 Python 애플리케이션입니다.
 
-## 개요
+## 주요 기능
 
-FnGuide에서 3가지 지표를 크롤링하여 종목별로 점수를 매기고, 고점수 종목에 대해 과거 데이터 기반 백테스트를 수행하는 웹 애플리케이션입니다.
+FnGuide의 세 가지 지표에 각각 1점을 부여하고, 2점 이상 종목을 백테스트 대상으로 사용합니다.
 
-### 스크리닝 기준 (각 1점, 최대 3점)
+| 기준 | 설명 | 현재 데이터 경로 |
+| --- | --- | --- |
+| 연간실적호전 | 연간 영업이익이 개선된 종목 | FnGuide `TURNAROUND_A.json` |
+| 외국인/기관 동반 순매수 전환 | 외국인과 기관이 함께 순매수로 전환한 종목 | FnGuide `SUPPLY_TREND_FIRST_BUY.json` |
+| 국민연금 보유 | 종목별 주주현황에 국민연금공단이 공시된 종목 | FnGuide CompanyInfo Snapshot |
 
-| 기준 | 설명 |
-|------|------|
-| 연간실적호전 (턴어라운드) | 연간 실적이 호전된 종목 |
-| 외국인/기관 동반 순매수 전환 | 외국인과 기관이 동시에 순매수로 전환한 종목 |
-| 국민연금 보유 | 국민연금공단이 보유 중인 종목 |
+구형 `WooriRenewal` HTML 화면이나 Selenium DOM에 의존하지 않습니다. JSON 응답 구조와 Snapshot의 실제 종목코드를 검증하므로, HTTP 200 오류 문서와 우선주→보통주 페이지 연결도 결과에서 걸러냅니다.
 
-## 실행 방법
+웹 UI는 다음 기능을 제공합니다.
 
-### 요구사항
+- 스크리닝 대시보드와 수동 재조회
+- 5개 백테스트 전략, 거래비용 반영, KOSPI 비교
+- 백테스트 CSV 다운로드
+- DuckDB 테이블/스키마/종목별 데이터 조회
+- 매일 오전 8시 APScheduler 자동 갱신
 
-- Python 3.10+
-- Chrome 브라우저 (Selenium headless 크롤링)
+## 요구사항
 
-### 설치 및 실행
+- Python 3.10 이상(자동화 환경은 Python 3.11)
+- 인터넷 연결
+
+Chrome, ChromeDriver, Selenium은 필요하지 않습니다.
+
+웹 백테스트는 기본적으로 저장소의 `ticker_map.json`과 yfinance를 사용합니다. KRX 계정이 있고 `KRX_ID`, `KRX_PW` 환경 변수를 설정한 경우 pykrx를 우선 사용하며, 호출 실패 시 yfinance로 자동 대체합니다.
+
+## 설치와 실행
+
+가상환경 사용을 권장합니다.
 
 ```bash
-pip install -r requirements.txt
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 python app.py
 ```
 
-- 메인 대시보드: http://localhost:5000
-- 백테스트 페이지: http://localhost:5000/backtest
-- DB 뷰어: http://localhost:5000/db
+접속 주소:
 
-### 자동 갱신
+- 메인 대시보드: <http://localhost:5000>
+- 백테스트: <http://localhost:5000/backtest>
+- DB 뷰어: <http://localhost:5000/db>
 
-APScheduler가 매일 오전 8시에 FnGuide 데이터를 자동 갱신합니다. 웹 대시보드의 "재조회" 버튼으로 수동 갱신도 가능합니다.
+정적 HTML 리포트만 만들려면 다음을 실행합니다.
+
+```bash
+python stock_screener.py
+```
+
+결과는 `stock_screening_result.html`에 생성되며 Git에는 포함되지 않습니다.
+
+## 테스트
+
+회귀 테스트는 외부 네트워크 없이 실행됩니다.
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+선택적으로 정적 검사와 컴파일 검사를 실행할 수 있습니다.
+
+```bash
+ruff check .
+python -m py_compile app.py backtester.py daily_report.py screening.py stock_db.py stock_screener.py
+```
+
+실데이터 연결 확인:
+
+```bash
+python - <<'PY'
+from screening import fetch_all_data
+
+turn, supply, nps = fetch_all_data()
+print({"turnaround": len(turn), "supply": len(supply), "nps": len(nps)})
+assert turn and supply and nps
+PY
+```
 
 ## 백테스트
 
-2점 이상 종목을 대상으로 5가지 전략을 지원합니다:
+2점 이상 종목을 대상으로 다음 전략을 지원합니다.
 
 | 전략 | 설명 |
-|------|------|
-| 동일 비중 Buy & Hold | 첫 거래일에 동일 금액 매수 후 보유 |
-| 월간 리밸런싱 | 20 거래일마다 동일 비중으로 재배분 |
-| 변동성 가중 + 트레일링 스탑 | 저변동성 종목에 높은 비중, 고점 대비 하락 시 매도 |
-| 이동평균 필터 (MA20) | 종가 > 20일 이동평균일 때만 보유 |
-| 복합 전략 | MA 필터 + 변동성 가중 + 트레일링 스탑 결합 |
+| --- | --- |
+| 동일 비중 Buy & Hold | 첫 거래일에 동일 금액으로 매수 후 보유 |
+| 월간 리밸런싱 | 20거래일마다 동일 비중으로 재배분 |
+| 변동성 가중 + 트레일링 스탑 | 저변동성 종목에 높은 비중을 두고 고점 대비 하락 시 매도 |
+| 이동평균 필터(MA20) | 종가가 20일 이동평균보다 높을 때만 보유 |
+| 복합 전략 | MA 필터, 변동성 가중, 트레일링 스탑 결합 |
 
-슬리피지, 거래 수수료, 증권거래세를 반영하며, KOSPI 벤치마크 대비 성과를 비교합니다. 결과는 CSV로 다운로드할 수 있습니다.
+엔진은 다음 비용을 별도로 추적합니다.
 
-매매 상세 이력에서 종목, 상태(청산/보유중), 손익(수익/손실), 매수일 범위로 필터링할 수 있습니다.
+- 매수/매도 슬리피지
+- 매수/매도 수수료
+- 매도 시 증권거래세
 
-## DB 뷰어
+총수익률과 MDD는 첫 거래 후 평가액이 아니라 초기 자본금을 기준으로 계산합니다. 여러 번 매수한 포지션은 FIFO 로트로 부분·전량 청산하며, 각 로트의 매수 수수료와 매도 비용을 실현손익에 반영합니다.
 
-DuckDB에 저장된 데이터를 웹 UI로 조회할 수 있습니다 (`/db`):
-
-- DB 통계 (크기, 레코드 수, 종목 수, 날짜 범위)
-- 테이블별 데이터 브라우저 (페이지네이션, 정렬, 필터)
-- 종목별 데이터 요약 (종목명, 보유 기간, 최신 종가)
-
-읽기 성능을 위해 `daily_prices`, `index_prices`, `ticker_map` 테이블에 인덱스가 적용되어 있습니다.
-
-## GitHub Actions 자동 리포트
-
-평일(월~금) 오전 8시(KST)에 자동으로 스크리닝 → 백테스트 → 텔레그램 알림을 수행하는 GitHub Actions 워크플로우가 포함되어 있습니다. 주말/공휴일에는 실행되지 않습니다.
-
-### 동작 흐름
-
-1. FnGuide 3개 지표 크롤링 (Selenium headless)
-2. 종목 스코어링 (최대 3점)
-3. 2점 이상 종목 대상 백테스트 (복합 전략: MA + 변동성 가중 + 트레일링 스탑)
-4. 슬리피지(0.3%), 수수료(0.015%), 증권거래세(0.20%) 반영
-5. KOSPI 벤치마크 대비 성과 비교
-6. 상위 10종목 + 백테스트 결과를 텔레그램으로 전송
-7. CSV 파일을 GitHub Actions Artifact로 업로드 (30일 보관)
-
-### 설정 방법
-
-#### 1. 텔레그램 봇 생성
-
-1. 텔레그램에서 [@BotFather](https://t.me/BotFather)에게 `/newbot` 명령어 전송
-2. 봇 이름과 사용자명 설정 후 **봇 토큰** 복사
-3. 생성된 봇에게 아무 메시지 전송 (채팅방 활성화)
-4. [@userinfobot](https://t.me/userinfobot)에게 메시지를 보내 **Chat ID** 확인 (그룹 채팅방의 경우 봇을 그룹에 추가 후 `https://api.telegram.org/bot<토큰>/getUpdates`에서 `chat.id` 확인)
-
-#### 2. GitHub Secrets 등록
-
-GitHub 저장소 → `Settings` → `Secrets and variables` → `Actions` → `New repository secret`
-
-| Secret 이름 | 값 |
-|-------------|-----|
-| `TELEGRAM_BOT_TOKEN` | BotFather에서 받은 봇 토큰 (예: `123456:ABC-DEF...`) |
-| `TELEGRAM_CHAT_ID` | 메시지를 받을 채팅 ID (예: `123456789`) |
-
-#### 3. 종목 매핑 파일 갱신 (선택)
-
-`ticker_map.json`에 종목명→종목코드 매핑이 저장되어 있습니다. 신규 상장/상장폐지가 있을 경우 로컬에서 갱신할 수 있습니다:
-
-```bash
-python -c "
-from stock_db import StockDB
-db = StockDB()
-import json
-n2c, _ = db.get_ticker_map_from_db()
-with open('ticker_map.json', 'w', encoding='utf-8') as f:
-    json.dump(n2c, f, ensure_ascii=False, indent=2)
-print(f'{len(n2c)}개 종목 저장 완료')
-"
-```
-
-> **참고**: GitHub Actions는 해외 서버에서 실행되어 KRX API(pykrx)에 접근할 수 없으므로, 가격 데이터는 yfinance를 사용합니다. 종목 매핑은 로컬에서 생성한 `ticker_map.json`을 사용합니다.
-
-#### 4. 수동 실행
-
-GitHub 저장소 → `Actions` 탭 → `일일 국장검색 리포트` → `Run workflow` 버튼으로 수동 실행할 수 있습니다.
-
-### 텔레그램 알림 내용
-
-- 스크리닝 요약 (3개 지표별 종목 수, 점수 분포)
-- 상위 10종목 (종목명, 점수, 출처)
-- 백테스트 결과 (수익률, 연환산수익률, MDD, 샤프비율, 승률)
-- 거래비용 반영 내역 (슬리피지, 수수료, 거래세)
-- KOSPI 벤치마크 비교 (초과수익률 α)
-- 개별 종목 수익률
-- CSV 파일 첨부
+> 백테스트는 현재 스크리닝 결과를 과거 전체 기간에 적용하므로 Look-ahead bias가 있습니다. 전략 간 상대 비교와 시스템 검증 용도로 해석하세요.
 
 ## 데이터 저장
 
-- **DuckDB** (`stock_data.duckdb`): 일봉 가격, 종목코드 매핑, KOSPI 지수 데이터를 증분 저장합니다. 이미 수집된 날짜는 pykrx API를 다시 호출하지 않습니다.
-- **JSON 캐시** (`cache_data.json`): 마지막 스크리닝 결과를 캐시하여 서버 재시작 시 즉시 로드합니다.
+- `stock_data.duckdb`: 일봉 가격, KOSPI 지수, 종목코드 매핑을 증분 저장합니다.
+- `cache_data.json`: 마지막 스크리닝 결과를 저장해 서버 재시작 시 복원합니다.
+- `ticker_map.json`: FnGuide Snapshot 조회와 GitHub Actions의 yfinance 종목 매핑에 사용합니다.
+
+DuckDB 캐시 범위가 요청 기간을 포함하면 외부 가격 API를 다시 호출하지 않습니다. 티커 맵 신선도는 가장 최근의 성공적인 갱신 시각을 기준으로 판단하고, 새 DB이거나 KRX 갱신이 실패하면 `ticker_map.json`으로 초기화합니다. KRX 가격·지수 호출이 불가능하면 yfinance의 `.KS`/`.KQ` 종목과 `^KS11` 지수로 자동 대체합니다.
+
+## GitHub Actions 일일 리포트
+
+`.github/workflows/daily_report.yml`은 월~금 오전 8시(KST)에 다음 순서로 실행됩니다. 한국 공휴일은 별도로 판정하지 않습니다.
+
+1. Python 3.11 및 의존성 설치
+2. 회귀 테스트 실행
+3. FnGuide 세 지표 수집과 종목 스코어링
+4. 2점 이상 종목의 6개월 복합 전략 백테스트
+5. yfinance 가격과 KOSPI 벤치마크 수집
+6. 텔레그램 요약/CSV 전송
+7. CSV를 GitHub Actions Artifact로 30일 보관
+
+워크플로에는 Chrome 설치 단계가 없습니다.
+
+### 텔레그램 설정
+
+저장소의 `Settings → Secrets and variables → Actions`에 다음 Repository secret을 등록합니다.
+
+| Secret | 값 |
+| --- | --- |
+| `TELEGRAM_BOT_TOKEN` | BotFather에서 발급한 봇 토큰 |
+| `TELEGRAM_CHAT_ID` | 메시지를 받을 개인 또는 그룹 Chat ID |
+
+봇 생성은 텔레그램의 [@BotFather](https://t.me/BotFather)에서 `/newbot`으로 시작할 수 있습니다. 수동 검증은 GitHub의 `Actions → 일일 국장검색 리포트 → Run workflow`에서 실행합니다.
+
+GitHub 호스티드 러너에서는 KRX 접근 제약을 피하기 위해 가격 데이터에 yfinance를 사용합니다. 스크리닝과 종목 매핑에는 저장소의 `ticker_map.json`이 필요합니다.
 
 ## 프로젝트 구조
 
-```
-app.py              # Flask 웹 서버, 크롤링, 스코어링, 백테스트 오케스트레이션
-backtester.py       # 커스텀 백테스트 엔진 (외부 의존성 없음)
-stock_db.py         # DuckDB 기반 주가 데이터 스토리지
-daily_report.py     # GitHub Actions 일일 자동 리포트 스크립트
-ticker_map.json     # 종목명→종목코드 매핑 (yfinance용)
-stock_screener.py   # 독립 실행 CLI 버전 (requests 기반, 웹 서버 미사용)
-requirements.txt    # Python 의존성
-.github/workflows/  # GitHub Actions 워크플로우
-  daily_report.yml  #   매일 오전 8시 자동 리포트
+```text
+app.py                         Flask 웹 서버와 작업 오케스트레이션
+screening.py                   FnGuide 데이터 수집, 검증, 공통 점수 계산
+backtester.py                  거래비용/FIFO 로트 기반 커스텀 백테스트 엔진
+stock_db.py                    DuckDB 증분 가격·지수·티커 캐시
+stock_screener.py              정적 HTML 리포트 CLI
+daily_report.py                GitHub Actions 일일 텔레그램 리포트
+ticker_map.json                종목명→종목코드 매핑
+tests/                         네트워크 독립 회귀 테스트
+requirements.txt               런타임 의존성
+.github/workflows/
+  daily_report.yml             평일 오전 8시 자동 리포트
 ```
 
 ## 면책 조항
 
-본 시스템은 투자 참고용이며, 투자의 최종 책임은 투자자 본인에게 있습니다. 백테스트 결과는 현재 스크리닝 결과 기준의 시뮬레이션으로, Look-ahead bias가 존재할 수 있습니다.
+이 프로젝트는 투자 참고 및 소프트웨어 실험용입니다. 데이터의 정확성·완전성을 보장하지 않으며, 투자 판단과 결과에 대한 책임은 사용자에게 있습니다.

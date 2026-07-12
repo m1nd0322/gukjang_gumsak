@@ -22,15 +22,13 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Chrome 설치
-        uses: browser-actions/setup-chrome@v1
-        with:
-          chrome-version: 'stable'
-
       - name: 의존성 설치
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: 회귀 테스트
+        run: python -m unittest discover -s tests -v
 
       - name: 일일 리포트 실행
         env:

@@ -2,7 +2,7 @@
 """
 일일 자동 리포트 스크립트 (GitHub Actions 전용)
 ================================================
-1. FnGuide 3개 지표 크롤링 → 종목 스코어링
+1. FnGuide 3개 지표 수집 → 종목 스코어링
 2. 2점 이상 종목 대상 백테스트 (슬리피지/수수료/세금 반영)
 3. KOSPI 벤치마크 대비 성과 비교
 4. 상위 10종목 텔레그램 전송 + CSV 저장
@@ -18,18 +18,13 @@ import json
 import logging
 import os
 import sys
-import time
-import traceback
 from datetime import datetime, timedelta
 
 import requests
 import yfinance as yf
 
 from backtester import BacktestEngine
-
-# app.py에서 크롤링/스코어링 함수 가져오기
-# (scheduler.start()는 __main__ 블록 안에 있으므로 안전)
-from app import fetch_all_data, calculate_scores
+from screening import calculate_scores, fetch_all_data
 
 logging.basicConfig(
     level=logging.INFO,
@@ -184,7 +179,7 @@ def format_telegram_message(scored_results: list, stats: dict,
     config = bt_results.get('cost_config', {})
 
     lines = []
-    lines.append(f"<b>📊 국장검색 일일 리포트</b>")
+    lines.append("<b>📊 국장검색 일일 리포트</b>")
     lines.append(f"<i>{now}</i>")
     lines.append("")
 
@@ -276,17 +271,27 @@ def main():
     logger.info("  일일 자동 리포트 시작")
     logger.info("=" * 60)
 
-    # ── 1단계: FnGuide 크롤링 ──
-    logger.info("[1/5] FnGuide 3개 지표 크롤링 시작...")
-    turn_data, supply_data, nps_data = fetch_all_data()
-
-    if not turn_data and not supply_data and not nps_data:
-        msg = "모든 데이터 소스에서 수집 실패"
+    # ── 1단계: FnGuide 데이터 수집 ──
+    logger.info("[1/5] FnGuide 3개 지표 수집 시작...")
+    try:
+        turn_data, supply_data, nps_data = fetch_all_data(require_all=True)
+    except Exception as exc:
+        msg = f"스크리닝 데이터 수집 실패: {exc}"
         logger.error(msg)
         send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{msg}")
         sys.exit(1)
 
-    logger.info(f"  턴어라운드: {len(turn_data)}개 | 순매수전환: {len(supply_data)}개 | 국민연금: {len(nps_data)}개")
+    source_counts = {
+        "턴어라운드": len(turn_data),
+        "순매수전환": len(supply_data),
+        "국민연금": len(nps_data),
+    }
+    logger.info(
+        "  턴어라운드: %d개 | 순매수전환: %d개 | 국민연금: %d개",
+        source_counts["턴어라운드"],
+        source_counts["순매수전환"],
+        source_counts["국민연금"],
+    )
 
     # ── 2단계: 스코어링 ──
     logger.info("[2/5] 종목 스코어링...")

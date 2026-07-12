@@ -1,6 +1,15 @@
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
+.omx/
+.env
+.env.*
+!.env.example
 stock_data.duckdb
+stock_data.duckdb.wal
 cache_data.json
+backtest_*.csv
+stock_screening_result.html
 .omc/
 .claude/

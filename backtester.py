@@ -28,7 +28,7 @@ Custom Backtest Engine (커스텀 백테스트 엔진)
 
 import math
 import statistics
-from dataclasses import dataclass, field
+from dataclasses import dataclass, replace
 from typing import Dict, List, Optional
 
 
@@ -55,11 +55,11 @@ class TradeRecord:
     entry_price: float      # 원래 시장가
     exec_price: float       # 슬리피지 적용 실행가
     shares: int
-    entry_cost: float = 0.0  # 매수 시 발생 비용 (수수료)
+    entry_cost: float = 0.0  # 매수 시 현금 비용 (수수료)
     exit_date: Optional[str] = None
     exit_price: Optional[float] = None
     exec_exit_price: Optional[float] = None
-    exit_cost: float = 0.0   # 매도 시 발생 비용 (수수료+세금)
+    exit_cost: float = 0.0   # 매도 시 현금 비용 (수수료+세금)
     pnl: float = 0.0         # 비용 차감 후 순손익
     pnl_pct: float = 0.0
     status: str = 'open'
@@ -137,8 +137,8 @@ class Portfolio:
         self.trades.append(TradeRecord(
             ticker=ticker, name=name or ticker,
             entry_date=date, entry_price=price,
-            exec_price=round(exec_price, 1),
-            shares=shares, entry_cost=round(commission + slippage_cost, 0),
+            exec_price=exec_price,
+            shares=shares, entry_cost=commission,
         ))
         return shares
 
@@ -150,11 +150,13 @@ class Portfolio:
         - 세금: 체결 금액의 tax_pct% (증권거래세)
         반환: 실제 매도 주수
         """
-        if ticker not in self.positions:
+        if ticker not in self.positions or shares <= 0 or price <= 0:
             return 0
 
         pos = self.positions[ticker]
         actual = min(shares, pos['shares'])
+        if actual <= 0:
+            return 0
 
         # 슬리피지 적용 (매도: 불리하게 낮은 가격)
         exec_price = price * (1 - self.cost.slippage_pct / 100)
@@ -171,25 +173,61 @@ class Portfolio:
 
         self.cash += net_proceeds
 
-        # 순손익 (비용 차감 후)
-        pnl = net_proceeds - pos['avg_price'] * actual
-        pnl_pct = (net_proceeds / (pos['avg_price'] * actual) - 1) * 100 if pos['avg_price'] > 0 else 0
-
-        # 트레이드 기록 업데이트
-        for t in reversed(self.trades):
-            if t.ticker == ticker and t.status == 'open':
-                t.exit_date = date
-                t.exit_price = price
-                t.exec_exit_price = round(exec_price, 1)
-                t.exit_cost = round(commission + tax + slippage_cost, 0)
-                t.pnl = round(pnl, 0)
-                t.pnl_pct = round(pnl_pct, 2)
-                t.status = 'closed'
+        # 열린 매수 로트를 FIFO로 청산한다. 부분 청산 시 닫힌 로트와
+        # 남은 열린 로트로 분리해 매도 수량과 실현손익을 정확히 보존한다.
+        remaining = actual
+        open_lots = [
+            trade for trade in self.trades
+            if trade.ticker == ticker and trade.status == 'open'
+        ]
+        for trade in open_lots:
+            if remaining <= 0:
                 break
+            original_shares = trade.shares
+            lot_shares = min(remaining, original_shares)
+            entry_cost = trade.entry_cost * lot_shares / original_shares
+
+            if lot_shares < original_shares:
+                closed_trade = replace(
+                    trade,
+                    shares=lot_shares,
+                    entry_cost=entry_cost,
+                )
+                trade.shares = original_shares - lot_shares
+                trade.entry_cost -= entry_cost
+                self.trades.insert(self.trades.index(trade), closed_trade)
+            else:
+                closed_trade = trade
+
+            allocation = lot_shares / actual
+            lot_commission = commission * allocation
+            lot_tax = tax * allocation
+            lot_net_proceeds = exec_price * lot_shares - lot_commission - lot_tax
+            lot_buy_cost = closed_trade.exec_price * lot_shares + closed_trade.entry_cost
+            pnl = lot_net_proceeds - lot_buy_cost
+
+            closed_trade.exit_date = date
+            closed_trade.exit_price = price
+            closed_trade.exec_exit_price = exec_price
+            closed_trade.exit_cost = lot_commission + lot_tax
+            closed_trade.pnl = pnl
+            closed_trade.pnl_pct = (pnl / lot_buy_cost * 100) if lot_buy_cost > 0 else 0
+            closed_trade.status = 'closed'
+            remaining -= lot_shares
 
         pos['shares'] -= actual
         if pos['shares'] <= 0:
             del self.positions[ticker]
+        else:
+            remaining_lots = [
+                trade for trade in self.trades
+                if trade.ticker == ticker and trade.status == 'open'
+            ]
+            open_shares = sum(trade.shares for trade in remaining_lots)
+            if open_shares:
+                pos['avg_price'] = sum(
+                    trade.exec_price * trade.shares for trade in remaining_lots
+                ) / open_shares
         return actual
 
     def sell_all(self, prices: Dict[str, float], date: str):
@@ -551,7 +589,6 @@ class BacktestEngine:
 
                 # 역변동성 비중 (변동성 낮을수록 큰 비중)
                 total_inv = sum(inv_vols.values())
-                eq = self.portfolio.equity(prices)
                 # 기존 보유 종목 가치 차감
                 available = self.portfolio.cash
 
@@ -852,30 +889,11 @@ class BacktestEngine:
               매도일, 매도가, 매도비용, 실현손익, 수익률(%), 상태
         """
         details = []
-        # 종목별 누적 매입 추적 (평균단가, 총매입금액 계산용)
-        stock_accum: Dict[str, dict] = {}
-
         for t in self.portfolio.trades:
             buy_amount = round(t.exec_price * t.shares)  # 매입금액 (체결가 × 수량)
             total_buy_amount = round(buy_amount + t.entry_cost)  # 총매입금액 (매입금액 + 매수비용)
             avg_price = round(t.exec_price)  # 이 거래의 평균단가 = 체결가
-
-            # 종목별 누적 (여러 번 매수 시 평균단가 업데이트)
             ticker = t.ticker
-            if ticker not in stock_accum:
-                stock_accum[ticker] = {
-                    'total_shares': 0,
-                    'total_cost': 0,  # 체결가 기준 누적
-                    'total_buy_with_cost': 0,  # 비용 포함 누적
-                }
-            acc = stock_accum[ticker]
-            acc['total_shares'] += t.shares
-            acc['total_cost'] += t.exec_price * t.shares
-            acc['total_buy_with_cost'] += buy_amount + t.entry_cost
-
-            # 누적 평균단가
-            cumulative_avg = round(acc['total_cost'] / acc['total_shares']) if acc['total_shares'] > 0 else 0
-            cumulative_total_buy = round(acc['total_buy_with_cost'])
 
             # 평가금액: 보유중이면 마지막 종가 기준, 청산이면 매도 체결가 기준
             if t.status == 'closed' and t.exec_exit_price:
@@ -903,14 +921,6 @@ class BacktestEngine:
             if t.status == 'open' and buy_amount > 0:
                 return_pct = round((eval_amount / buy_amount - 1) * 100, 2)
 
-            # 매도 시 누적에서 차감
-            if t.status == 'closed':
-                acc['total_shares'] -= t.shares
-                acc['total_cost'] -= t.exec_price * t.shares
-                acc['total_buy_with_cost'] -= (buy_amount + t.entry_cost)
-                if acc['total_shares'] <= 0:
-                    stock_accum.pop(ticker, None)
-
             details.append({
                 'ticker': ticker,
                 'name': t.name,
@@ -918,8 +928,8 @@ class BacktestEngine:
                 'entry_price': round(t.entry_price),
                 'shares': t.shares,
                 'buy_amount': buy_amount,
-                'avg_price': cumulative_avg,
-                'total_buy_amount': cumulative_total_buy,
+                'avg_price': avg_price,
+                'total_buy_amount': total_buy_amount,
                 'eval_amount': eval_amount,
                 'eval_pnl': eval_pnl,
                 'exit_date': sell_date,
@@ -942,13 +952,13 @@ class BacktestEngine:
     def _calc_metrics(self, equities: List[float], dates: List[str]) -> dict:
         """핵심 성과 지표 계산"""
         n = len(equities)
-        if n == 0 or equities[0] == 0:
+        if n == 0 or self.initial_capital <= 0:
             return {'_dd_curve': []}
 
-        total_ret = (equities[-1] / equities[0] - 1) * 100
+        total_ret = (equities[-1] / self.initial_capital - 1) * 100
 
         # MDD
-        peak = equities[0]
+        peak = self.initial_capital
         mdd = 0.0
         dd_curve = []
         mdd_peak_d = mdd_trough_d = tmp_peak_d = dates[0]
@@ -966,11 +976,15 @@ class BacktestEngine:
 
         # 일별 수익률
         daily_rets = []
-        for i in range(1, n):
-            if equities[i - 1] > 0:
-                daily_rets.append(equities[i] / equities[i - 1] - 1)
+        previous = self.initial_capital
+        for equity in equities:
+            if previous > 0:
+                daily_rets.append(equity / previous - 1)
+            previous = equity
 
-        ann_ret = ((equities[-1] / equities[0]) ** (252 / max(n, 1)) - 1) * 100
+        ann_ret = (
+            (equities[-1] / self.initial_capital) ** (252 / max(n, 1)) - 1
+        ) * 100
 
         vol = (statistics.stdev(daily_rets) * math.sqrt(252) * 100
                if len(daily_rets) > 1 else 0)
@@ -1179,9 +1193,11 @@ class BacktestEngine:
 
         bench_ret = (bd[-1]['close'] / base - 1) * 100
 
-        start_eq = equities[0]
         curve = [
-            {'date': b['date'], 'equity': round(start_eq * b['close'] / base)}
+            {
+                'date': b['date'],
+                'equity': round(self.initial_capital * b['close'] / base),
+            }
             for b in bd
         ]
 

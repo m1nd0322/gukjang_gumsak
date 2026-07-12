@@ -4,161 +4,53 @@
 - 턴어라운드 (연간실적호전)
 - 외국인/기관 동반 순매수 전환
 - 국민연금 보유현황
-3개 지표를 종합하여 점수화하는 웹 기반 스크리닝 시스템
+3개 지표를 종합하여 점수화하고 정적 HTML로 저장
 """
 
-import requests
-from bs4 import BeautifulSoup
-import pandas as pd
 from datetime import datetime
-import re
 import os
+
+import pandas as pd
+
+from screening import (
+    calculate_scores as calculate_score_rows,
+    fetch_all_data,
+    fetch_nps_holdings as fetch_nps_holding_rows,
+    fetch_supply_trend as fetch_supply_trend_rows,
+    fetch_turnaround as fetch_turnaround_rows,
+)
+
 
 # ============================================================
 # 1. 데이터 수집
 # ============================================================
 
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-    'Referer': 'https://comp.fnguide.com/SVO/WooriRenewal/',
-}
-
-
-def normalize_stock_name(name):
-    """종목명 정규화: 공백, 특수문자 통일"""
-    name = name.strip()
-    name = re.sub(r'\s+', ' ', name)  # 다중 공백 → 단일 공백
-    return name
-
-
-def parse_table(table, exclude_last_col=True):
-    """BeautifulSoup table 요소 → list of dicts"""
-    headers = []
-    for th in table.find('thead').find_all('th'):
-        text = th.get_text(separator=' ', strip=True)
-        headers.append(text)
-
-    if exclude_last_col and headers and 'Action' in headers[-1]:
-        headers = headers[:-1]
-
-    rows = []
-    for tr in table.find('tbody').find_all('tr'):
-        tds = tr.find_all('td')
-        row = {}
-        for i, td in enumerate(tds):
-            if i >= len(headers):
-                break
-            row[headers[i]] = td.get_text(strip=True)
-        if row:
-            rows.append(row)
-    return rows, headers
+def _to_dataframe(rows):
+    return pd.DataFrame(rows)
 
 
 def fetch_turnaround():
-    """1. 턴어라운드 - 연간실적호전 종목 크롤링"""
-    url = 'https://comp.fnguide.com/SVO/WooriRenewal/ScreenerBasics_turn.asp'
+    """1. 턴어라운드 - 연간실적호전 종목 수집"""
     print("[1/3] 턴어라운드(연간실적호전) 데이터 수집 중...")
-
-    resp = requests.get(url, headers=HEADERS, timeout=30)
-    resp.encoding = 'utf-8'
-    soup = BeautifulSoup(resp.text, 'html.parser')
-
-    # grid_A = 연간실적호전 테이블
-    grid_a = soup.find('div', id='grid_A')
-    if not grid_a:
-        print("  ⚠ grid_A를 찾을 수 없습니다.")
-        return pd.DataFrame()
-
-    table = grid_a.find('table')
-    rows, headers = parse_table(table)
-
-    df = pd.DataFrame(rows)
-    if '종목명' in df.columns:
-        df['종목명'] = df['종목명'].apply(normalize_stock_name)
-
-    print(f"  ✓ {len(df)}개 종목 수집 완료")
-    return df
+    frame = _to_dataframe(fetch_turnaround_rows())
+    print(f"  ✓ {len(frame)}개 종목 수집 완료")
+    return frame
 
 
 def fetch_supply_trend():
-    """2. 외국인/기관 동반 순매수 전환 종목 크롤링"""
-    url = 'https://comp.fnguide.com/SVO/WooriRenewal/SupplyTrend.asp'
+    """2. 외국인/기관 동반 순매수 전환 종목 수집"""
     print("[2/3] 외국인/기관 동반 순매수 전환 데이터 수집 중...")
-
-    resp = requests.get(url, headers=HEADERS, timeout=30)
-    resp.encoding = 'utf-8'
-    soup = BeautifulSoup(resp.text, 'html.parser')
-
-    # tbl_2 = 외국인/기관 동반 순매수 전환 테이블
-    tbl_2 = soup.find('div', id='tbl_2')
-    if not tbl_2:
-        print("  ⚠ tbl_2를 찾을 수 없습니다.")
-        return pd.DataFrame()
-
-    table = tbl_2.find('table')
-    rows, headers = parse_table(table)
-
-    df = pd.DataFrame(rows)
-    if '종목명' in df.columns:
-        df['종목명'] = df['종목명'].apply(normalize_stock_name)
-
-    print(f"  ✓ {len(df)}개 종목 수집 완료")
-    return df
+    frame = _to_dataframe(fetch_supply_trend_rows())
+    print(f"  ✓ {len(frame)}개 종목 수집 완료")
+    return frame
 
 
 def fetch_nps_holdings():
-    """3. 국민연금공단 보유현황 크롤링"""
-    url = 'https://comp.fnguide.com/SVO/WooriRenewal/inst.asp'
+    """3. 국민연금공단 보유현황 수집"""
     print("[3/3] 국민연금공단 보유현황 데이터 수집 중...")
-
-    resp = requests.get(url, headers=HEADERS, timeout=30)
-    resp.encoding = 'utf-8'
-    soup = BeautifulSoup(resp.text, 'html.parser')
-
-    # 기관투자자 보유현황 테이블 (기본이 국민연금공단)
-    table = soup.find('table', class_='ctb1')
-    if not table:
-        print("  ⚠ 테이블을 찾을 수 없습니다.")
-        return pd.DataFrame()
-
-    # 헤더 파싱
-    headers = []
-    thead = table.find('thead')
-    if thead:
-        # nested thead structure 처리
-        ths = thead.find_all('th')
-        for th in ths:
-            text = th.get_text(separator=' ', strip=True)
-            if text and text != '':
-                headers.append(text)
-
-    # 'Action' 제외
-    if headers and 'Action' in headers[-1]:
-        headers = headers[:-1]
-
-    # tbody가 없을 수 있음 - tr 직접 탐색
-    rows = []
-    all_trs = table.find_all('tr')
-    for tr in all_trs:
-        tds = tr.find_all('td')
-        if not tds:
-            continue
-        row = {}
-        for i, td in enumerate(tds):
-            if i >= len(headers):
-                break
-            row[headers[i]] = td.get_text(strip=True)
-        if row:
-            rows.append(row)
-
-    df = pd.DataFrame(rows)
-    if '종목명' in df.columns:
-        df['종목명'] = df['종목명'].apply(normalize_stock_name)
-
-    print(f"  ✓ {len(df)}개 종목 수집 완료")
-    return df
+    frame = _to_dataframe(fetch_nps_holding_rows())
+    print(f"  ✓ {len(frame)}개 종목 수집 완료")
+    return frame
 
 
 # ============================================================
@@ -166,78 +58,21 @@ def fetch_nps_holdings():
 # ============================================================
 
 def calculate_scores(df_turn, df_supply, df_nps):
-    """3개 데이터셋 기반 종합 점수 계산"""
+    """공통 스크리닝 계층으로 세 데이터셋의 종합 점수를 계산한다."""
     print("\n점수 계산 중...")
-
-    stocks_turn = set(df_turn['종목명'].tolist()) if '종목명' in df_turn.columns else set()
-    stocks_supply = set(df_supply['종목명'].tolist()) if '종목명' in df_supply.columns else set()
-    stocks_nps = set(df_nps['종목명'].tolist()) if '종목명' in df_nps.columns else set()
-
-    all_stocks = stocks_turn | stocks_supply | stocks_nps
-
-    results = []
-    for stock in all_stocks:
-        score = 0
-        sources = []
-
-        in_turn = stock in stocks_turn
-        in_supply = stock in stocks_supply
-        in_nps = stock in stocks_nps
-
-        if in_turn:
-            score += 1
-            sources.append('연간실적호전')
-        if in_supply:
-            score += 1
-            sources.append('순매수전환')
-        if in_nps:
-            score += 1
-            sources.append('국민연금')
-
-        # 각 소스별 상세 정보 수집
-        detail = {'종목명': stock, '종합점수': score, '출처': ', '.join(sources)}
-
-        # 턴어라운드 상세
-        if in_turn:
-            row = df_turn[df_turn['종목명'] == stock].iloc[0]
-            for col in df_turn.columns:
-                if col not in ('No.', '종목명'):
-                    detail[f'[턴]{col}'] = row.get(col, '')
-
-        # 수급 상세
-        if in_supply:
-            row = df_supply[df_supply['종목명'] == stock].iloc[0]
-            for col in df_supply.columns:
-                if col not in ('No.', '종목명'):
-                    detail[f'[수급]{col}'] = row.get(col, '')
-
-        # 국민연금 상세
-        if in_nps:
-            row = df_nps[df_nps['종목명'] == stock].iloc[0]
-            for col in df_nps.columns:
-                if col not in ('No.', '종목명'):
-                    detail[f'[연금]{col}'] = row.get(col, '')
-
-        results.append(detail)
-
-    result_df = pd.DataFrame(results)
-    result_df = result_df.sort_values(['종합점수', '종목명'], ascending=[False, True]).reset_index(drop=True)
-    result_df.index = result_df.index + 1  # 1부터 시작
-
-    count_3 = len(result_df[result_df['종합점수'] == 3])
-    count_2 = len(result_df[result_df['종합점수'] == 2])
-    count_1 = len(result_df[result_df['종합점수'] == 1])
-    print(f"  3점: {count_3}개 | 2점: {count_2}개 | 1점: {count_1}개 | 총: {len(result_df)}개")
-
-    return result_df, {
-        'turn_count': len(stocks_turn),
-        'supply_count': len(stocks_supply),
-        'nps_count': len(stocks_nps),
-        'total': len(all_stocks),
-        'score_3': count_3,
-        'score_2': count_2,
-        'score_1': count_1,
-    }
+    rows, stats = calculate_score_rows(
+        df_turn.to_dict("records"),
+        df_supply.to_dict("records"),
+        df_nps.to_dict("records"),
+    )
+    result_df = pd.DataFrame(rows)
+    if not result_df.empty:
+        result_df.index = result_df.pop("순위")
+    print(
+        f"  3점: {stats['score_3']}개 | 2점: {stats['score_2']}개 | "
+        f"1점: {stats['score_1']}개 | 총: {stats['total']}개"
+    )
+    return result_df, stats
 
 
 # ============================================================
@@ -662,9 +497,15 @@ def main():
     print()
 
     # 데이터 수집
-    df_turn = fetch_turnaround()
-    df_supply = fetch_supply_trend()
-    df_nps = fetch_nps_holdings()
+    print("[1/3] FnGuide 세 데이터 소스 수집 중...")
+    turn_rows, supply_rows, nps_rows = fetch_all_data(require_all=True)
+    df_turn = _to_dataframe(turn_rows)
+    df_supply = _to_dataframe(supply_rows)
+    df_nps = _to_dataframe(nps_rows)
+    print(
+        f"  ✓ 턴어라운드 {len(df_turn)}개 | 순매수전환 {len(df_supply)}개 | "
+        f"국민연금 {len(df_nps)}개"
+    )
 
     if df_turn.empty and df_supply.empty and df_nps.empty:
         print("\n❌ 데이터를 수집하지 못했습니다.")
@@ -683,12 +524,12 @@ def main():
     print("=" * 60)
 
     if stats['score_3'] > 0:
-        print(f"\n★ 3점 종목 (3개 항목 모두 해당):")
+        print("\n★ 3점 종목 (3개 항목 모두 해당):")
         for _, row in result_df[result_df['종합점수'] == 3].iterrows():
             print(f"  - {row['종목명']}")
 
     if stats['score_2'] > 0:
-        print(f"\n● 2점 종목 (2개 항목 해당):")
+        print("\n● 2점 종목 (2개 항목 해당):")
         for _, row in result_df[result_df['종합점수'] == 2].iterrows():
             print(f"  - {row['종목명']} ({row['출처']})")
 

@@ -11,33 +11,19 @@
 브라우저: http://localhost:5000
 """
 
-from bs4 import BeautifulSoup
 from flask import Flask, jsonify, render_template_string, request, Response
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 import json
-import re
+import math
 import os
 import logging
 import threading
-import time
 import traceback
 
 from backtester import BacktestEngine
+from screening import calculate_scores, fetch_all_data
 from stock_db import StockDB
-
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
-try:
-    from webdriver_manager.chrome import ChromeDriverManager
-    USE_WDM = True
-except ImportError:
-    USE_WDM = False
 
 # ============================================================
 # 설정
@@ -72,261 +58,22 @@ backtest_state = {
 }
 bt_lock = threading.Lock()
 
-# pykrx (한국 주식 데이터)
-try:
-    from pykrx import stock as krx
-    HAS_PYKRX = True
-except ImportError:
-    HAS_PYKRX = False
-    logger.warning("pykrx 미설치 - pip install pykrx 로 설치하세요")
+# KRX 인증 정보가 있으면 pykrx를 우선 사용하고, 없으면 StockDB의
+# ticker_map.json/yfinance 경로를 사용한다. pykrx 1.2.8부터 KRX 데이터
+# API는 로그인 환경 변수가 필요하다.
+HAS_PYKRX = False
+krx = None
+if os.getenv('KRX_ID') and os.getenv('KRX_PW'):
+    try:
+        from pykrx import stock as krx
+        HAS_PYKRX = True
+    except ImportError:
+        logger.warning("pykrx 미설치 - yfinance 대체 경로를 사용합니다")
+else:
+    logger.info("KRX 인증 정보 없음 - ticker_map.json/yfinance 경로를 사용합니다")
 
 # DuckDB 스토리지
 stock_db = StockDB()
-
-
-# ============================================================
-# Selenium 브라우저 관리
-# ============================================================
-def create_driver():
-    """Headless Chrome 드라이버 생성"""
-    chrome_options = Options()
-    chrome_options.add_argument('--headless')
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--disable-dev-shm-usage')
-    chrome_options.add_argument('--disable-gpu')
-    chrome_options.add_argument('--window-size=1920,1080')
-    chrome_options.add_argument('--lang=ko-KR')
-    chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-
-    if USE_WDM:
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-    else:
-        driver = webdriver.Chrome(options=chrome_options)
-
-    driver.implicitly_wait(5)
-    return driver
-
-
-# ============================================================
-# 크롤링 함수
-# ============================================================
-def normalize(name):
-    return re.sub(r'\s+', ' ', name.strip())
-
-
-def parse_table_safe(container, label):
-    """컨테이너(div 또는 table) 안의 테이블을 안전하게 파싱"""
-    if container is None:
-        logger.warning(f"  {label}: 컨테이너를 찾을 수 없음")
-        return []
-
-    table = container.find('table') if container.name != 'table' else container
-    if table is None:
-        logger.warning(f"  {label}: 테이블을 찾을 수 없음")
-        return []
-
-    # 헤더 파싱
-    thead = table.find('thead')
-    headers = []
-    if thead:
-        for th in thead.find_all('th'):
-            text = th.get_text(separator=' ', strip=True)
-            if text:
-                headers.append(text)
-    else:
-        first_tr = table.find('tr')
-        if first_tr:
-            for cell in first_tr.find_all(['th', 'td']):
-                headers.append(cell.get_text(separator=' ', strip=True))
-
-    # 'No.' 헤더 정규화
-    headers = [('No.' if 'No.' in h else h) for h in headers]
-
-    # Action 컬럼 제거
-    if headers and 'Action' in headers[-1]:
-        headers = headers[:-1]
-
-    logger.info(f"  {label} 헤더: {headers}")
-
-    # 행 파싱
-    rows = []
-    tbody = table.find('tbody')
-    tr_source = tbody.find_all('tr') if tbody else table.find_all('tr')
-
-    for tr in tr_source:
-        tds = tr.find_all('td')
-        if not tds:
-            continue
-        row = {}
-        for i, td in enumerate(tds):
-            if i < len(headers):
-                row[headers[i]] = td.get_text(strip=True)
-        if row and '종목명' in row:
-            row['종목명'] = normalize(row['종목명'])
-            rows.append(row)
-
-    logger.info(f"  {label}: {len(rows)}개 행 파싱")
-    return rows
-
-
-def fetch_all_data():
-    """Selenium으로 3개 페이지를 순차 크롤링 (브라우저 1개 재사용)"""
-    driver = None
-    turn_data = []
-    supply_data = []
-    nps_data = []
-
-    try:
-        logger.info("Chrome 브라우저 시작 (headless)...")
-        driver = create_driver()
-
-        # ----- 1. 턴어라운드 (연간실적호전) -----
-        logger.info("[1/3] 턴어라운드(연간실적호전) 크롤링")
-        try:
-            driver.get('https://comp.fnguide.com/SVO/WooriRenewal/ScreenerBasics_turn.asp')
-            time.sleep(2)
-
-            # '연간실적호전' 탭 클릭
-            tabs = driver.find_elements(By.CSS_SELECTOR, '#btnTurn li button')
-            for tab in tabs:
-                if '연간실적호전' in tab.text:
-                    tab.click()
-                    logger.info("  '연간실적호전' 탭 클릭")
-                    time.sleep(1.5)
-                    break
-
-            html = driver.page_source
-            soup = BeautifulSoup(html, 'html.parser')
-            grid_a = soup.find('div', id='grid_A')
-            if grid_a is None:
-                # 탭 클릭 후에는 grid_A가 visible 상태이므로 전체에서 '결산년월' 테이블 탐색
-                for tbl in soup.find_all('table'):
-                    if '결산년월' in (tbl.get_text() or ''):
-                        grid_a = tbl
-                        break
-            turn_data = parse_table_safe(grid_a, '연간실적호전')
-            logger.info(f"  턴어라운드: {len(turn_data)}개 종목")
-        except Exception as e:
-            logger.error(f"  턴어라운드 실패: {e}")
-
-        # ----- 2. 외국인/기관 동반 순매수 전환 -----
-        logger.info("[2/3] 외국인/기관 순매수 전환 크롤링")
-        try:
-            driver.get('https://comp.fnguide.com/SVO/WooriRenewal/SupplyTrend.asp')
-            time.sleep(2)
-
-            # '외국인/기관 동반 순매수 전환' 탭 클릭
-            tabs = driver.find_elements(By.CSS_SELECTOR, '#btnSupply li button')
-            for tab in tabs:
-                if '전환' in tab.text:
-                    tab.click()
-                    logger.info("  '순매수 전환' 탭 클릭")
-                    time.sleep(1.5)
-                    break
-
-            html = driver.page_source
-            soup = BeautifulSoup(html, 'html.parser')
-            tbl_2 = soup.find('div', id='tbl_2')
-            supply_data = parse_table_safe(tbl_2, '순매수전환')
-            logger.info(f"  순매수전환: {len(supply_data)}개 종목")
-        except Exception as e:
-            logger.error(f"  순매수전환 실패: {e}")
-
-        # ----- 3. 국민연금공단 보유현황 -----
-        logger.info("[3/3] 국민연금 보유현황 크롤링")
-        try:
-            driver.get('https://comp.fnguide.com/SVO/WooriRenewal/inst.asp')
-            time.sleep(3)  # 국민연금 데이터가 많아 로딩 시간 여유
-
-            html = driver.page_source
-            soup = BeautifulSoup(html, 'html.parser')
-            table = soup.find('table', class_='ctb1')
-            if table is None:
-                table = soup.find('table')
-            nps_data = parse_table_safe(table, '국민연금')
-            logger.info(f"  국민연금: {len(nps_data)}개 종목")
-        except Exception as e:
-            logger.error(f"  국민연금 실패: {e}")
-
-    except Exception as e:
-        logger.error(f"브라우저 초기화 실패: {e}")
-    finally:
-        if driver:
-            try:
-                driver.quit()
-                logger.info("Chrome 브라우저 종료")
-            except:
-                pass
-
-    return turn_data, supply_data, nps_data
-
-
-# ============================================================
-# 점수 계산
-# ============================================================
-def calculate_scores(turn_data, supply_data, nps_data):
-    """종합 점수 계산"""
-    turn_names = {r['종목명'] for r in turn_data if '종목명' in r}
-    supply_names = {r['종목명'] for r in supply_data if '종목명' in r}
-    nps_names = {r['종목명'] for r in nps_data if '종목명' in r}
-    all_stocks = turn_names | supply_names | nps_names
-
-    turn_map = {r['종목명']: r for r in turn_data if '종목명' in r}
-    supply_map = {r['종목명']: r for r in supply_data if '종목명' in r}
-    nps_map = {r['종목명']: r for r in nps_data if '종목명' in r}
-
-    results = []
-    for stock in all_stocks:
-        score = 0
-        sources = []
-
-        if stock in turn_names:
-            score += 1
-            sources.append('연간실적호전')
-        if stock in supply_names:
-            score += 1
-            sources.append('순매수전환')
-        if stock in nps_names:
-            score += 1
-            sources.append('국민연금')
-
-        detail = {
-            '종목명': stock,
-            '종합점수': score,
-            '출처': ', '.join(sources),
-        }
-
-        if stock in turn_map:
-            for k, v in turn_map[stock].items():
-                if k not in ('No.', '종목명'):
-                    detail[f'[턴]{k}'] = v
-        if stock in supply_map:
-            for k, v in supply_map[stock].items():
-                if k not in ('No.', '종목명'):
-                    detail[f'[수급]{k}'] = v
-        if stock in nps_map:
-            for k, v in nps_map[stock].items():
-                if k not in ('No.', '종목명'):
-                    detail[f'[연금]{k}'] = v
-
-        results.append(detail)
-
-    results.sort(key=lambda x: (-x['종합점수'], x['종목명']))
-    for i, r in enumerate(results):
-        r['순위'] = i + 1
-
-    stats = {
-        'turn_count': len(turn_names),
-        'supply_count': len(supply_names),
-        'nps_count': len(nps_names),
-        'total': len(all_stocks),
-        'score_3': sum(1 for r in results if r['종합점수'] == 3),
-        'score_2': sum(1 for r in results if r['종합점수'] == 2),
-        'score_1': sum(1 for r in results if r['종합점수'] == 1),
-    }
-
-    return results, stats
 
 
 # ============================================================
@@ -344,11 +91,8 @@ def refresh_data():
     logger.info("데이터 갱신 시작")
 
     try:
-        # Selenium으로 3개 페이지 순차 크롤링
-        turn, supply, nps = fetch_all_data()
-
-        if not turn and not supply and not nps:
-            raise Exception("모든 데이터 소스에서 수집 실패 (Selenium 크롤링 결과 없음)")
+        # JSON 피드와 종목별 Snapshot에서 세 소스 수집
+        turn, supply, nps = fetch_all_data(require_all=True)
 
         result, stats = calculate_scores(turn, supply, nps)
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -421,9 +165,17 @@ def api_refresh():
     with data_lock:
         if current_data['status'] == 'loading':
             return jsonify({'status': 'already_loading', 'message': '이미 갱신 중입니다.'})
+        current_data['status'] = 'loading'
+        current_data['error_msg'] = ''
 
     thread = threading.Thread(target=refresh_data, daemon=True)
-    thread.start()
+    try:
+        thread.start()
+    except Exception as e:
+        with data_lock:
+            current_data['status'] = 'error'
+            current_data['error_msg'] = str(e)
+        return jsonify({'error': '갱신 작업을 시작하지 못했습니다.'}), 500
     return jsonify({'status': 'started', 'message': '데이터 갱신을 시작합니다.'})
 
 
@@ -619,20 +371,60 @@ def api_backtest_run():
         if backtest_state['status'] == 'loading':
             return jsonify({'status': 'already_loading', 'message': '이미 실행 중입니다.'})
 
-    params = request.get_json() or {}
-    period = int(params.get('period', 6))
-    capital = int(params.get('capital', 100_000_000))
+    params = request.get_json(silent=True)
+    if params is None:
+        if request.get_data(cache=True):
+            return jsonify({'error': '올바른 JSON 객체 형식이 필요합니다.'}), 400
+        params = {}
+    if not isinstance(params, dict):
+        return jsonify({'error': 'JSON 객체 형식의 요청이 필요합니다.'}), 400
+    try:
+        period = int(params.get('period', 6))
+        capital = int(params.get('capital', 100_000_000))
+        slippage = float(params.get('slippage', 0.3))
+        commission = float(params.get('commission', 0.015))
+        tax = float(params.get('tax', 0.20))
+    except (TypeError, ValueError):
+        return jsonify({'error': '기간, 자본금, 거래비용은 숫자여야 합니다.'}), 400
+
     strategy = params.get('strategy', 'equal_weight')
-    slippage = float(params.get('slippage', 0.3))
-    commission = float(params.get('commission', 0.015))
-    tax = float(params.get('tax', 0.20))
+    allowed_strategies = {
+        'equal_weight', 'rebalance', 'vol_trailing_stop', 'ma_filter', 'composite'
+    }
+    if strategy not in allowed_strategies:
+        return jsonify({'error': '지원하지 않는 백테스트 전략입니다.'}), 400
+    if not 1 <= period <= 120:
+        return jsonify({'error': '기간은 1~120개월이어야 합니다.'}), 400
+    if capital <= 0:
+        return jsonify({'error': '초기 자본금은 0보다 커야 합니다.'}), 400
+    costs = (slippage, commission, tax)
+    if not all(math.isfinite(value) and 0 <= value < 100 for value in costs):
+        return jsonify({'error': '거래비용은 0 이상 100 미만이어야 합니다.'}), 400
+
+    with bt_lock:
+        if backtest_state['status'] == 'loading':
+            return jsonify({'status': 'already_loading', 'message': '이미 실행 중입니다.'})
+        backtest_state.update(
+            status='loading',
+            results=None,
+            error_msg='',
+            progress='백테스트 준비 중...',
+            engine=None,
+        )
 
     thread = threading.Thread(
         target=run_backtest_task,
         args=(period, capital, strategy, slippage, commission, tax),
         daemon=True,
     )
-    thread.start()
+    try:
+        thread.start()
+    except Exception as e:
+        with bt_lock:
+            backtest_state['status'] = 'error'
+            backtest_state['error_msg'] = str(e)
+            backtest_state['progress'] = ''
+        return jsonify({'error': '백테스트 작업을 시작하지 못했습니다.'}), 500
     return jsonify({'status': 'started', 'message': '백테스트를 시작합니다.'})
 
 
@@ -742,26 +534,34 @@ def api_db_tables():
 @app.route('/api/db/schema/<table_name>')
 def api_db_schema(table_name):
     """테이블 스키마 조회"""
-    schema = stock_db.get_table_schema(table_name)
-    if schema is None:
+    try:
+        schema = stock_db.get_table_schema(table_name)
+    except ValueError:
         return jsonify({'error': '존재하지 않는 테이블'}), 404
     return jsonify({'schema': schema})
 
 @app.route('/api/db/query/<table_name>')
 def api_db_query(table_name):
     """테이블 데이터 조회 (페이지네이션)"""
-    page = int(request.args.get('page', 1))
-    page_size = int(request.args.get('page_size', 50))
+    try:
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 50))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'page와 page_size는 정수여야 합니다.'}), 400
+    if page < 1 or not 1 <= page_size <= 500:
+        return jsonify({'error': 'page는 1 이상, page_size는 1~500이어야 합니다.'}), 400
+
     order_by = request.args.get('order_by')
     order_dir = request.args.get('order_dir', 'DESC')
     filter_col = request.args.get('filter_col')
     filter_val = request.args.get('filter_val')
 
-    result = stock_db.query_table(
-        table_name, page, page_size,
-        order_by, order_dir, filter_col, filter_val
-    )
-    if result is None:
+    try:
+        result = stock_db.query_table(
+            table_name, page, page_size,
+            order_by, order_dir, filter_col, filter_val
+        )
+    except ValueError:
         return jsonify({'error': '존재하지 않는 테이블'}), 404
     return jsonify(result)
 
@@ -988,7 +788,11 @@ function pollStatus() {
                 document.getElementById('refreshBtn').disabled = false;
                 document.getElementById('loadingOverlay').classList.remove('show');
                 renderData(d);
-                showToast('데이터 갱신 완료!', 'success');
+                if (d.error_msg) {
+                    showToast(d.error_msg, 'error');
+                } else {
+                    showToast('데이터 갱신 완료!', 'success');
+                }
             } else if (d.status === 'error') {
                 clearInterval(pollTimer);
                 pollTimer = null;
@@ -1875,10 +1679,10 @@ function loadTables() {
 function renderStats(stats) {
     if (!stats) return;
     document.getElementById('statSize').textContent = (stats.db_size_mb || 0) + ' MB';
-    document.getElementById('statRows').textContent = fmt(stats.total_rows || 0);
-    document.getElementById('statTickers').textContent = fmt(stats.ticker_count || 0);
-    const minDate = stats.min_date || '-';
-    const maxDate = stats.max_date || '-';
+    document.getElementById('statRows').textContent = fmt(stats.total_records || 0);
+    document.getElementById('statTickers').textContent = fmt(stats.total_tickers || 0);
+    const minDate = stats.date_min || '-';
+    const maxDate = stats.date_max || '-';
     document.getElementById('statDates').textContent = minDate === '-' ? '-' : minDate + ' ~ ' + maxDate;
 }
 

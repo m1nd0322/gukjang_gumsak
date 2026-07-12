@@ -14,15 +14,21 @@ DuckDB 기반 주가 데이터 스토리지
     prices = db.get_prices('005930', '2025-01-01', '2025-06-15')
 """
 
-import os
+import json
 import logging
+import math
+import os
 import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 
 import duckdb
+import yfinance as yf
 
 logger = logging.getLogger(__name__)
+DEFAULT_TICKER_MAP_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'ticker_map.json'
+)
 
 
 class StockDB:
@@ -98,6 +104,51 @@ class StockDB:
         finally:
             con.close()
 
+    def load_ticker_map_file(
+        self, path: str = DEFAULT_TICKER_MAP_PATH
+    ) -> Tuple[Dict[str, str], Dict[str, str]]:
+        """저장소의 종목 매핑 JSON을 DuckDB 초기값으로 적재한다."""
+        try:
+            with open(path, encoding='utf-8') as file:
+                raw_map = json.load(file)
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.warning(f"종목 매핑 파일 로드 실패 ({path}): {exc}")
+            return {}, {}
+
+        if not isinstance(raw_map, dict):
+            logger.warning(f"종목 매핑 파일 구조가 올바르지 않습니다: {path}")
+            return {}, {}
+
+        name_to_code = {
+            str(name).strip(): str(code).strip()
+            for name, code in raw_map.items()
+            if str(name).strip() and str(code).strip()
+        }
+        if not name_to_code:
+            return {}, {}
+
+        now_str = datetime.now().isoformat()
+        rows = [
+            (code, name, None, now_str)
+            for name, code in name_to_code.items()
+        ]
+        con = self._connect()
+        try:
+            con.executemany("""
+                INSERT INTO ticker_map (ticker, name, market, updated_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT (ticker) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    updated_at = EXCLUDED.updated_at
+            """, rows)
+        finally:
+            con.close()
+
+        logger.info(f"종목 매핑 파일 적재: {len(rows)}개")
+        return name_to_code, {
+            code: name for name, code in name_to_code.items()
+        }
+
     def refresh_ticker_map(self, krx_module) -> Tuple[Dict[str, str], Dict[str, str]]:
         """
         pykrx로 KRX 전 종목 매핑을 갱신하고 DB에 저장
@@ -159,33 +210,45 @@ class StockDB:
 
         return name_to_code, code_to_name
 
-    def get_or_refresh_ticker_map(self, krx_module=None) -> Tuple[Dict[str, str], Dict[str, str]]:
+    def get_or_refresh_ticker_map(
+        self,
+        krx_module=None,
+        fallback_path: str = DEFAULT_TICKER_MAP_PATH,
+    ) -> Tuple[Dict[str, str], Dict[str, str]]:
         """
         DB에 캐시된 매핑이 있으면 사용, 없거나 오래되면 갱신
         """
         con = self._connect()
         try:
             result = con.execute("""
-                SELECT COUNT(*), MIN(updated_at) FROM ticker_map
+                SELECT COUNT(*), MAX(updated_at) FROM ticker_map
             """).fetchone()
             count = result[0]
-            oldest = result[1]
+            newest = result[1]
         finally:
             con.close()
 
         # 매핑이 없거나 7일 이상 지난 경우 갱신
         need_refresh = count == 0
-        if oldest and not need_refresh:
-            if isinstance(oldest, str):
-                oldest = datetime.fromisoformat(oldest)
-            if (datetime.now() - oldest).days > 7:
+        if newest and not need_refresh:
+            if isinstance(newest, str):
+                newest = datetime.fromisoformat(newest)
+            if (datetime.now() - newest).days > 7:
                 need_refresh = True
 
         if need_refresh and krx_module:
             logger.info("종목 매핑 갱신 중...")
-            return self.refresh_ticker_map(krx_module)
+            refreshed = self.refresh_ticker_map(krx_module)
+            if refreshed[0]:
+                return refreshed
+            logger.warning("KRX 종목 매핑 갱신 실패 - 기존 캐시를 유지합니다")
 
-        return self.get_ticker_map_from_db()
+        cached = self.get_ticker_map_from_db()
+        if cached[0]:
+            return cached
+        if fallback_path:
+            return self.load_ticker_map_file(fallback_path)
+        return {}, {}
 
     # ----------------------------------------------------------
     # 일봉 데이터
@@ -272,65 +335,170 @@ class StockDB:
         finally:
             con.close()
 
-    def fetch_and_store(self, ticker: str, start_yyyymmdd: str, end_yyyymmdd: str,
-                        krx_module=None) -> int:
+    @staticmethod
+    def _number(value, default: float = 0.0) -> float:
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return default
+        return number if math.isfinite(number) else default
+
+    @staticmethod
+    def _yfinance_end_date(end_yyyymmdd: str) -> str:
+        """yfinance의 배타적 end 인수에 맞춰 하루 뒤 날짜를 반환한다."""
+        compact = end_yyyymmdd.replace('-', '')
+        return (
+            datetime.strptime(compact, '%Y%m%d') + timedelta(days=1)
+        ).strftime('%Y-%m-%d')
+
+    def _download_yfinance(
+        self, symbol: str, start_yyyymmdd: str, end_yyyymmdd: str
+    ):
+        start = datetime.strptime(
+            start_yyyymmdd.replace('-', ''), '%Y%m%d'
+        ).strftime('%Y-%m-%d')
+        frame = yf.download(
+            symbol,
+            start=start,
+            end=self._yfinance_end_date(end_yyyymmdd),
+            progress=False,
+            auto_adjust=True,
+            threads=False,
+        )
+        if getattr(frame.columns, 'nlevels', 1) > 1:
+            frame = frame.copy()
+            frame.columns = frame.columns.get_level_values(0)
+        return frame
+
+    def _fetch_yfinance_stock(
+        self, ticker: str, start_yyyymmdd: str, end_yyyymmdd: str
+    ) -> List[dict]:
+        """KRX 인증 없이 yfinance의 KOSPI/KOSDAQ 심볼을 순서대로 조회한다."""
+        for suffix in ('.KS', '.KQ'):
+            symbol = f"{ticker}{suffix}"
+            try:
+                frame = self._download_yfinance(
+                    symbol, start_yyyymmdd, end_yyyymmdd
+                )
+            except Exception as exc:
+                logger.debug(f"yfinance 조회 실패 ({symbol}): {exc}")
+                continue
+            if frame.empty:
+                continue
+
+            rows = []
+            for date_idx, row in frame.iterrows():
+                close = self._number(row.get('Close'))
+                if close <= 0:
+                    continue
+                rows.append({
+                    'date': date_idx.strftime('%Y-%m-%d'),
+                    'open': self._number(row.get('Open'), close),
+                    'high': self._number(row.get('High'), close),
+                    'low': self._number(row.get('Low'), close),
+                    'close': close,
+                    'volume': int(self._number(row.get('Volume'))),
+                })
+            if rows:
+                logger.info(f"  {ticker}: yfinance {len(rows)}일 수집")
+                return rows
+        return []
+
+    def _fetch_yfinance_index(
+        self, index_code: str, start_yyyymmdd: str, end_yyyymmdd: str
+    ) -> List[dict]:
+        """지원 지수의 yfinance 대체 데이터를 반환한다."""
+        symbol = {'1001': '^KS11'}.get(index_code)
+        if not symbol:
+            return []
+        try:
+            frame = self._download_yfinance(
+                symbol, start_yyyymmdd, end_yyyymmdd
+            )
+        except Exception as exc:
+            logger.warning(f"yfinance 지수 조회 실패 ({symbol}): {exc}")
+            return []
+
+        rows = []
+        for date_idx, row in frame.iterrows():
+            close = self._number(row.get('Close'))
+            if close > 0:
+                rows.append({
+                    'date': date_idx.strftime('%Y-%m-%d'),
+                    'close': close,
+                })
+        if rows:
+            logger.info(f"  KOSPI 지수: yfinance {len(rows)}일 수집")
+        return rows
+
+    def fetch_and_store(
+        self, ticker: str, start_yyyymmdd: str, end_yyyymmdd: str,
+        krx_module=None
+    ) -> int:
         """
-        증분 수집: DB에 없는 기간만 pykrx에서 가져와 저장
+        증분 수집: DB에 없는 기간만 pykrx/yfinance에서 가져와 저장
 
         Returns:
             새로 수집한 일수
         """
-        if not krx_module:
-            return 0
-
-        # DB에 이미 있는 날짜 확인
         stored_dates = self.get_stored_dates(ticker)
-
-        # pykrx 요청 기간 결정
-        # 시작일과 끝일 형식 통일 (YYYYMMDD)
         start_s = start_yyyymmdd.replace('-', '')
         end_s = end_yyyymmdd.replace('-', '')
 
-        # DB에 데이터가 있으면 마지막 날짜+1 부터만 수집
         if stored_dates:
-            db_max = max(stored_dates)  # 'YYYY-MM-DD'
+            db_max = max(stored_dates)
             db_max_yyyymmdd = db_max.replace('-', '')
-            # 요청 끝날짜가 DB 최신보다 뒤면 그 부분만 수집
             if end_s <= db_max_yyyymmdd:
-                # 요청 범위가 이미 모두 DB에 있을 가능성 높음
-                # 시작 부분도 체크
                 db_min = min(stored_dates)
                 db_min_yyyymmdd = db_min.replace('-', '')
                 if start_s >= db_min_yyyymmdd:
                     logger.debug(f"  {ticker}: DB에 충분한 데이터 존재")
                     return 0
 
-        try:
-            df = krx_module.get_market_ohlcv_by_date(start_s, end_s, ticker)
-        except Exception as e:
-            logger.warning(f"pykrx 데이터 조회 실패 ({ticker}): {e}")
-            return 0
-
         new_data = []
-        for date_idx, row in df.iterrows():
-            d = date_idx.strftime('%Y-%m-%d') if hasattr(date_idx, 'strftime') else str(date_idx)[:10]
-            if d in stored_dates:
-                continue
-            close_val = float(row.get('종가', 0))
-            if close_val <= 0:
-                continue
-            new_data.append({
-                'date': d,
-                'open': float(row.get('시가', 0)),
-                'high': float(row.get('고가', 0)),
-                'low': float(row.get('저가', 0)),
-                'close': close_val,
-                'volume': int(row.get('거래량', 0)),
-            })
+        if krx_module:
+            try:
+                df = krx_module.get_market_ohlcv_by_date(
+                    start_s, end_s, ticker
+                )
+            except Exception as exc:
+                logger.warning(f"pykrx 데이터 조회 실패 ({ticker}): {exc}")
+            else:
+                for date_idx, row in df.iterrows():
+                    d = (
+                        date_idx.strftime('%Y-%m-%d')
+                        if hasattr(date_idx, 'strftime')
+                        else str(date_idx)[:10]
+                    )
+                    if d in stored_dates:
+                        continue
+                    close = self._number(row.get('종가'))
+                    if close <= 0:
+                        continue
+                    new_data.append({
+                        'date': d,
+                        'open': self._number(row.get('시가'), close),
+                        'high': self._number(row.get('고가'), close),
+                        'low': self._number(row.get('저가'), close),
+                        'close': close,
+                        'volume': int(self._number(row.get('거래량'))),
+                    })
+
+        if not new_data:
+            new_data = [
+                row
+                for row in self._fetch_yfinance_stock(
+                    ticker, start_s, end_s
+                )
+                if row['date'] not in stored_dates
+            ]
 
         if new_data:
             self.save_prices(ticker, new_data)
-            logger.info(f"  {ticker}: {len(new_data)}일 신규 수집 (기존 {len(stored_dates)}일)")
+            logger.info(
+                f"  {ticker}: {len(new_data)}일 신규 수집 "
+                f"(기존 {len(stored_dates)}일)"
+            )
 
         return len(new_data)
 
@@ -397,13 +565,11 @@ class StockDB:
         finally:
             con.close()
 
-    def ensure_index_data(self, index_code: str, start_yyyymmdd: str, end_yyyymmdd: str,
-                          krx_module=None) -> int:
+    def ensure_index_data(
+        self, index_code: str, start_yyyymmdd: str, end_yyyymmdd: str,
+        krx_module=None
+    ) -> int:
         """지수 데이터 증분 수집"""
-        if not krx_module:
-            return 0
-
-        # 기존 날짜
         con = self._connect()
         try:
             rows = con.execute("""
@@ -417,18 +583,44 @@ class StockDB:
         start_s = start_yyyymmdd.replace('-', '')
         end_s = end_yyyymmdd.replace('-', '')
 
-        try:
-            df = krx_module.get_index_ohlcv_by_date(start_s, end_s, index_code)
-        except Exception as e:
-            logger.warning(f"지수 데이터 조회 실패 ({index_code}): {e}")
-            return 0
+        if stored:
+            stored_compact = {date.replace('-', '') for date in stored}
+            if (
+                start_s >= min(stored_compact)
+                and end_s <= max(stored_compact)
+            ):
+                logger.debug("  KOSPI 지수: DB에 충분한 데이터 존재")
+                return 0
 
         new_data = []
-        for date_idx, row in df.iterrows():
-            d = date_idx.strftime('%Y-%m-%d') if hasattr(date_idx, 'strftime') else str(date_idx)[:10]
-            if d in stored:
-                continue
-            new_data.append({'date': d, 'close': float(row.get('종가', 0))})
+        if krx_module:
+            try:
+                df = krx_module.get_index_ohlcv_by_date(
+                    start_s, end_s, index_code
+                )
+            except Exception as exc:
+                logger.warning(
+                    f"지수 데이터 조회 실패 ({index_code}): {exc}"
+                )
+            else:
+                for date_idx, row in df.iterrows():
+                    d = (
+                        date_idx.strftime('%Y-%m-%d')
+                        if hasattr(date_idx, 'strftime')
+                        else str(date_idx)[:10]
+                    )
+                    close = self._number(row.get('종가'))
+                    if d not in stored and close > 0:
+                        new_data.append({'date': d, 'close': close})
+
+        if not new_data:
+            new_data = [
+                row
+                for row in self._fetch_yfinance_index(
+                    index_code, start_s, end_s
+                )
+                if row['date'] not in stored
+            ]
 
         if new_data:
             self.save_index_prices(index_code, new_data)
