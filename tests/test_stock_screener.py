@@ -58,6 +58,7 @@ class StaticReportTest(unittest.TestCase):
         self.assertIn("국민연금 신규/추가매수", html)
         self.assertIn("국민연금 매수</span>", html)
         self.assertIn("만료일: 2026-09-30", html)
+        self.assertIn("FnGuide 공개 주요주주 범위", html)
 
 
 if __name__ == "__main__":

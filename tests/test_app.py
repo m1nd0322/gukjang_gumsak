@@ -133,6 +133,7 @@ class FlaskApiTest(unittest.TestCase):
     def test_dashboard_describes_time_bounded_nps_signal(self):
         self.assertIn("국민연금 신규/추가매수", app_module.HTML_TEMPLATE)
         self.assertIn("매수일부터 3개월 동안만 1점", app_module.HTML_TEMPLATE)
+        self.assertIn("FnGuide 공개 주요주주 범위", app_module.HTML_TEMPLATE)
 
 
 if __name__ == "__main__":

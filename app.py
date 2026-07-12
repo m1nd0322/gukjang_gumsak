@@ -726,7 +726,7 @@ tr:hover{background:#f8fafc}.c{text-align:center}
         </div>
         <div id="n" class="tp">
             <h3 style="padding:14px 14px 0;color:#059669">국민연금 신규/추가매수 신호</h3>
-            <p style="padding:6px 14px 0;color:#6b7280;font-size:12px">국민연금 주요주주 신규·추가매수 신호는 매수일부터 3개월 동안만 1점으로 반영됩니다.</p>
+            <p style="padding:6px 14px 0;color:#6b7280;font-size:12px">FnGuide 공개 주요주주 범위의 국민연금 신규·추가매수 신호는 매수일부터 3개월 동안만 1점으로 반영됩니다.</p>
             <table class="st"><thead id="npsHead"></thead><tbody id="npsBody"></tbody></table>
         </div>
     </div>
