@@ -111,6 +111,12 @@ def reconcile_nps_signals(
     """현재 보유와 확인된 매수 이벤트를 활성 신호로 병합한다."""
     current = _normalize_holdings(holdings)
     signals = {}
+    disclosed_event_dates = set()
+    for event in events:
+        event_code = str(event.get("종목코드") or "").strip()
+        event_date = _parse_date(event.get("변동일"))
+        if event_code and event_date:
+            disclosed_event_dates.add((event_code, event_date))
 
     previous_signals = (previous_state or {}).get("signals", {})
     if isinstance(previous_signals, dict):
@@ -130,29 +136,35 @@ def reconcile_nps_signals(
     if previous_state is not None and isinstance(previous_holdings, dict):
         for code, holding in current.items():
             previous_holding = previous_holdings.get(code)
+            current_date = _parse_date(holding["최종변동일"])
+            has_disclosed_current_event = (
+                code,
+                current_date,
+            ) in disclosed_event_dates
             if previous_holding is None:
-                candidate_events.append(
-                    {
-                        "종목코드": code,
-                        "변동일": holding["최종변동일"],
-                        "변동사유": "Snapshot 신규 보유",
-                        "변동전": 0,
-                        "증감": holding["보통주"],
-                        "변동후": holding["보통주"],
-                        "지분율(%)": holding["지분율"],
-                    }
-                )
+                if not has_disclosed_current_event:
+                    candidate_events.append(
+                        {
+                            "종목코드": code,
+                            "변동일": holding["최종변동일"],
+                            "변동사유": "Snapshot 신규 보유",
+                            "변동전": 0,
+                            "증감": holding["보통주"],
+                            "변동후": holding["보통주"],
+                            "지분율(%)": holding["지분율"],
+                        }
+                    )
                 continue
             if not isinstance(previous_holding, dict):
                 continue
             previous_shares = _parse_int(previous_holding.get("보통주"))
             previous_date = _parse_date(previous_holding.get("최종변동일"))
-            current_date = _parse_date(holding["최종변동일"])
             if (
                 holding["보통주"] > previous_shares
                 and previous_date
                 and current_date
                 and current_date > previous_date
+                and not has_disclosed_current_event
             ):
                 candidate_events.append(
                     {
@@ -172,10 +184,16 @@ def reconcile_nps_signals(
         code = str(event.get("종목코드") or "").strip()
         event_date = _parse_date(event.get("변동일"))
         change = _parse_int(event.get("증감"))
-        if code not in current or not event_date or change <= 0:
+        before = _parse_int(event.get("변동전"))
+        after = _parse_int(event.get("변동후"))
+        if (
+            code not in current
+            or not event_date
+            or change <= 0
+            or after <= before
+        ):
             continue
         reason = str(event.get("변동사유") or "")
-        before = _parse_int(event.get("변동전"))
         buy_type = "신규매수" if reason.startswith("신규") or before == 0 else "추가매수"
         expires_on = add_calendar_months(event_date)
         if not event_date <= as_of < expires_on:
@@ -198,7 +216,7 @@ def reconcile_nps_signals(
             "변동사유": reason,
             "변동전": before,
             "증감": change,
-            "변동후": _parse_int(event.get("변동후")),
+            "변동후": after,
             "지분율": _parse_float(event.get("지분율(%)")),
         }
 

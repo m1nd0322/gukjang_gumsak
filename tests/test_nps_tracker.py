@@ -229,6 +229,86 @@ class NpsTrackerTest(unittest.TestCase):
         self.assertEqual(active[0]["매수일"], "2026-06-01")
         self.assertEqual(active[0]["만료일"], "2026-09-01")
 
+    def test_later_sell_event_prevents_snapshot_from_refreshing_buy_date(self):
+        previous_state = {
+            "version": 1,
+            "updated_at": "2026-06-30",
+            "holdings": {
+                "000001": {
+                    "종목명": "순증가종목",
+                    "보통주": 1000,
+                    "지분율": 5.0,
+                    "최종변동일": "2026-06-30",
+                }
+            },
+            "signals": {},
+        }
+        holdings = [
+            {
+                "종목코드": "000001",
+                "종목명": "순증가종목",
+                "보통주": "1,400",
+                "지분율(%)": "7.0",
+                "최종변동일": "2026/07/05",
+            }
+        ]
+        events = [
+            {
+                "종목코드": "000001",
+                "변동일": "2026-07-01",
+                "변동사유": "장내매수(+)",
+                "변동전": 1000,
+                "증감": 500,
+                "변동후": 1500,
+                "지분율(%)": 7.5,
+            },
+            {
+                "종목코드": "000001",
+                "변동일": "2026-07-05",
+                "변동사유": "장내매도(-)",
+                "변동전": 1500,
+                "증감": -100,
+                "변동후": 1400,
+                "지분율(%)": 7.0,
+            },
+        ]
+
+        active, _ = reconcile_nps_signals(
+            holdings, events, previous_state, as_of=date(2026, 7, 12)
+        )
+
+        self.assertEqual(active[0]["매수일"], "2026-07-01")
+        self.assertEqual(active[0]["변동사유"], "장내매수(+)")
+
+    def test_inconsistent_positive_event_does_not_create_buy_signal(self):
+        holdings = [
+            {
+                "종목코드": "000001",
+                "종목명": "모순종목",
+                "보통주": "900",
+                "지분율(%)": "4.5",
+                "최종변동일": "2026/07/10",
+            }
+        ]
+        events = [
+            {
+                "종목코드": "000001",
+                "변동일": "2026-07-10",
+                "변동사유": "기타",
+                "변동전": 1000,
+                "증감": 100,
+                "변동후": 900,
+                "지분율(%)": 4.5,
+            }
+        ]
+
+        active, state = reconcile_nps_signals(
+            holdings, events, None, as_of=date(2026, 7, 12)
+        )
+
+        self.assertEqual(active, [])
+        self.assertEqual(state["signals"], {})
+
     def test_disappeared_holding_removes_signal(self):
         previous_state = {
             "version": 1,

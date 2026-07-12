@@ -282,7 +282,10 @@ def _fetch_nps_share_one(
     )
     response.raise_for_status()
     html = response.text
-    page_matches = _snapshot_ticker(html) == str(code).upper()
+    page_matches = (
+        _snapshot_ticker(html) == str(code).upper()
+        and _SHARE_BODY_RE.search(html or "") is not None
+    )
     if not page_matches:
         return False, []
     return True, parse_nps_share_events(
@@ -360,8 +363,13 @@ def fetch_nps_holdings(
     *,
     max_workers: int = 12,
     timeout: float = 15,
+    required_codes: set[str] | None = None,
 ) -> list[dict]:
-    """전 종목 Snapshot에서 국민연금공단 5% 공시 보유 종목을 수집한다."""
+    """전 종목 Snapshot에서 국민연금공단 5% 공시 보유 종목을 수집한다.
+
+    직전 상태에 있던 ``required_codes``는 페이지를 검증하지 못하면 보유 해제로
+    간주할 수 없으므로 전체 수집을 실패시켜 기존 상태를 보존한다.
+    """
     try:
         with open(ticker_map_path, encoding="utf-8") as file:
             ticker_map = json.load(file)
@@ -370,6 +378,18 @@ def fetch_nps_holdings(
 
     if not isinstance(ticker_map, dict) or not ticker_map:
         raise ScreeningDataError("종목 코드 맵이 비어 있거나 올바르지 않습니다")
+
+    required = {
+        str(code).strip().upper()
+        for code in (required_codes or set())
+        if str(code).strip()
+    }
+    mapped_codes = {
+        str(code).strip().upper()
+        for code in ticker_map.values()
+        if str(code).strip()
+    }
+    unverified_required = required - mapped_codes
 
     workers = max(1, min(int(max_workers), 32))
     rows = []
@@ -383,18 +403,30 @@ def fetch_nps_holdings(
                 str(code),
                 timeout=timeout,
                 session_getter=_worker_session,
-            ): name
+            ): (name, str(code).strip().upper())
             for name, code in ticker_map.items()
         }
         for future in as_completed(futures):
+            name, code = futures[future]
             try:
                 page_matches, row = future.result()
                 valid_pages += int(page_matches)
+                if not page_matches and code in required:
+                    unverified_required.add(code)
                 if row:
                     rows.append(row)
             except Exception as exc:
                 failures += 1
-                logger.debug("국민연금 조회 실패 (%s): %s", futures[future], exc)
+                if code in required:
+                    unverified_required.add(code)
+                logger.debug("국민연금 조회 실패 (%s): %s", name, exc)
+
+    if unverified_required:
+        sample = ", ".join(sorted(unverified_required)[:5])
+        raise ScreeningDataError(
+            "기존 보유 종목의 Snapshot을 검증하지 못했습니다 "
+            f"({len(unverified_required)}개: {sample})"
+        )
 
     minimum_valid_pages = max(1, math.ceil(len(ticker_map) * 0.8))
     if valid_pages < minimum_valid_pages:
@@ -427,7 +459,12 @@ def build_nps_buy_signals(
     """현재 보유·변동내역·직전 상태를 활성 국민연금 매수 신호로 병합한다."""
     effective_date = as_of or kst_today()
     previous_state = load_nps_state(state_path)
-    holdings = fetch_nps_holdings(ticker_map_path)
+    previous_holdings = (previous_state or {}).get("holdings", {})
+    required_codes = set(previous_holdings) if isinstance(previous_holdings, dict) else set()
+    holdings = fetch_nps_holdings(
+        ticker_map_path,
+        required_codes=required_codes,
+    )
     events = fetch_nps_share_events(
         holdings,
         require_coverage=previous_state is None,

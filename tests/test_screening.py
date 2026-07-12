@@ -26,6 +26,10 @@ class FakeResponse:
         if self.status_code >= 400:
             raise RuntimeError(f"HTTP {self.status_code}")
 
+    @property
+    def text(self):
+        return self.content.decode("utf-8")
+
 
 class FakeSession:
     def __init__(self, response):
@@ -212,6 +216,27 @@ class NpsParserTest(unittest.TestCase):
 
         self.assertIsNone(row)
 
+    def test_share_fetch_rejects_matching_page_without_sharebody(self):
+        from screening import _fetch_nps_share_one
+
+        html = """
+        <html>
+          <head><title>삼성전자(005930) | 지분분석 | FnGuide</title></head>
+          <body>changed markup</body>
+        </html>
+        """
+        session = FakeSession(FakeResponse(html.encode("utf-8")))
+
+        page_matches, rows = _fetch_nps_share_one(
+            "삼성전자",
+            "005930",
+            timeout=1,
+            session_getter=lambda: session,
+        )
+
+        self.assertFalse(page_matches)
+        self.assertEqual(rows, [])
+
     def test_full_scan_rejects_invalid_page_coverage(self):
         handle = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False)
         try:
@@ -226,6 +251,38 @@ class NpsParserTest(unittest.TestCase):
             ):
                 with self.assertRaises(ScreeningDataError):
                     fetch_nps_holdings(handle.name, max_workers=1)
+        finally:
+            if not handle.closed:
+                handle.close()
+            os.unlink(handle.name)
+
+    def test_full_scan_rejects_failed_snapshot_for_previous_holding(self):
+        handle = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False)
+        try:
+            json.dump(
+                {f"종목{index}": f"00000{index}" for index in range(1, 6)},
+                handle,
+            )
+            handle.close()
+
+            def fetch_one(name, code, **_kwargs):
+                if code == "000005":
+                    return False, None
+                return True, {
+                    "종목코드": code,
+                    "종목명": name,
+                    "보통주": "1,000",
+                    "지분율(%)": "5.0",
+                    "최종변동일": "2026/07/01",
+                }
+
+            with patch("screening._fetch_nps_one", side_effect=fetch_one):
+                with self.assertRaisesRegex(ScreeningDataError, "기존 보유 종목"):
+                    fetch_nps_holdings(
+                        handle.name,
+                        max_workers=1,
+                        required_codes={"000005"},
+                    )
         finally:
             if not handle.closed:
                 handle.close()
@@ -358,11 +415,15 @@ class NpsSignalBuilderTest(unittest.TestCase):
     def test_existing_state_allows_partial_share_analysis_coverage(self):
         from screening import build_nps_buy_signals
 
-        previous = {"version": 1, "holdings": {}, "signals": {}}
+        previous = {
+            "version": 1,
+            "holdings": {"000001": {"종목명": "A", "보통주": 1000}},
+            "signals": {},
+        }
         holdings = [{"종목코드": "000001", "종목명": "A"}]
         with (
             patch("screening.load_nps_state", return_value=previous),
-            patch("screening.fetch_nps_holdings", return_value=holdings),
+            patch("screening.fetch_nps_holdings", return_value=holdings) as snapshots,
             patch("screening.fetch_nps_share_events", return_value=[]) as events,
             patch(
                 "screening.reconcile_nps_signals", return_value=([], previous)
@@ -374,6 +435,9 @@ class NpsSignalBuilderTest(unittest.TestCase):
                 as_of=date(2026, 7, 12),
             )
 
+        snapshots.assert_called_once_with(
+            "ticker_map.json", required_codes={"000001"}
+        )
         events.assert_called_once_with(holdings, require_coverage=False)
 
 
