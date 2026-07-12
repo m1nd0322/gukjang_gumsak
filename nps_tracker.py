@@ -125,7 +125,7 @@ def reconcile_nps_signals(
             ):
                 signals[code] = dict(signal)
 
-    candidate_events = list(events)
+    candidate_events = []
     previous_holdings = (previous_state or {}).get("holdings", {})
     if previous_state is not None and isinstance(previous_holdings, dict):
         for code, holding in current.items():
@@ -165,6 +165,8 @@ def reconcile_nps_signals(
                         "지분율(%)": holding["지분율"],
                     }
                 )
+
+    candidate_events.extend(events)
 
     for event in candidate_events:
         code = str(event.get("종목코드") or "").strip()

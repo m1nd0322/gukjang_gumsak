@@ -332,6 +332,47 @@ class NpsTrackerTest(unittest.TestCase):
         self.assertEqual(active[0]["변동사유"], "Snapshot 보유량 증가")
         self.assertEqual(active[0]["증감"], "200")
 
+    def test_share_analysis_reason_wins_over_same_day_snapshot_difference(self):
+        holdings = [
+            {
+                "종목코드": "000001",
+                "종목명": "공시우선종목",
+                "보통주": "1,200",
+                "지분율(%)": "6.0",
+                "최종변동일": "2026/07/01",
+            }
+        ]
+        previous_state = {
+            "version": 1,
+            "updated_at": "2026-06-01",
+            "holdings": {
+                "000001": {
+                    "종목명": "공시우선종목",
+                    "보통주": 1000,
+                    "지분율": 5.0,
+                    "최종변동일": "2026-06-01",
+                }
+            },
+            "signals": {},
+        }
+        events = [
+            {
+                "종목코드": "000001",
+                "변동일": "2026-07-01",
+                "변동사유": "장내매수(+)",
+                "변동전": 1000,
+                "증감": 200,
+                "변동후": 1200,
+                "지분율(%)": 6.0,
+            }
+        ]
+
+        active, _ = reconcile_nps_signals(
+            holdings, events, previous_state, as_of=date(2026, 7, 12)
+        )
+
+        self.assertEqual(active[0]["변동사유"], "장내매수(+)")
+
     def test_snapshot_requires_both_more_shares_and_a_later_date(self):
         previous_state = {
             "version": 1,
