@@ -20,6 +20,8 @@ import requests
 from nps_tracker import (
     kst_today,
     load_nps_state,
+    NpsStateLockError,
+    nps_state_lock,
     reconcile_nps_signals,
     save_nps_state,
 )
@@ -72,8 +74,16 @@ _NPS_ROW_RE = re.compile(
     r"<td[^>]*>(.*?)</td>",
     re.I | re.S,
 )
+_NPS_HOLDER_MARKER_RE = re.compile(
+    r'<th[^>]*\btitle=["\']국민연금공단["\'][^>]*>', re.I | re.S
+)
 _SHARE_BODY_RE = re.compile(
     r'<tbody[^>]*id=["\']sharebody["\'][^>]*>(.*?)</tbody>', re.I | re.S
+)
+_HTML_TABLE_RE = re.compile(r"<table\b[^>]*>.*?</table>", re.I | re.S)
+_HTML_CAPTION_RE = re.compile(r"<caption\b[^>]*>(.*?)</caption>", re.I | re.S)
+_SHARE_CHANGE_TABLE_ID_RE = re.compile(
+    r'<table\b[^>]*\bid\s*=\s*["\']tbl_own_chg["\']', re.I | re.S
 )
 _HTML_ROW_RE = re.compile(r"<tr[^>]*>(.*?)</tr>", re.I | re.S)
 _HTML_CELL_RE = re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>", re.I | re.S)
@@ -176,6 +186,77 @@ def _snapshot_ticker(html: str) -> Optional[str]:
     return title_match.group(1).strip().upper() if title_match else None
 
 
+def _table_has_caption(table_html: str, expected: str) -> bool:
+    return any(
+        _cell_text(caption) == expected
+        for caption in _HTML_CAPTION_RE.findall(table_html or "")
+    )
+
+
+def _has_snapshot_shareholder_table(html: str) -> bool:
+    shareholder_tables = [
+        table_html
+        for table_html in _HTML_TABLE_RE.findall(html or "")
+        if _table_has_caption(table_html, "주주현황")
+    ]
+    if not shareholder_tables:
+        return False
+
+    for table_html in shareholder_tables:
+        if not _NPS_HOLDER_MARKER_RE.search(table_html):
+            continue
+        row_match = _NPS_ROW_RE.search(table_html)
+        if not row_match:
+            return False
+        common_shares, ratio, changed_at = (
+            _cell_text(value) for value in row_match.groups()
+        )
+        try:
+            if int(common_shares.replace(",", "")) <= 0 or float(ratio) <= 0:
+                return False
+            date.fromisoformat(changed_at.replace("/", "-").replace(".", "-"))
+        except ValueError:
+            return False
+    return True
+
+
+def _share_change_rows_are_valid(table_html: str) -> bool:
+    body_match = _SHARE_BODY_RE.search(table_html or "")
+    if not body_match:
+        return False
+    row_html_values = _HTML_ROW_RE.findall(body_match.group(1))
+    if not row_html_values:
+        return True
+
+    no_data_labels = {"", "-", "자료가 없습니다", "데이터가 없습니다"}
+    for row_html in row_html_values:
+        cells = [_cell_text(cell) for cell in _HTML_CELL_RE.findall(row_html)]
+        if len(cells) == 1 and cells[0] in no_data_labels:
+            continue
+        if len(cells) < 10:
+            return False
+        try:
+            date.fromisoformat(cells[3].replace("/", "-").replace(".", "-"))
+            int(cells[6].replace(",", ""))
+            int(cells[7].replace(",", ""))
+            int(cells[8].replace(",", ""))
+            float(cells[9].replace(",", ""))
+        except ValueError:
+            return False
+    return True
+
+
+def _has_share_change_table(html: str) -> bool:
+    for table_html in _HTML_TABLE_RE.findall(html or ""):
+        if (
+            _SHARE_CHANGE_TABLE_ID_RE.search(table_html)
+            and _table_has_caption(table_html, "주주변동내역")
+            and _share_change_rows_are_valid(table_html)
+        ):
+            return True
+    return False
+
+
 def parse_nps_holding(
     html: str, *, expected_code: str, stock_name: str
 ) -> Optional[dict]:
@@ -260,7 +341,10 @@ def _fetch_nps_one(
     )
     response.raise_for_status()
     html = response.text
-    page_matches = _snapshot_ticker(html) == str(code).upper()
+    page_matches = (
+        _snapshot_ticker(html) == str(code).upper()
+        and _has_snapshot_shareholder_table(html)
+    )
     if not page_matches:
         return False, None
     return True, parse_nps_holding(html, expected_code=str(code), stock_name=stock_name)
@@ -284,7 +368,7 @@ def _fetch_nps_share_one(
     html = response.text
     page_matches = (
         _snapshot_ticker(html) == str(code).upper()
-        and _SHARE_BODY_RE.search(html or "") is not None
+        and _has_share_change_table(html)
     )
     if not page_matches:
         return False, []
@@ -299,6 +383,7 @@ def fetch_nps_share_events(
     require_coverage: bool,
     max_workers: int = 12,
     timeout: float = 15,
+    verified_codes: set[str] | None = None,
 ) -> list[dict]:
     """현재 국민연금 보유 종목의 최근 주요주주 변동내역을 병렬 수집한다."""
     if not holdings:
@@ -325,6 +410,10 @@ def fetch_nps_share_events(
                 page_matches, page_rows = future.result()
                 if page_matches:
                     valid_pages += 1
+                    if verified_codes is not None:
+                        verified_codes.add(
+                            str(holding.get("종목코드") or "").strip().upper()
+                        )
                     rows.extend(page_rows)
             except Exception as exc:
                 failures += 1
@@ -465,15 +554,18 @@ def build_nps_buy_signals(
         ticker_map_path,
         required_codes=required_codes,
     )
+    verified_codes: set[str] = set()
     events = fetch_nps_share_events(
         holdings,
         require_coverage=previous_state is None,
+        verified_codes=verified_codes,
     )
     return reconcile_nps_signals(
         holdings,
         events,
         previous_state,
         as_of=effective_date,
+        snapshot_inference_codes=verified_codes,
     )
 
 
@@ -501,26 +593,41 @@ def fetch_all_data(
             errors.append(f"{label}: {exc}")
 
     try:
-        collected[2], pending_nps_state = build_nps_buy_signals(
-            ticker_map_path,
-            nps_state_path,
-            as_of=as_of,
-        )
-    except Exception as exc:
-        logger.error("국민연금 데이터 수집 실패: %s", exc)
+        with nps_state_lock(nps_state_path):
+            try:
+                collected[2], pending_nps_state = build_nps_buy_signals(
+                    ticker_map_path,
+                    nps_state_path,
+                    as_of=as_of,
+                )
+            except Exception as exc:
+                logger.error("국민연금 데이터 수집 실패: %s", exc)
+                errors.append(f"국민연금: {exc}")
+
+            if errors and require_all:
+                detail = "; ".join(errors)
+                raise ScreeningDataError(f"필수 데이터 소스 수집 실패 ({detail})")
+            if not any(collected) and errors:
+                detail = "; ".join(errors) or "응답 데이터 없음"
+                raise ScreeningDataError(f"모든 데이터 소스에서 수집 실패 ({detail})")
+            if not errors and pending_nps_state is not None:
+                try:
+                    save_nps_state(nps_state_path, pending_nps_state)
+                except Exception as exc:
+                    raise ScreeningDataError(
+                        f"국민연금 상태 저장 실패: {exc}"
+                    ) from exc
+            return collected[0], collected[1], collected[2]
+    except NpsStateLockError as exc:
+        logger.error("국민연금 상태 잠금 실패: %s", exc)
         errors.append(f"국민연금: {exc}")
 
     if errors and require_all:
         detail = "; ".join(errors)
         raise ScreeningDataError(f"필수 데이터 소스 수집 실패 ({detail})")
-    if not any(collected) and errors:
+    if not any(collected):
         detail = "; ".join(errors) or "응답 데이터 없음"
         raise ScreeningDataError(f"모든 데이터 소스에서 수집 실패 ({detail})")
-    if not errors and pending_nps_state is not None:
-        try:
-            save_nps_state(nps_state_path, pending_nps_state)
-        except Exception as exc:
-            raise ScreeningDataError(f"국민연금 상태 저장 실패: {exc}") from exc
     return collected[0], collected[1], collected[2]
 
 

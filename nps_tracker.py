@@ -1,10 +1,12 @@
 """국민연금 신규·추가매수 신호의 날짜와 상태 전이."""
 
 from calendar import monthrange
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 import json
 import os
 import tempfile
+import time
 
 
 STATE_VERSION = 1
@@ -13,6 +15,51 @@ KST = timezone(timedelta(hours=9), name="Asia/Seoul")
 
 class NpsStateError(ValueError):
     """저장된 국민연금 상태를 안전하게 사용할 수 없을 때 발생한다."""
+
+
+class NpsStateLockError(NpsStateError):
+    """다른 프로세스가 상태 갱신을 끝내지 않아 잠금을 얻지 못한 경우."""
+
+
+@contextmanager
+def nps_state_lock(
+    path: str | os.PathLike,
+    *,
+    timeout: float = 30,
+    stale_after: float = 900,
+):
+    """원자적 디렉터리 생성으로 OS에 독립적인 프로세스 잠금을 건다."""
+    lock_path = f"{os.path.abspath(os.fspath(path))}.lock"
+    deadline = time.monotonic() + max(0.0, float(timeout))
+    while True:
+        try:
+            os.mkdir(lock_path)
+            break
+        except FileExistsError:
+            try:
+                lock_age = time.time() - os.path.getmtime(lock_path)
+            except FileNotFoundError:
+                continue
+            if lock_age >= max(0.0, float(stale_after)):
+                try:
+                    os.rmdir(lock_path)
+                except OSError:
+                    pass
+                else:
+                    continue
+            if time.monotonic() >= deadline:
+                raise NpsStateLockError(
+                    f"국민연금 상태 갱신 잠금을 얻지 못했습니다: {lock_path}"
+                )
+            time.sleep(min(0.05, max(0.0, deadline - time.monotonic())))
+
+    try:
+        yield
+    finally:
+        try:
+            os.rmdir(lock_path)
+        except FileNotFoundError:
+            pass
 
 
 def load_nps_state(path: str | os.PathLike) -> dict | None:
@@ -107,6 +154,7 @@ def reconcile_nps_signals(
     previous_state: dict | None,
     *,
     as_of: date,
+    snapshot_inference_codes: set[str] | None = None,
 ) -> tuple[list[dict], dict]:
     """현재 보유와 확인된 매수 이벤트를 활성 신호로 병합한다."""
     current = _normalize_holdings(holdings)
@@ -135,6 +183,11 @@ def reconcile_nps_signals(
     previous_holdings = (previous_state or {}).get("holdings", {})
     if previous_state is not None and isinstance(previous_holdings, dict):
         for code, holding in current.items():
+            if (
+                snapshot_inference_codes is not None
+                and code not in snapshot_inference_codes
+            ):
+                continue
             previous_holding = previous_holdings.get(code)
             current_date = _parse_date(holding["최종변동일"])
             has_disclosed_current_event = (
@@ -191,9 +244,12 @@ def reconcile_nps_signals(
             or not event_date
             or change <= 0
             or after <= before
+            or after - before != change
         ):
             continue
         reason = str(event.get("변동사유") or "")
+        if "(-)" in reason or "매도" in reason:
+            continue
         buy_type = "신규매수" if reason.startswith("신규") or before == 0 else "추가매수"
         expires_on = add_calendar_months(event_date)
         if not event_date <= as_of < expires_on:

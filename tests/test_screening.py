@@ -216,6 +216,78 @@ class NpsParserTest(unittest.TestCase):
 
         self.assertIsNone(row)
 
+    def test_snapshot_fetch_rejects_matching_title_without_shareholder_table(self):
+        from screening import _fetch_nps_one
+
+        html = """
+        <html>
+          <head><title>삼성전자(005930) | Snapshot | FnGuide</title></head>
+          <body>changed shareholder markup</body>
+        </html>
+        """
+        session = FakeSession(FakeResponse(html.encode("utf-8")))
+
+        page_matches, row = _fetch_nps_one(
+            "삼성전자",
+            "005930",
+            timeout=1,
+            session_getter=lambda: session,
+        )
+
+        self.assertFalse(page_matches)
+        self.assertIsNone(row)
+
+    def test_snapshot_fetch_accepts_valid_table_without_nps_row(self):
+        from screening import _fetch_nps_one
+
+        html = """
+        <html>
+          <head><title>삼성전자(005930) | Snapshot | FnGuide</title></head>
+          <body><table>
+            <caption class="cphidden">주주현황</caption>
+            <tbody><tr><th title="다른주주">다른주주</th></tr></tbody>
+          </table></body>
+        </html>
+        """
+        session = FakeSession(FakeResponse(html.encode("utf-8")))
+
+        page_matches, row = _fetch_nps_one(
+            "삼성전자",
+            "005930",
+            timeout=1,
+            session_getter=lambda: session,
+        )
+
+        self.assertTrue(page_matches)
+        self.assertIsNone(row)
+
+    def test_snapshot_fetch_rejects_malformed_nps_row_in_valid_table(self):
+        from screening import _fetch_nps_one
+
+        html = """
+        <html>
+          <head><title>삼성전자(005930) | Snapshot | FnGuide</title></head>
+          <body><table>
+            <caption class="cphidden">주주현황</caption>
+            <tbody><tr>
+              <th title="국민연금공단">국민연금공단</th>
+              <td>changed layout</td>
+            </tr></tbody>
+          </table></body>
+        </html>
+        """
+        session = FakeSession(FakeResponse(html.encode("utf-8")))
+
+        page_matches, row = _fetch_nps_one(
+            "삼성전자",
+            "005930",
+            timeout=1,
+            session_getter=lambda: session,
+        )
+
+        self.assertFalse(page_matches)
+        self.assertIsNone(row)
+
     def test_share_fetch_rejects_matching_page_without_sharebody(self):
         from screening import _fetch_nps_share_one
 
@@ -235,6 +307,55 @@ class NpsParserTest(unittest.TestCase):
         )
 
         self.assertFalse(page_matches)
+        self.assertEqual(rows, [])
+
+    def test_share_fetch_rejects_unstructured_sharebody(self):
+        from screening import _fetch_nps_share_one
+
+        html = """
+        <html>
+          <head><title>삼성전자(005930) | 지분분석 | FnGuide</title></head>
+          <body><table id="tbl_own_chg">
+            <caption class="cphidden">주주변동내역</caption>
+            <tbody id="sharebody">
+            <tr><td>changed layout</td></tr>
+          </tbody></table></body>
+        </html>
+        """
+        session = FakeSession(FakeResponse(html.encode("utf-8")))
+
+        page_matches, rows = _fetch_nps_share_one(
+            "삼성전자",
+            "005930",
+            timeout=1,
+            session_getter=lambda: session,
+        )
+
+        self.assertFalse(page_matches)
+        self.assertEqual(rows, [])
+
+    def test_share_fetch_accepts_valid_empty_change_table(self):
+        from screening import _fetch_nps_share_one
+
+        html = """
+        <html>
+          <head><title>삼성전자(005930) | 지분분석 | FnGuide</title></head>
+          <body><table id="tbl_own_chg">
+            <caption class="cphidden">주주변동내역</caption>
+            <tbody id="sharebody"></tbody>
+          </table></body>
+        </html>
+        """
+        session = FakeSession(FakeResponse(html.encode("utf-8")))
+
+        page_matches, rows = _fetch_nps_share_one(
+            "삼성전자",
+            "005930",
+            timeout=1,
+            session_getter=lambda: session,
+        )
+
+        self.assertTrue(page_matches)
         self.assertEqual(rows, [])
 
     def test_full_scan_rejects_invalid_page_coverage(self):
@@ -322,9 +443,13 @@ class NpsShareCollectorTest(unittest.TestCase):
             }.get(code, [])
             return True, events
 
+        verified_codes = set()
         with patch("screening._fetch_nps_share_one", side_effect=fetch_one):
             rows = fetch_nps_share_events(
-                self.holdings[:2], require_coverage=True, max_workers=1
+                self.holdings[:2],
+                require_coverage=True,
+                max_workers=1,
+                verified_codes=verified_codes,
             )
 
         self.assertEqual(
@@ -335,6 +460,7 @@ class NpsShareCollectorTest(unittest.TestCase):
                 ("000002", "2026-07-03"),
             ],
         )
+        self.assertEqual(verified_codes, {"000001", "000002"})
 
     def test_share_event_scan_requires_eighty_percent_on_bootstrap(self):
         from screening import fetch_nps_share_events
@@ -407,9 +533,17 @@ class NpsSignalBuilderTest(unittest.TestCase):
             )
 
         self.assertEqual(result, ([{"종목명": "A"}], candidate))
-        events.assert_called_once_with(holdings, require_coverage=True)
+        events.assert_called_once_with(
+            holdings,
+            require_coverage=True,
+            verified_codes=set(),
+        )
         reconcile.assert_called_once_with(
-            holdings, [], None, as_of=date(2026, 7, 12)
+            holdings,
+            [],
+            None,
+            as_of=date(2026, 7, 12),
+            snapshot_inference_codes=set(),
         )
 
     def test_existing_state_allows_partial_share_analysis_coverage(self):
@@ -438,7 +572,11 @@ class NpsSignalBuilderTest(unittest.TestCase):
         snapshots.assert_called_once_with(
             "ticker_map.json", required_codes={"000001"}
         )
-        events.assert_called_once_with(holdings, require_coverage=False)
+        events.assert_called_once_with(
+            holdings,
+            require_coverage=False,
+            verified_codes=set(),
+        )
 
 
 class ScoringTest(unittest.TestCase):
@@ -559,6 +697,30 @@ class SourceOrchestrationTest(unittest.TestCase):
                 state_path,
                 as_of=date(2026, 7, 12),
             )
+
+    def test_refresh_holds_state_lock_across_build_and_save(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state_path = Path(directory) / "nps_state.json"
+            with (
+                patch("screening.fetch_turnaround", return_value=[]),
+                patch("screening.fetch_supply_trend", return_value=[]),
+                patch(
+                    "screening.build_nps_buy_signals",
+                    return_value=([], self.candidate_state),
+                ),
+                patch("screening.nps_state_lock") as state_lock,
+                patch("screening.save_nps_state") as save_state,
+            ):
+                fetch_all_data(
+                    "ticker_map.json",
+                    require_all=True,
+                    nps_state_path=state_path,
+                )
+
+            state_lock.assert_called_once_with(state_path)
+            state_lock.return_value.__enter__.assert_called_once_with()
+            save_state.assert_called_once_with(state_path, self.candidate_state)
+            state_lock.return_value.__exit__.assert_called_once()
 
     def test_failed_required_refresh_preserves_existing_nps_state_bytes(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -309,6 +309,64 @@ class NpsTrackerTest(unittest.TestCase):
         self.assertEqual(active, [])
         self.assertEqual(state["signals"], {})
 
+    def test_sell_reason_with_positive_numbers_does_not_create_buy_signal(self):
+        holdings = [
+            {
+                "종목코드": "000001",
+                "종목명": "매도표시종목",
+                "보통주": "1,200",
+                "지분율(%)": "6.0",
+                "최종변동일": "2026/07/10",
+            }
+        ]
+        events = [
+            {
+                "종목코드": "000001",
+                "변동일": "2026-07-10",
+                "변동사유": "장내매도(-)",
+                "변동전": 1000,
+                "증감": 200,
+                "변동후": 1200,
+                "지분율(%)": 6.0,
+            }
+        ]
+
+        active, state = reconcile_nps_signals(
+            holdings, events, None, as_of=date(2026, 7, 12)
+        )
+
+        self.assertEqual(active, [])
+        self.assertEqual(state["signals"], {})
+
+    def test_arithmetically_inconsistent_buy_event_is_rejected(self):
+        holdings = [
+            {
+                "종목코드": "000001",
+                "종목명": "수치모순종목",
+                "보통주": "1,200",
+                "지분율(%)": "6.0",
+                "최종변동일": "2026/07/10",
+            }
+        ]
+        events = [
+            {
+                "종목코드": "000001",
+                "변동일": "2026-07-10",
+                "변동사유": "장내매수(+)",
+                "변동전": 1000,
+                "증감": 100,
+                "변동후": 1200,
+                "지분율(%)": 6.0,
+            }
+        ]
+
+        active, state = reconcile_nps_signals(
+            holdings, events, None, as_of=date(2026, 7, 12)
+        )
+
+        self.assertEqual(active, [])
+        self.assertEqual(state["signals"], {})
+
     def test_disappeared_holding_removes_signal(self):
         previous_state = {
             "version": 1,
@@ -411,6 +469,41 @@ class NpsTrackerTest(unittest.TestCase):
         self.assertEqual(active[0]["만료일"], "2026-10-01")
         self.assertEqual(active[0]["변동사유"], "Snapshot 보유량 증가")
         self.assertEqual(active[0]["증감"], "200")
+
+    def test_snapshot_fallback_requires_verified_share_analysis(self):
+        previous_state = {
+            "version": 1,
+            "updated_at": "2026-06-30",
+            "holdings": {
+                "000001": {
+                    "종목명": "검증실패종목",
+                    "보통주": 1000,
+                    "지분율": 5.0,
+                    "최종변동일": "2026-06-30",
+                }
+            },
+            "signals": {},
+        }
+        holdings = [
+            {
+                "종목코드": "000001",
+                "종목명": "검증실패종목",
+                "보통주": "1,400",
+                "지분율(%)": "7.0",
+                "최종변동일": "2026/07/05",
+            }
+        ]
+
+        active, state = reconcile_nps_signals(
+            holdings,
+            [],
+            previous_state,
+            as_of=date(2026, 7, 12),
+            snapshot_inference_codes=set(),
+        )
+
+        self.assertEqual(active, [])
+        self.assertEqual(state["signals"], {})
 
     def test_share_analysis_reason_wins_over_same_day_snapshot_difference(self):
         holdings = [
@@ -538,6 +631,34 @@ class NpsTrackerTest(unittest.TestCase):
 
             self.assertEqual(load_nps_state(path), state)
             self.assertEqual(list(Path(directory).glob(".nps-state-*.json")), [])
+
+    def test_state_lock_is_cross_process_and_cleans_up(self):
+        from nps_tracker import NpsStateLockError, nps_state_lock
+
+        with TemporaryDirectory() as directory:
+            state_path = Path(directory) / "nps_state.json"
+            lock_path = Path(f"{state_path}.lock")
+
+            with nps_state_lock(state_path):
+                self.assertTrue(lock_path.is_dir())
+                with self.assertRaises(NpsStateLockError):
+                    with nps_state_lock(state_path, timeout=0):
+                        pass
+
+            self.assertFalse(lock_path.exists())
+
+    def test_state_lock_times_out_when_stale_directory_is_not_empty(self):
+        from nps_tracker import NpsStateLockError, nps_state_lock
+
+        with TemporaryDirectory() as directory:
+            state_path = Path(directory) / "nps_state.json"
+            lock_path = Path(f"{state_path}.lock")
+            lock_path.mkdir()
+            (lock_path / "unexpected").write_text("busy", encoding="utf-8")
+
+            with self.assertRaises(NpsStateLockError):
+                with nps_state_lock(state_path, timeout=0, stale_after=0):
+                    pass
 
     def test_today_uses_fixed_korea_timezone(self):
         from nps_tracker import kst_today

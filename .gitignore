@@ -10,6 +10,7 @@ stock_data.duckdb
 stock_data.duckdb.wal
 cache_data.json
 nps_state.json
+nps_state.json.lock/
 backtest_*.csv
 stock_screening_result.html
 .omc/
