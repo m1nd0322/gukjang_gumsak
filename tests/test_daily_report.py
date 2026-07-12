@@ -22,6 +22,22 @@ class DailyReportSourceValidationTest(unittest.TestCase):
         send_telegram.assert_called_once()
         self.assertIn("순매수전환", send_telegram.call_args.args[0])
 
+    def test_message_uses_nps_buy_signal_label(self):
+        message = daily_report.format_telegram_message(
+            [
+                {
+                    "종목명": "A",
+                    "종합점수": 1,
+                    "출처": "국민연금 신규/추가매수",
+                }
+            ],
+            {"nps_count": 1, "score_1": 1},
+            {"metrics": {}, "stock_performance": []},
+            {},
+        )
+
+        self.assertIn("국민연금 신규/추가매수: 1종목", message)
+
 
 if __name__ == "__main__":
     unittest.main()

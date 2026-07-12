@@ -187,7 +187,9 @@ def format_telegram_message(scored_results: list, stats: dict,
     lines.append("<b>▸ 스크리닝 요약</b>")
     lines.append(f"  연간실적호전: {stats.get('turn_count', 0)}종목")
     lines.append(f"  순매수전환: {stats.get('supply_count', 0)}종목")
-    lines.append(f"  국민연금: {stats.get('nps_count', 0)}종목")
+    lines.append(
+        f"  국민연금 신규/추가매수: {stats.get('nps_count', 0)}종목"
+    )
     lines.append(f"  3점: {stats.get('score_3', 0)} | 2점: {stats.get('score_2', 0)} | 1점: {stats.get('score_1', 0)}")
     lines.append("")
 
@@ -284,13 +286,13 @@ def main():
     source_counts = {
         "턴어라운드": len(turn_data),
         "순매수전환": len(supply_data),
-        "국민연금": len(nps_data),
+        "국민연금 신규/추가매수": len(nps_data),
     }
     logger.info(
-        "  턴어라운드: %d개 | 순매수전환: %d개 | 국민연금: %d개",
+        "  턴어라운드: %d개 | 순매수전환: %d개 | 국민연금 신규/추가매수: %d개",
         source_counts["턴어라운드"],
         source_counts["순매수전환"],
-        source_counts["국민연금"],
+        source_counts["국민연금 신규/추가매수"],
     )
 
     # ── 2단계: 스코어링 ──

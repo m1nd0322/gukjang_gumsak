@@ -3,7 +3,7 @@
 한국 증시 종합 스크리닝 시스템
 - 턴어라운드 (연간실적호전)
 - 외국인/기관 동반 순매수 전환
-- 국민연금 보유현황
+- 국민연금 신규/추가매수 신호
 3개 지표를 종합하여 점수화하고 정적 HTML로 저장
 """
 
@@ -103,8 +103,8 @@ def generate_html(result_df, df_turn, df_supply, df_nps, stats, output_path):
                 sources_html += '<span class="tag tag-turn">연간실적호전</span> '
             elif src == '순매수전환':
                 sources_html += '<span class="tag tag-supply">순매수전환</span> '
-            elif src == '국민연금':
-                sources_html += '<span class="tag tag-nps">국민연금</span> '
+            elif '국민연금' in src:
+                sources_html += '<span class="tag tag-nps">국민연금 매수</span> '
 
         # 상세 정보 구성
         detail_parts = []
@@ -362,7 +362,7 @@ def generate_html(result_df, df_turn, df_supply, df_nps, stats, output_path):
     <div class="container">
         <div class="header">
             <h1>한국 증시 종합 스크리닝 시스템</h1>
-            <p>턴어라운드(연간실적호전) + 외국인/기관 동반 순매수 전환 + 국민연금 보유 | 데이터 수집: {now}</p>
+            <p>턴어라운드(연간실적호전) + 외국인/기관 동반 순매수 전환 + 국민연금 신규/추가매수 | 데이터 수집: {now}</p>
         </div>
 
         <div class="stats-grid">
@@ -388,7 +388,7 @@ def generate_html(result_df, df_turn, df_supply, df_nps, stats, output_path):
             </div>
             <div class="stat-card">
                 <div class="number">{stats['nps_count']}</div>
-                <div class="label">국민연금 보유</div>
+                <div class="label">국민연금 신규/추가매수</div>
             </div>
         </div>
 
@@ -405,7 +405,7 @@ def generate_html(result_df, df_turn, df_supply, df_nps, stats, output_path):
             <button class="tab-btn active" onclick="showTab('main')">종합 결과</button>
             <button class="tab-btn" onclick="showTab('turn')">연간실적호전 ({stats['turn_count']})</button>
             <button class="tab-btn" onclick="showTab('supply')">순매수전환 ({stats['supply_count']})</button>
-            <button class="tab-btn" onclick="showTab('nps')">국민연금 ({stats['nps_count']})</button>
+            <button class="tab-btn" onclick="showTab('nps')">국민연금 매수 ({stats['nps_count']})</button>
         </div>
 
         <div class="table-container">
@@ -434,7 +434,8 @@ def generate_html(result_df, df_turn, df_supply, df_nps, stats, output_path):
                 {supply_table}
             </div>
             <div id="tab-nps" class="tab-content">
-                <h3 style="padding: 16px 16px 0; color: #059669;">국민연금공단 보유 종목</h3>
+                <h3 style="padding: 16px 16px 0; color: #059669;">국민연금 신규/추가매수 신호</h3>
+                <p style="padding: 6px 16px 0; color: #6b7280; font-size: 12px;">국민연금 주요주주 신규·추가매수 신호는 매수일부터 3개월 동안만 1점으로 반영됩니다.</p>
                 {nps_table}
             </div>
         </div>
@@ -504,7 +505,7 @@ def main():
     df_nps = _to_dataframe(nps_rows)
     print(
         f"  ✓ 턴어라운드 {len(df_turn)}개 | 순매수전환 {len(df_supply)}개 | "
-        f"국민연금 {len(df_nps)}개"
+        f"국민연금 신규/추가매수 {len(df_nps)}개"
     )
 
     if df_turn.empty and df_supply.empty and df_nps.empty:
