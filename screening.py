@@ -27,6 +27,7 @@ SUPPLY_TREND_URL = (
     "https://comp.fnguide.com/SVO2/json/data/NH/SUPPLY_TREND_FIRST_BUY.json"
 )
 SNAPSHOT_URL = "https://wcomp.fnguide.com/CompanyInfo/Snapshot"
+SHARE_ANALYSIS_URL = "https://wcomp.fnguide.com/CompanyInfo/ShareAnalysis"
 DEFAULT_TICKER_MAP = os.path.join(os.path.dirname(__file__), "ticker_map.json")
 
 REQUEST_HEADERS = {
@@ -62,6 +63,11 @@ _NPS_ROW_RE = re.compile(
     r"<td[^>]*>(.*?)</td>",
     re.I | re.S,
 )
+_SHARE_BODY_RE = re.compile(
+    r'<tbody[^>]*id=["\']sharebody["\'][^>]*>(.*?)</tbody>', re.I | re.S
+)
+_HTML_ROW_RE = re.compile(r"<tr[^>]*>(.*?)</tr>", re.I | re.S)
+_HTML_CELL_RE = re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>", re.I | re.S)
 _TAG_RE = re.compile(r"<[^>]+>")
 _thread_local = threading.local()
 
@@ -182,11 +188,51 @@ def parse_nps_holding(
     if not ratio:
         return None
     return {
+        "종목코드": expected_code.upper(),
         "종목명": normalize_stock_name(stock_name),
         "보통주": common_shares,
         "지분율(%)": ratio,
         "최종변동일": changed_at,
     }
+
+
+def parse_nps_share_events(
+    html: str, *, expected_code: str, stock_name: str
+) -> list[dict]:
+    """FnGuide 지분분석에서 국민연금공단 보통주 변동내역을 추출한다."""
+    if _snapshot_ticker(html) != expected_code.upper():
+        return []
+
+    body_match = _SHARE_BODY_RE.search(html or "")
+    if not body_match:
+        return []
+
+    events = []
+    for row_html in _HTML_ROW_RE.findall(body_match.group(1)):
+        cells = [_cell_text(cell) for cell in _HTML_CELL_RE.findall(row_html)]
+        if len(cells) < 10 or cells[1] != "국민연금공단" or cells[5] != "보통주":
+            continue
+        try:
+            before = int(cells[6].replace(",", ""))
+            change = int(cells[7].replace(",", ""))
+            after = int(cells[8].replace(",", ""))
+            ratio = float(cells[9].replace(",", ""))
+        except ValueError:
+            continue
+        events.append(
+            {
+                "종목코드": expected_code.upper(),
+                "종목명": normalize_stock_name(stock_name),
+                "변동일": cells[3].replace(".", "-").replace("/", "-"),
+                "변동사유": cells[4],
+                "주식종류": cells[5],
+                "변동전": before,
+                "증감": change,
+                "변동후": after,
+                "지분율(%)": ratio,
+            }
+        )
+    return events
 
 
 def _fetch_nps_one(
@@ -209,6 +255,95 @@ def _fetch_nps_one(
     if not page_matches:
         return False, None
     return True, parse_nps_holding(html, expected_code=str(code), stock_name=stock_name)
+
+
+def _fetch_nps_share_one(
+    stock_name: str,
+    code: str,
+    *,
+    timeout: float,
+    session_getter: Callable[[], requests.Session],
+) -> tuple[bool, list[dict]]:
+    session = session_getter()
+    response = session.get(
+        SHARE_ANALYSIS_URL,
+        params={"cmp_cd": code},
+        headers=REQUEST_HEADERS,
+        timeout=timeout,
+    )
+    response.raise_for_status()
+    html = response.text
+    page_matches = _snapshot_ticker(html) == str(code).upper()
+    if not page_matches:
+        return False, []
+    return True, parse_nps_share_events(
+        html, expected_code=str(code), stock_name=stock_name
+    )
+
+
+def fetch_nps_share_events(
+    holdings: list[dict],
+    *,
+    require_coverage: bool,
+    max_workers: int = 12,
+    timeout: float = 15,
+) -> list[dict]:
+    """현재 국민연금 보유 종목의 최근 주요주주 변동내역을 병렬 수집한다."""
+    if not holdings:
+        return []
+
+    workers = max(1, min(int(max_workers), 32))
+    rows = []
+    failures = 0
+    valid_pages = 0
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(
+                _fetch_nps_share_one,
+                normalize_stock_name(holding.get("종목명")),
+                str(holding.get("종목코드") or ""),
+                timeout=timeout,
+                session_getter=_worker_session,
+            ): holding
+            for holding in holdings
+        }
+        for future in as_completed(futures):
+            holding = futures[future]
+            try:
+                page_matches, page_rows = future.result()
+                if page_matches:
+                    valid_pages += 1
+                    rows.extend(page_rows)
+            except Exception as exc:
+                failures += 1
+                logger.debug(
+                    "국민연금 변동내역 조회 실패 (%s): %s",
+                    holding.get("종목명"),
+                    exc,
+                )
+
+    minimum_valid_pages = math.ceil(len(holdings) * 0.8)
+    if valid_pages < minimum_valid_pages:
+        message = (
+            "국민연금 ShareAnalysis 유효 페이지 비율이 낮습니다 "
+            f"({valid_pages}/{len(holdings)}, 최소 {minimum_valid_pages})"
+        )
+        if require_coverage:
+            raise ScreeningDataError(message)
+        logger.warning(message)
+
+    if failures:
+        logger.warning(
+            "국민연금 ShareAnalysis 조회 실패: %d/%d", failures, len(holdings)
+        )
+    rows.sort(key=lambda row: (row.get("종목코드", ""), row.get("변동일", "")))
+    logger.info(
+        "국민연금 변동내역: %d건 (ShareAnalysis 유효 %d/%d)",
+        len(rows),
+        valid_pages,
+        len(holdings),
+    )
+    return rows
 
 
 def fetch_nps_holdings(

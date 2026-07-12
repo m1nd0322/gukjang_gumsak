@@ -123,12 +123,85 @@ class NpsParserTest(unittest.TestCase):
         self.assertEqual(
             row,
             {
+                "종목코드": "005930",
                 "종목명": "삼성전자",
                 "보통주": "458,637,667",
                 "지분율(%)": "7.84",
                 "최종변동일": "2022/08/16",
             },
         )
+
+    def test_extracts_only_nps_share_change_rows(self):
+        from screening import parse_nps_share_events
+
+        html = """
+        <html>
+          <head><title>대웅제약(069620) | 지분분석 | FnGuide</title></head>
+          <body><table><tbody id="sharebody">
+            <tr>
+              <td>국민연금공단</td><td>국민연금공단</td><td>본인</td>
+              <td>2026/07/01</td><td>신규주요주주(+)</td><td>보통주</td>
+              <td>0</td><td>+200</td><td>200</td><td>5.10</td>
+            </tr>
+            <tr>
+              <td>국민연금공단</td><td>국민연금공단</td><td>본인</td>
+              <td>2026.07.10</td><td>장내매도(-)</td><td>보통주</td>
+              <td>200</td><td>-100</td><td>100</td><td>4.90</td>
+            </tr>
+            <tr>
+              <td>KB자산운용</td><td>KB자산운용</td><td>본인</td>
+              <td>2026/07/11</td><td>장내매수(+)</td><td>보통주</td>
+              <td>100</td><td>+5</td><td>105</td><td>5.00</td>
+            </tr>
+            <tr>
+              <td>국민연금공단</td><td>국민연금공단</td><td>본인</td>
+              <td>2026/07/12</td><td>장내매수(+)</td><td>우선주</td>
+              <td>100</td><td>+10</td><td>110</td><td>5.10</td>
+            </tr>
+          </tbody></table></body>
+        </html>
+        """
+
+        rows = parse_nps_share_events(
+            html, expected_code="069620", stock_name=" 대웅제약 "
+        )
+
+        self.assertEqual(
+            rows,
+            [
+                {
+                    "종목코드": "069620",
+                    "종목명": "대웅제약",
+                    "변동일": "2026-07-01",
+                    "변동사유": "신규주요주주(+)",
+                    "주식종류": "보통주",
+                    "변동전": 0,
+                    "증감": 200,
+                    "변동후": 200,
+                    "지분율(%)": 5.1,
+                },
+                {
+                    "종목코드": "069620",
+                    "종목명": "대웅제약",
+                    "변동일": "2026-07-10",
+                    "변동사유": "장내매도(-)",
+                    "주식종류": "보통주",
+                    "변동전": 200,
+                    "증감": -100,
+                    "변동후": 100,
+                    "지분율(%)": 4.9,
+                },
+            ],
+        )
+
+    def test_share_events_reject_mismatched_ticker_page(self):
+        from screening import parse_nps_share_events
+
+        rows = parse_nps_share_events(
+            self.html, expected_code="005935", stock_name="삼성전자우"
+        )
+
+        self.assertEqual(rows, [])
 
     def test_rejects_preferred_share_redirected_to_common_stock(self):
         row = parse_nps_holding(
@@ -155,6 +228,102 @@ class NpsParserTest(unittest.TestCase):
             if not handle.closed:
                 handle.close()
             os.unlink(handle.name)
+
+
+class NpsShareCollectorTest(unittest.TestCase):
+    holdings = [
+        {"종목코드": f"00000{index}", "종목명": chr(64 + index)}
+        for index in range(1, 6)
+    ]
+
+    @staticmethod
+    def _event(code, changed_at):
+        return {
+            "종목코드": code,
+            "종목명": code,
+            "변동일": changed_at,
+            "변동사유": "장내매수(+)",
+            "주식종류": "보통주",
+            "변동전": 100,
+            "증감": 10,
+            "변동후": 110,
+            "지분율(%)": 5.0,
+        }
+
+    def test_share_event_scan_sorts_rows_after_valid_coverage(self):
+        from screening import fetch_nps_share_events
+
+        def fetch_one(_name, code, **_kwargs):
+            events = {
+                "000001": [self._event("000001", "2026-07-02")],
+                "000002": [
+                    self._event("000002", "2026-07-03"),
+                    self._event("000002", "2026-06-01"),
+                ],
+            }.get(code, [])
+            return True, events
+
+        with patch("screening._fetch_nps_share_one", side_effect=fetch_one):
+            rows = fetch_nps_share_events(
+                self.holdings[:2], require_coverage=True, max_workers=1
+            )
+
+        self.assertEqual(
+            [(row["종목코드"], row["변동일"]) for row in rows],
+            [
+                ("000001", "2026-07-02"),
+                ("000002", "2026-06-01"),
+                ("000002", "2026-07-03"),
+            ],
+        )
+
+    def test_share_event_scan_requires_eighty_percent_on_bootstrap(self):
+        from screening import fetch_nps_share_events
+
+        def fetch_one(_name, code, **_kwargs):
+            return code in {"000001", "000002", "000003"}, [
+                self._event(code, "2026-07-01")
+            ]
+
+        with patch("screening._fetch_nps_share_one", side_effect=fetch_one):
+            with self.assertRaisesRegex(ScreeningDataError, "유효 페이지 비율"):
+                fetch_nps_share_events(
+                    self.holdings, require_coverage=True, max_workers=1
+                )
+
+    def test_share_event_scan_keeps_partial_rows_when_state_exists(self):
+        from screening import fetch_nps_share_events
+
+        def fetch_one(_name, code, **_kwargs):
+            page_matches = code in {"000001", "000002", "000003"}
+            events = [self._event(code, "2026-07-01")] if page_matches else []
+            return page_matches, events
+
+        with patch("screening._fetch_nps_share_one", side_effect=fetch_one):
+            with self.assertLogs("screening", level="WARNING") as logs:
+                rows = fetch_nps_share_events(
+                    self.holdings, require_coverage=False, max_workers=1
+                )
+
+        self.assertEqual(len(rows), 3)
+        self.assertIn("유효 페이지 비율이 낮습니다", "\n".join(logs.output))
+
+    def test_share_event_scan_warns_on_request_failure(self):
+        from screening import fetch_nps_share_events
+
+        def fetch_one(_name, code, **_kwargs):
+            if code == "000002":
+                raise RuntimeError("network down")
+            return True, [self._event(code, "2026-07-01")]
+
+        with patch("screening._fetch_nps_share_one", side_effect=fetch_one):
+            with self.assertLogs("screening", level="WARNING") as logs:
+                rows = fetch_nps_share_events(
+                    self.holdings[:2], require_coverage=False, max_workers=1
+                )
+
+        self.assertEqual([row["종목코드"] for row in rows], ["000001"])
+        self.assertIn("조회 실패: 1/2", "\n".join(logs.output))
 
 
 class ScoringTest(unittest.TestCase):
