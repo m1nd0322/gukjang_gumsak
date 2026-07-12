@@ -1,4 +1,7 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import app as app_module
@@ -83,6 +86,53 @@ class FlaskApiTest(unittest.TestCase):
         self.assertIn("stats.total_tickers", template)
         self.assertIn("stats.date_min", template)
         self.assertIn("stats.date_max", template)
+
+    def test_legacy_cache_without_version_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache_path = Path(directory) / "cache_data.json"
+            cache_path.write_text(
+                json.dumps(
+                    {
+                        "turn": [],
+                        "supply": [],
+                        "nps": [{"종목명": "구형보유"}],
+                        "result": [{"종목명": "구형보유", "종합점수": 1}],
+                        "stats": {"nps_count": 1},
+                        "last_updated": "2026-07-11 08:00:00",
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            with patch.object(app_module, "CACHE_FILE", str(cache_path)):
+                loaded = app_module.load_cache()
+
+        self.assertFalse(loaded)
+        self.assertEqual(app_module.current_data["status"], "idle")
+
+    def test_refresh_writes_current_cache_version(self):
+        stats = {"score_3": 0, "score_2": 0, "score_1": 0}
+        with tempfile.TemporaryDirectory() as directory:
+            cache_path = Path(directory) / "cache_data.json"
+            with (
+                patch.object(app_module, "CACHE_FILE", str(cache_path)),
+                patch.object(
+                    app_module, "fetch_all_data", return_value=([], [], [])
+                ),
+                patch.object(
+                    app_module, "calculate_scores", return_value=([], stats)
+                ),
+            ):
+                app_module.refresh_data()
+
+            cache = json.loads(cache_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(cache["version"], app_module.CACHE_VERSION)
+
+    def test_dashboard_describes_time_bounded_nps_signal(self):
+        self.assertIn("국민연금 신규/추가매수", app_module.HTML_TEMPLATE)
+        self.assertIn("매수일부터 3개월 동안만 1점", app_module.HTML_TEMPLATE)
 
 
 if __name__ == "__main__":

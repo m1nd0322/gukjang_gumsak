@@ -394,6 +394,42 @@ class ScoringTest(unittest.TestCase):
         self.assertEqual(stats["score_3"], 1)
         self.assertEqual(stats["total"], 3)
 
+    def test_nps_signal_is_one_point_with_new_source_name(self):
+        results, stats = calculate_scores(
+            [{"종목명": "A"}],
+            [{"종목명": "A"}],
+            [
+                {
+                    "종목명": "A",
+                    "매수구분": "추가매수",
+                    "매수일": "2026-06-30",
+                    "만료일": "2026-09-30",
+                }
+            ],
+        )
+
+        self.assertEqual(results[0]["종합점수"], 3)
+        self.assertEqual(
+            results[0]["출처"],
+            "연간실적호전, 순매수전환, 국민연금 신규/추가매수",
+        )
+        self.assertEqual(results[0]["[연금]매수구분"], "추가매수")
+        self.assertEqual(stats["nps_count"], 1)
+
+    def test_expired_signal_removal_reduces_score_by_one(self):
+        active, _ = calculate_scores(
+            [{"종목명": "A"}], [{"종목명": "A"}], [{"종목명": "A"}]
+        )
+        expired, _ = calculate_scores(
+            [{"종목명": "A"}], [{"종목명": "A"}], []
+        )
+
+        self.assertEqual(
+            active[0]["종합점수"] - expired[0]["종합점수"],
+            1,
+        )
+        self.assertNotIn("국민연금", expired[0]["출처"])
+
 
 class SourceOrchestrationTest(unittest.TestCase):
     candidate_state = {

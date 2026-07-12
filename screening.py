@@ -37,6 +37,7 @@ SNAPSHOT_URL = "https://wcomp.fnguide.com/CompanyInfo/Snapshot"
 SHARE_ANALYSIS_URL = "https://wcomp.fnguide.com/CompanyInfo/ShareAnalysis"
 DEFAULT_TICKER_MAP = os.path.join(os.path.dirname(__file__), "ticker_map.json")
 DEFAULT_NPS_STATE = os.path.join(os.path.dirname(__file__), "nps_state.json")
+NPS_SOURCE_LABEL = "국민연금 신규/추가매수"
 
 REQUEST_HEADERS = {
     "User-Agent": (
@@ -515,7 +516,7 @@ def calculate_scores(
         if stock in supply_map:
             sources.append("순매수전환")
         if stock in nps_map:
-            sources.append("국민연금")
+            sources.append(NPS_SOURCE_LABEL)
 
         detail = {
             "종목명": stock,

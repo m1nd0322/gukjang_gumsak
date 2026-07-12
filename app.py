@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(DATA_DIR, 'cache_data.json')
+CACHE_VERSION = 2
 
 # 글로벌 데이터 저장소
 current_data = {
@@ -108,6 +109,7 @@ def refresh_data():
 
         # 캐시 파일 저장
         cache = {
+            'version': CACHE_VERSION,
             'turn': turn, 'supply': supply, 'nps': nps,
             'result': result, 'stats': stats, 'last_updated': now,
         }
@@ -136,6 +138,9 @@ def load_cache():
         try:
             with open(CACHE_FILE, 'r', encoding='utf-8') as f:
                 cache = json.load(f)
+            if cache.get('version') != CACHE_VERSION:
+                logger.info("구형 스크리닝 캐시를 무시합니다")
+                return False
             with data_lock:
                 current_data['turn'] = cache.get('turn', [])
                 current_data['supply'] = cache.get('supply', [])
@@ -657,7 +662,7 @@ tr:hover{background:#f8fafc}.c{text-align:center}
     <div class="hd">
         <div class="hd-left">
             <h1>한국 증시 종합 스크리닝 시스템</h1>
-            <p>턴어라운드(연간실적호전) + 외국인/기관 동반 순매수 전환 + 국민연금 보유</p>
+            <p>턴어라운드(연간실적호전) + 외국인/기관 동반 순매수 전환 + 국민연금 신규/추가매수</p>
         </div>
         <div class="hd-right">
             <a href="/backtest" style="padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;background:rgba(255,255,255,.15);color:#fff;text-decoration:none;transition:all .3s">📊 백테스트</a>
@@ -681,7 +686,7 @@ tr:hover{background:#f8fafc}.c{text-align:center}
         <div class="sc s1"><div class="n" id="stat1">-</div><div class="l">1점 (1개 해당)</div></div>
         <div class="sc"><div class="n" id="statTurn">-</div><div class="l">연간실적호전</div></div>
         <div class="sc"><div class="n" id="statSupply">-</div><div class="l">순매수전환</div></div>
-        <div class="sc"><div class="n" id="statNps">-</div><div class="l">국민연금 보유</div></div>
+        <div class="sc"><div class="n" id="statNps">-</div><div class="l">국민연금 신규/추가매수</div></div>
     </div>
 
     <div class="fb">
@@ -697,7 +702,7 @@ tr:hover{background:#f8fafc}.c{text-align:center}
         <button class="tb a" onclick="showTab('m',this)">종합 결과</button>
         <button class="tb" id="tabTurn" onclick="showTab('t',this)">연간실적호전</button>
         <button class="tb" id="tabSupply" onclick="showTab('s',this)">순매수전환</button>
-        <button class="tb" id="tabNps" onclick="showTab('n',this)">국민연금</button>
+        <button class="tb" id="tabNps" onclick="showTab('n',this)">국민연금 매수</button>
     </div>
 
     <div class="tc">
@@ -720,7 +725,8 @@ tr:hover{background:#f8fafc}.c{text-align:center}
             <table class="st"><thead id="supplyHead"></thead><tbody id="supplyBody"></tbody></table>
         </div>
         <div id="n" class="tp">
-            <h3 style="padding:14px 14px 0;color:#059669">국민연금공단 보유 종목</h3>
+            <h3 style="padding:14px 14px 0;color:#059669">국민연금 신규/추가매수 신호</h3>
+            <p style="padding:6px 14px 0;color:#6b7280;font-size:12px">국민연금 주요주주 신규·추가매수 신호는 매수일부터 3개월 동안만 1점으로 반영됩니다.</p>
             <table class="st"><thead id="npsHead"></thead><tbody id="npsBody"></tbody></table>
         </div>
     </div>
@@ -833,7 +839,7 @@ function renderData(d) {
     document.getElementById('updateInfo').textContent = '마지막 갱신: ' + (d.last_updated || '-');
     document.getElementById('tabTurn').textContent = '연간실적호전 (' + (stats.turn_count||0) + ')';
     document.getElementById('tabSupply').textContent = '순매수전환 (' + (stats.supply_count||0) + ')';
-    document.getElementById('tabNps').textContent = '국민연금 (' + (stats.nps_count||0) + ')';
+    document.getElementById('tabNps').textContent = '국민연금 매수 (' + (stats.nps_count||0) + ')';
 
     // 메인 테이블
     const body = document.getElementById('mainBody');
