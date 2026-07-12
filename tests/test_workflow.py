@@ -21,6 +21,10 @@ class WorkflowStateCacheTest(unittest.TestCase):
             workflow.index("actions/cache/save@v4"),
         )
         self.assertIn("if: success()", workflow)
+        self.assertIn("concurrency:", workflow)
+        self.assertIn("group: daily-report-nps-state", workflow)
+        self.assertIn("cancel-in-progress: false", workflow)
+        self.assertGreaterEqual(workflow.count("github.run_attempt"), 2)
 
 
 if __name__ == "__main__":

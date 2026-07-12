@@ -184,9 +184,11 @@ event_date <= as_of_date < event_date + 3 calendar months
 GitHub Actions는 실행마다 새 파일시스템을 사용하므로 일일 리포트 작업에 `nps_state.json` 캐시 복원·저장 단계를 추가한다.
 
 - 실행 전 가장 최근의 `nps-state-` 캐시를 복원한다.
-- 실행마다 고유한 키로 갱신된 상태를 저장한다.
+- 예약·수동 실행을 같은 concurrency group으로 직렬화한다.
+- `run_id`와 `run_attempt`를 조합한 실행 시도별 고유 키로 갱신된 상태를 저장한다.
 - 캐시가 없으면 ShareAnalysis 최근 20건을 이용한 초기화 규칙을 적용한다.
 - 캐시 저장 실패는 리포트 결과를 거짓 성공으로 만들지 않도록 워크플로 실패로 남긴다.
+- Actions 캐시는 영구 저장소가 아니므로 장기 보관이 필요하면 상태 파일을 별도로 백업한다.
 
 ## 오류 처리
 

@@ -130,6 +130,17 @@ class FlaskApiTest(unittest.TestCase):
 
         self.assertEqual(cache["version"], app_module.CACHE_VERSION)
 
+    def test_refresh_skips_when_another_refresh_holds_the_lock(self):
+        self.assertTrue(app_module.refresh_lock.acquire(blocking=False))
+        try:
+            with patch.object(app_module, "fetch_all_data") as fetch:
+                started = app_module.refresh_data()
+        finally:
+            app_module.refresh_lock.release()
+
+        self.assertFalse(started)
+        fetch.assert_not_called()
+
     def test_dashboard_describes_time_bounded_nps_signal(self):
         self.assertIn("국민연금 신규/추가매수", app_module.HTML_TEMPLATE)
         self.assertIn("매수일부터 3개월 동안만 1점", app_module.HTML_TEMPLATE)

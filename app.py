@@ -48,6 +48,7 @@ current_data = {
     'error_msg': '',
 }
 data_lock = threading.Lock()
+refresh_lock = threading.Lock()
 
 # 백테스트 상태
 backtest_state = {
@@ -81,6 +82,17 @@ stock_db = StockDB()
 # 데이터 갱신
 # ============================================================
 def refresh_data():
+    """한 번에 하나의 데이터 갱신만 실행한다."""
+    if not refresh_lock.acquire(blocking=False):
+        logger.info("이미 데이터 갱신이 진행 중이므로 중복 실행을 건너뜁니다")
+        return False
+    try:
+        return _refresh_data_locked()
+    finally:
+        refresh_lock.release()
+
+
+def _refresh_data_locked():
     """데이터 수집 → 점수 계산 → 저장"""
     global current_data
 
@@ -117,6 +129,7 @@ def refresh_data():
             json.dump(cache, f, ensure_ascii=False, indent=2)
 
         logger.info(f"데이터 갱신 완료: 3점={stats['score_3']}, 2점={stats['score_2']}, 1점={stats['score_1']}")
+        return True
 
     except Exception as e:
         logger.error(f"데이터 갱신 실패: {e}")
@@ -129,6 +142,7 @@ def refresh_data():
             else:
                 current_data['status'] = 'error'
                 current_data['error_msg'] = str(e)
+        return False
 
 
 def load_cache():
