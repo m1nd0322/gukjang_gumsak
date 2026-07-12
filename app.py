@@ -86,6 +86,11 @@ def refresh_data():
     if not refresh_lock.acquire(blocking=False):
         logger.info("이미 데이터 갱신이 진행 중이므로 중복 실행을 건너뜁니다")
         return False
+    return _run_reserved_refresh()
+
+
+def _run_reserved_refresh():
+    """이미 확보한 단일 실행 잠금을 해제할 때까지 갱신한다."""
     try:
         return _refresh_data_locked()
     finally:
@@ -181,19 +186,25 @@ def index():
 @app.route('/api/refresh', methods=['POST'])
 def api_refresh():
     """재조회 API - 비동기 데이터 갱신"""
+    if not refresh_lock.acquire(blocking=False):
+        return jsonify({'status': 'already_loading', 'message': '이미 갱신 중입니다.'})
+
     with data_lock:
-        if current_data['status'] == 'loading':
-            return jsonify({'status': 'already_loading', 'message': '이미 갱신 중입니다.'})
         current_data['status'] = 'loading'
         current_data['error_msg'] = ''
 
-    thread = threading.Thread(target=refresh_data, daemon=True)
     try:
+        thread = threading.Thread(target=_run_reserved_refresh, daemon=True)
         thread.start()
     except Exception as e:
+        refresh_lock.release()
         with data_lock:
-            current_data['status'] = 'error'
-            current_data['error_msg'] = str(e)
+            if current_data.get('last_updated'):
+                current_data['status'] = 'done'
+                current_data['error_msg'] = f"갱신 시작 실패 (이전 데이터 유지): {e}"
+            else:
+                current_data['status'] = 'error'
+                current_data['error_msg'] = str(e)
         return jsonify({'error': '갱신 작업을 시작하지 못했습니다.'}), 500
     return jsonify({'status': 'started', 'message': '데이터 갱신을 시작합니다.'})
 
@@ -842,6 +853,12 @@ function fetchStatus() {
         });
 }
 
+function escapeHtml(value) {
+    const element = document.createElement('div');
+    element.textContent = value == null ? '' : String(value);
+    return element.innerHTML;
+}
+
 function renderData(d) {
     const stats = d.stats || {};
     document.getElementById('stat3').textContent = stats.score_3 || 0;
@@ -863,19 +880,19 @@ function renderData(d) {
         let tags = '';
         (r['출처'] || '').split(', ').forEach(src => {
             const cls = src.includes('실적') ? 'turn' : (src.includes('순매수') ? 'supply' : 'nps');
-            tags += `<span class="tag ${cls}">${src}</span> `;
+            tags += `<span class="tag ${cls}">${escapeHtml(src)}</span> `;
         });
         let details = '';
         Object.keys(r).forEach(k => {
             const v = r[k];
             if (!v || v === '') return;
-            if (k.startsWith('[턴]')) details += `<span class="d turn">${k.slice(3)}: ${v}</span> `;
-            else if (k.startsWith('[수급]')) details += `<span class="d supply">${k.slice(4)}: ${v}</span> `;
-            else if (k.startsWith('[연금]')) details += `<span class="d nps">${k.slice(4)}: ${v}</span> `;
+            if (k.startsWith('[턴]')) details += `<span class="d turn">${escapeHtml(k.slice(3))}: ${escapeHtml(v)}</span> `;
+            else if (k.startsWith('[수급]')) details += `<span class="d supply">${escapeHtml(k.slice(4))}: ${escapeHtml(v)}</span> `;
+            else if (k.startsWith('[연금]')) details += `<span class="d nps">${escapeHtml(k.slice(4))}: ${escapeHtml(v)}</span> `;
         });
         body.innerHTML += `<tr class="score-${s}" data-score="${s}">
             <td class="c">${i+1}</td>
-            <td class="sn"><b>${r['종목명']}</b></td>
+            <td class="sn"><b>${escapeHtml(r['종목명'])}</b></td>
             <td class="c"><span class="badge b${s}">${s}점</span></td>
             <td>${tags}</td>
             <td class="det">${details}</td>
@@ -891,9 +908,9 @@ function renderData(d) {
 function renderSubTable(data, headId, bodyId) {
     if (!data.length) return;
     const cols = Object.keys(data[0]).filter(c => c !== 'No.');
-    document.getElementById(headId).innerHTML = '<tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
+    document.getElementById(headId).innerHTML = '<tr>' + cols.map(c => `<th>${escapeHtml(c)}</th>`).join('') + '</tr>';
     document.getElementById(bodyId).innerHTML = data.map(r =>
-        '<tr>' + cols.map(c => `<td>${r[c]||''}</td>`).join('') + '</tr>'
+        '<tr>' + cols.map(c => `<td>${escapeHtml(r[c] || '')}</td>`).join('') + '</tr>'
     ).join('');
 }
 

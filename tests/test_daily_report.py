@@ -29,6 +29,9 @@ class DailyReportSourceValidationTest(unittest.TestCase):
                     "종목명": "A",
                     "종합점수": 1,
                     "출처": "국민연금 신규/추가매수",
+                    "[연금]매수구분": "추가매수",
+                    "[연금]매수일": "2026-06-30",
+                    "[연금]만료일": "2026-09-30",
                 }
             ],
             {"nps_count": 1, "score_1": 1},
@@ -37,6 +40,26 @@ class DailyReportSourceValidationTest(unittest.TestCase):
         )
 
         self.assertIn("국민연금 신규/추가매수: 1종목", message)
+        self.assertIn("추가매수 2026-06-30", message)
+        self.assertIn("만료 2026-09-30", message)
+
+    def test_message_escapes_external_stock_values(self):
+        message = daily_report.format_telegram_message(
+            [
+                {
+                    "종목명": "<b>위조</b>",
+                    "종합점수": 1,
+                    "출처": "국민연금 <i>위조</i>",
+                }
+            ],
+            {"nps_count": 1, "score_1": 1},
+            {"metrics": {}, "stock_performance": []},
+            {},
+        )
+
+        self.assertNotIn("<b>위조</b>", message)
+        self.assertIn("&lt;b&gt;위조&lt;/b&gt;", message)
+        self.assertIn("&lt;i&gt;위조&lt;/i&gt;", message)
 
 
 if __name__ == "__main__":

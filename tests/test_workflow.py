@@ -27,5 +27,20 @@ class WorkflowStateCacheTest(unittest.TestCase):
         self.assertGreaterEqual(workflow.count("github.run_attempt"), 2)
 
 
+class ReadmeRunbookTest(unittest.TestCase):
+    def test_dashboard_runbook_uses_uv_managed_python_on_every_os(self):
+        readme = Path("README.md").read_text(encoding="utf-8")
+        command = (
+            "uv run --isolated --managed-python --python 3.11 "
+            "--with-requirements requirements.txt python app.py"
+        )
+
+        self.assertIn(command, readme)
+        self.assertIn("macOS, Linux, Windows PowerShell/CMD에서 동일", readme)
+        self.assertIn("http://localhost:5000", readme)
+        self.assertIn("http://localhost:5000/backtest", readme)
+        self.assertIn("http://localhost:5000/db", readme)
+
+
 if __name__ == "__main__":
     unittest.main()

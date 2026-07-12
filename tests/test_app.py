@@ -37,13 +37,36 @@ class FlaskApiTest(unittest.TestCase):
             )
 
     def test_refresh_reserves_loading_state_before_thread_starts(self):
-        with patch.object(app_module.threading, "Thread", DeferredThread):
-            first = self.client.post("/api/refresh")
-            second = self.client.post("/api/refresh")
+        try:
+            with patch.object(app_module.threading, "Thread", DeferredThread):
+                first = self.client.post("/api/refresh")
+                second = self.client.post("/api/refresh")
+        finally:
+            if app_module.refresh_lock.locked():
+                app_module.refresh_lock.release()
 
         self.assertEqual(first.status_code, 200)
         self.assertEqual(first.get_json()["status"], "started")
         self.assertEqual(second.get_json()["status"], "already_loading")
+
+    def test_refresh_api_does_not_overwrite_active_scheduler_state(self):
+        with app_module.data_lock:
+            app_module.current_data.update(
+                status="done",
+                last_updated="2026-07-12 08:00:00",
+            )
+
+        self.assertTrue(app_module.refresh_lock.acquire(blocking=False))
+        try:
+            with patch.object(app_module.threading, "Thread") as thread:
+                response = self.client.post("/api/refresh")
+        finally:
+            app_module.refresh_lock.release()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["status"], "already_loading")
+        self.assertEqual(app_module.current_data["status"], "done")
+        thread.assert_not_called()
 
     def test_backtest_reserves_loading_state_before_thread_starts(self):
         with patch.object(app_module.threading, "Thread", DeferredThread):
@@ -145,6 +168,14 @@ class FlaskApiTest(unittest.TestCase):
         self.assertIn("국민연금 신규/추가매수", app_module.HTML_TEMPLATE)
         self.assertIn("매수일부터 3개월 동안만 1점", app_module.HTML_TEMPLATE)
         self.assertIn("FnGuide 공개 주요주주 범위", app_module.HTML_TEMPLATE)
+
+    def test_dashboard_escapes_screening_values_before_html_rendering(self):
+        template = app_module.HTML_TEMPLATE
+
+        self.assertIn("function escapeHtml(value)", template)
+        self.assertIn("escapeHtml(r['종목명'])", template)
+        self.assertIn("escapeHtml(v)", template)
+        self.assertIn("escapeHtml(r[c]", template)
 
 
 if __name__ == "__main__":

@@ -60,6 +60,44 @@ class StaticReportTest(unittest.TestCase):
         self.assertIn("만료일: 2026-09-30", html)
         self.assertIn("FnGuide 공개 주요주주 범위", html)
 
+    def test_external_screening_values_are_html_escaped(self):
+        malicious = '<script>alert("nps")</script>'
+        result = pd.DataFrame(
+            [
+                {
+                    "종목명": malicious,
+                    "종합점수": 1,
+                    "출처": "국민연금 신규/추가매수",
+                    "[연금]변동사유": malicious,
+                }
+            ],
+            index=[1],
+        )
+        nps = pd.DataFrame([{"종목명": malicious, "변동사유": malicious}])
+        stats = {
+            "turn_count": 0,
+            "supply_count": 0,
+            "nps_count": 1,
+            "total": 1,
+            "score_3": 0,
+            "score_2": 0,
+            "score_1": 1,
+        }
+        with TemporaryDirectory() as directory:
+            output_path = Path(directory) / "report.html"
+            generate_html(
+                result,
+                pd.DataFrame(),
+                pd.DataFrame(),
+                nps,
+                stats,
+                output_path,
+            )
+            html = output_path.read_text(encoding="utf-8")
+
+        self.assertNotIn(malicious, html)
+        self.assertIn("&lt;script&gt;alert(&quot;nps&quot;)&lt;/script&gt;", html)
+
 
 if __name__ == "__main__":
     unittest.main()

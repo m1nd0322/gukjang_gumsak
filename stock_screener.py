@@ -8,6 +8,7 @@
 """
 
 from datetime import datetime
+from html import escape
 import os
 
 import pandas as pd
@@ -27,6 +28,10 @@ from screening import (
 
 def _to_dataframe(rows):
     return pd.DataFrame(rows)
+
+
+def _html(value):
+    return escape(str(value if value is not None else ""), quote=True)
 
 
 def fetch_turnaround():
@@ -111,20 +116,29 @@ def generate_html(result_df, df_turn, df_supply, df_nps, stats, output_path):
         for col in result_df.columns:
             if col.startswith('[턴]') and pd.notna(row.get(col)) and row.get(col, '') != '':
                 label = col.replace('[턴]', '')
-                detail_parts.append(f'<span class="detail-item turn">{label}: {row[col]}</span>')
+                detail_parts.append(
+                    f'<span class="detail-item turn">{_html(label)}: '
+                    f'{_html(row[col])}</span>'
+                )
             elif col.startswith('[수급]') and pd.notna(row.get(col)) and row.get(col, '') != '':
                 label = col.replace('[수급]', '')
-                detail_parts.append(f'<span class="detail-item supply">{label}: {row[col]}</span>')
+                detail_parts.append(
+                    f'<span class="detail-item supply">{_html(label)}: '
+                    f'{_html(row[col])}</span>'
+                )
             elif col.startswith('[연금]') and pd.notna(row.get(col)) and row.get(col, '') != '':
                 label = col.replace('[연금]', '')
-                detail_parts.append(f'<span class="detail-item nps">{label}: {row[col]}</span>')
+                detail_parts.append(
+                    f'<span class="detail-item nps">{_html(label)}: '
+                    f'{_html(row[col])}</span>'
+                )
 
         details_html = ' '.join(detail_parts)
 
         main_rows_html += f"""
         <tr class="{row_class}" data-score="{score}">
             <td class="center">{idx}</td>
-            <td class="stock-name"><strong>{row['종목명']}</strong></td>
+            <td class="stock-name"><strong>{_html(row['종목명'])}</strong></td>
             <td class="center">{badge}</td>
             <td>{sources_html}</td>
             <td class="details">{details_html}</td>
@@ -135,10 +149,10 @@ def generate_html(result_df, df_turn, df_supply, df_nps, stats, output_path):
         if df.empty:
             return '<p>데이터 없음</p>'
         cols = [c for c in df.columns if c != 'No.']
-        header = ''.join(f'<th>{c}</th>' for c in cols)
+        header = ''.join(f'<th>{_html(c)}</th>' for c in cols)
         rows = ''
         for _, row in df.iterrows():
-            cells = ''.join(f'<td>{row.get(c, "")}</td>' for c in cols)
+            cells = ''.join(f'<td>{_html(row.get(c, ""))}</td>' for c in cols)
             rows += f'<tr>{cells}</tr>'
         return f"""<table id="{table_id}" class="sub-table">
             <thead><tr>{header}</tr></thead>

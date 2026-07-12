@@ -13,6 +13,7 @@
 """
 
 import csv
+from html import escape
 import io
 import json
 import logging
@@ -197,11 +198,18 @@ def format_telegram_message(scored_results: list, stats: dict,
     lines.append("<b>▸ 상위 10종목</b>")
     top10 = scored_results[:10]
     for i, stock in enumerate(top10):
-        name = stock['종목명']
+        name = escape(str(stock['종목명']))
         score = stock['종합점수']
-        sources = stock.get('출처', '')
+        sources = escape(str(stock.get('출처', '')))
         medal = ['🥇', '🥈', '🥉'][i] if i < 3 else f"{i+1}."
         lines.append(f"  {medal} <b>{name}</b> ({score}점) - {sources}")
+        buy_type = escape(str(stock.get('[연금]매수구분', '')))
+        bought_on = escape(str(stock.get('[연금]매수일', '')))
+        expires_on = escape(str(stock.get('[연금]만료일', '')))
+        if buy_type and bought_on and expires_on:
+            lines.append(
+                f"      ↳ 국민연금 {buy_type} {bought_on} (만료 {expires_on})"
+            )
     lines.append("")
 
     # 백테스트 결과
@@ -260,7 +268,11 @@ def format_telegram_message(scored_results: list, stats: dict,
         for sp in sorted_perf[:10]:
             ret = sp.get('return_pct', 0)
             icon = "📈" if ret >= 0 else "📉"
-            lines.append(f"  {icon} {sp['name']}: {ret:+.2f}% (MDD {sp.get('mdd', 0):.1f}%)")
+            name = escape(str(sp['name']))
+            lines.append(
+                f"  {icon} {name}: {ret:+.2f}% "
+                f"(MDD {sp.get('mdd', 0):.1f}%)"
+            )
 
     return "\n".join(lines)
 
