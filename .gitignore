@@ -9,6 +9,7 @@ __pycache__/
 stock_data.duckdb
 stock_data.duckdb.wal
 cache_data.json
+nps_state.json
 backtest_*.csv
 stock_screening_result.html
 .omc/

@@ -6,6 +6,7 @@
 """
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import date
 from html import unescape
 import json
 import logging
@@ -16,6 +17,12 @@ import threading
 from typing import Callable, Iterable, Optional
 
 import requests
+from nps_tracker import (
+    kst_today,
+    load_nps_state,
+    reconcile_nps_signals,
+    save_nps_state,
+)
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -29,6 +36,7 @@ SUPPLY_TREND_URL = (
 SNAPSHOT_URL = "https://wcomp.fnguide.com/CompanyInfo/Snapshot"
 SHARE_ANALYSIS_URL = "https://wcomp.fnguide.com/CompanyInfo/ShareAnalysis"
 DEFAULT_TICKER_MAP = os.path.join(os.path.dirname(__file__), "ticker_map.json")
+DEFAULT_NPS_STATE = os.path.join(os.path.dirname(__file__), "nps_state.json")
 
 REQUEST_HEADERS = {
     "User-Agent": (
@@ -409,30 +417,60 @@ def fetch_nps_holdings(
     return rows
 
 
+def build_nps_buy_signals(
+    ticker_map_path: str = DEFAULT_TICKER_MAP,
+    state_path: str = DEFAULT_NPS_STATE,
+    *,
+    as_of: date | None = None,
+) -> tuple[list[dict], dict]:
+    """현재 보유·변동내역·직전 상태를 활성 국민연금 매수 신호로 병합한다."""
+    effective_date = as_of or kst_today()
+    previous_state = load_nps_state(state_path)
+    holdings = fetch_nps_holdings(ticker_map_path)
+    events = fetch_nps_share_events(
+        holdings,
+        require_coverage=previous_state is None,
+    )
+    return reconcile_nps_signals(
+        holdings,
+        events,
+        previous_state,
+        as_of=effective_date,
+    )
+
+
 def fetch_all_data(
     ticker_map_path: str = DEFAULT_TICKER_MAP,
     *,
     require_all: bool = False,
+    nps_state_path: str = DEFAULT_NPS_STATE,
+    as_of: date | None = None,
 ) -> tuple[list[dict], list[dict], list[dict]]:
     """세 소스를 독립적으로 수집하고 가능한 결과를 모두 반환한다.
 
     ``require_all``은 정상 응답의 빈 목록은 허용하되, 어느 한 소스라도
     요청 또는 응답 검증에 실패하면 전체 호출을 실패시킨다.
     """
-    collected: list[list[dict]] = []
+    collected: list[list[dict]] = [[], [], []]
     errors = []
-    sources = (
-        ("턴어라운드", fetch_turnaround),
-        ("순매수전환", fetch_supply_trend),
-        ("국민연금", lambda: fetch_nps_holdings(ticker_map_path)),
-    )
-    for label, fetcher in sources:
+    pending_nps_state = None
+    sources = ((0, "턴어라운드", fetch_turnaround), (1, "순매수전환", fetch_supply_trend))
+    for index, label, fetcher in sources:
         try:
-            collected.append(fetcher())
+            collected[index] = fetcher()
         except Exception as exc:
             logger.error("%s 데이터 수집 실패: %s", label, exc)
             errors.append(f"{label}: {exc}")
-            collected.append([])
+
+    try:
+        collected[2], pending_nps_state = build_nps_buy_signals(
+            ticker_map_path,
+            nps_state_path,
+            as_of=as_of,
+        )
+    except Exception as exc:
+        logger.error("국민연금 데이터 수집 실패: %s", exc)
+        errors.append(f"국민연금: {exc}")
 
     if errors and require_all:
         detail = "; ".join(errors)
@@ -440,6 +478,11 @@ def fetch_all_data(
     if not any(collected) and errors:
         detail = "; ".join(errors) or "응답 데이터 없음"
         raise ScreeningDataError(f"모든 데이터 소스에서 수집 실패 ({detail})")
+    if not errors and pending_nps_state is not None:
+        try:
+            save_nps_state(nps_state_path, pending_nps_state)
+        except Exception as exc:
+            raise ScreeningDataError(f"국민연금 상태 저장 실패: {exc}") from exc
     return collected[0], collected[1], collected[2]
 
 

@@ -2,6 +2,8 @@ import json
 import os
 import tempfile
 import unittest
+from datetime import date
+from pathlib import Path
 from unittest.mock import patch
 
 from screening import (
@@ -326,6 +328,55 @@ class NpsShareCollectorTest(unittest.TestCase):
         self.assertIn("조회 실패: 1/2", "\n".join(logs.output))
 
 
+class NpsSignalBuilderTest(unittest.TestCase):
+    def test_bootstrap_requires_full_share_analysis_coverage(self):
+        from screening import build_nps_buy_signals
+
+        holdings = [{"종목코드": "000001", "종목명": "A"}]
+        candidate = {"version": 1, "holdings": {}, "signals": {}}
+        with (
+            patch("screening.load_nps_state", return_value=None),
+            patch("screening.fetch_nps_holdings", return_value=holdings),
+            patch("screening.fetch_nps_share_events", return_value=[]) as events,
+            patch(
+                "screening.reconcile_nps_signals",
+                return_value=([{"종목명": "A"}], candidate),
+            ) as reconcile,
+        ):
+            result = build_nps_buy_signals(
+                "ticker_map.json",
+                "nps_state.json",
+                as_of=date(2026, 7, 12),
+            )
+
+        self.assertEqual(result, ([{"종목명": "A"}], candidate))
+        events.assert_called_once_with(holdings, require_coverage=True)
+        reconcile.assert_called_once_with(
+            holdings, [], None, as_of=date(2026, 7, 12)
+        )
+
+    def test_existing_state_allows_partial_share_analysis_coverage(self):
+        from screening import build_nps_buy_signals
+
+        previous = {"version": 1, "holdings": {}, "signals": {}}
+        holdings = [{"종목코드": "000001", "종목명": "A"}]
+        with (
+            patch("screening.load_nps_state", return_value=previous),
+            patch("screening.fetch_nps_holdings", return_value=holdings),
+            patch("screening.fetch_nps_share_events", return_value=[]) as events,
+            patch(
+                "screening.reconcile_nps_signals", return_value=([], previous)
+            ),
+        ):
+            build_nps_buy_signals(
+                "ticker_map.json",
+                "nps_state.json",
+                as_of=date(2026, 7, 12),
+            )
+
+        events.assert_called_once_with(holdings, require_coverage=False)
+
+
 class ScoringTest(unittest.TestCase):
     def test_scores_and_details_remain_compatible(self):
         turn = [{"종목명": "A", "PER": "10"}, {"종목명": "B"}]
@@ -345,7 +396,17 @@ class ScoringTest(unittest.TestCase):
 
 
 class SourceOrchestrationTest(unittest.TestCase):
-    @patch("screening.fetch_nps_holdings", return_value=[{"종목명": "C"}])
+    candidate_state = {
+        "version": 1,
+        "updated_at": "2026-07-12",
+        "holdings": {"000003": {"종목명": "C", "보통주": 1000}},
+        "signals": {},
+    }
+
+    @patch(
+        "screening.build_nps_buy_signals",
+        return_value=([{"종목명": "C"}], candidate_state),
+    )
     @patch("screening.fetch_supply_trend", return_value=[])
     @patch("screening.fetch_turnaround", side_effect=ScreeningDataError("broken"))
     def test_default_mode_preserves_successful_sources(
@@ -357,12 +418,112 @@ class SourceOrchestrationTest(unittest.TestCase):
         self.assertEqual(supply, [])
         self.assertEqual(nps, [{"종목명": "C"}])
 
-    @patch("screening.fetch_nps_holdings", return_value=[{"종목명": "C"}])
+    @patch(
+        "screening.build_nps_buy_signals",
+        return_value=([{"종목명": "C"}], candidate_state),
+    )
     @patch("screening.fetch_supply_trend", return_value=[])
     @patch("screening.fetch_turnaround", side_effect=ScreeningDataError("broken"))
     def test_required_mode_rejects_a_failed_source(self, _turnaround, _supply, _nps):
         with self.assertRaises(ScreeningDataError):
             fetch_all_data(require_all=True)
+
+    def test_complete_refresh_saves_candidate_nps_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state_path = Path(directory) / "nps_state.json"
+            with (
+                patch("screening.fetch_turnaround", return_value=[{"종목명": "A"}]),
+                patch("screening.fetch_supply_trend", return_value=[]),
+                patch(
+                    "screening.build_nps_buy_signals",
+                    create=True,
+                    return_value=([{"종목명": "C"}], self.candidate_state),
+                ) as build_signals,
+            ):
+                turn, supply, nps = fetch_all_data(
+                    "ticker_map.json",
+                    require_all=True,
+                    nps_state_path=state_path,
+                    as_of=date(2026, 7, 12),
+                )
+
+            self.assertEqual(turn, [{"종목명": "A"}])
+            self.assertEqual(supply, [])
+            self.assertEqual(nps, [{"종목명": "C"}])
+            self.assertEqual(
+                json.loads(state_path.read_text(encoding="utf-8")),
+                self.candidate_state,
+            )
+            build_signals.assert_called_once_with(
+                "ticker_map.json",
+                state_path,
+                as_of=date(2026, 7, 12),
+            )
+
+    def test_failed_required_refresh_preserves_existing_nps_state_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state_path = Path(directory) / "nps_state.json"
+            original = b"trusted-state"
+            state_path.write_bytes(original)
+            with (
+                patch(
+                    "screening.fetch_turnaround",
+                    side_effect=ScreeningDataError("broken"),
+                ),
+                patch("screening.fetch_supply_trend", return_value=[]),
+                patch(
+                    "screening.build_nps_buy_signals",
+                    create=True,
+                    return_value=([{"종목명": "C"}], self.candidate_state),
+                ),
+            ):
+                with self.assertRaises(ScreeningDataError):
+                    fetch_all_data(
+                        "ticker_map.json",
+                        require_all=True,
+                        nps_state_path=state_path,
+                        as_of=date(2026, 7, 12),
+                    )
+
+            self.assertEqual(state_path.read_bytes(), original)
+
+    def test_partial_default_refresh_does_not_publish_candidate_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state_path = Path(directory) / "nps_state.json"
+            original = b"trusted-state"
+            state_path.write_bytes(original)
+            with (
+                patch(
+                    "screening.fetch_turnaround",
+                    side_effect=ScreeningDataError("broken"),
+                ),
+                patch("screening.fetch_supply_trend", return_value=[]),
+                patch(
+                    "screening.build_nps_buy_signals",
+                    return_value=([{"종목명": "C"}], self.candidate_state),
+                ),
+            ):
+                turn, supply, nps = fetch_all_data(
+                    "ticker_map.json",
+                    nps_state_path=state_path,
+                    as_of=date(2026, 7, 12),
+                )
+
+            self.assertEqual((turn, supply, nps), ([], [], [{"종목명": "C"}]))
+            self.assertEqual(state_path.read_bytes(), original)
+
+    def test_state_save_failure_is_reported_as_screening_error(self):
+        with (
+            patch("screening.fetch_turnaround", return_value=[]),
+            patch("screening.fetch_supply_trend", return_value=[]),
+            patch(
+                "screening.build_nps_buy_signals",
+                return_value=([], self.candidate_state),
+            ),
+            patch("screening.save_nps_state", side_effect=OSError("disk full")),
+        ):
+            with self.assertRaisesRegex(ScreeningDataError, "상태 저장 실패"):
+                fetch_all_data(require_all=True)
 
 
 if __name__ == "__main__":
