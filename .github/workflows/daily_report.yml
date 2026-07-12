@@ -16,6 +16,14 @@ jobs:
       - name: 저장소 체크아웃
         uses: actions/checkout@v4
 
+      - name: 국민연금 신호 상태 복원
+        uses: actions/cache/restore@v4
+        with:
+          path: nps_state.json
+          key: nps-state-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            nps-state-${{ runner.os }}-
+
       - name: Python 설치
         uses: actions/setup-python@v5
         with:
@@ -35,6 +43,13 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python daily_report.py
+
+      - name: 국민연금 신호 상태 저장
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: nps_state.json
+          key: nps-state-${{ runner.os }}-${{ github.run_id }}
 
       - name: CSV 아티팩트 업로드
         if: always()
