@@ -26,6 +26,8 @@ Requires Chrome installed (Selenium headless crawling). The standalone CLI versi
 ```
 FnGuide (3 pages) --[Selenium crawl]--> Raw tables --[score]--> Ranked stocks
                                                                       |
+                                                    Daily snapshots --> DuckDB
+                                                                      |
                                               Stocks scoring >= 2 ----+
                                                                       |
                               pykrx --[incremental]--> DuckDB ---> BacktestEngine ---> Results JSON
@@ -40,7 +42,7 @@ FnGuide (3 pages) --[Selenium crawl]--> Raw tables --[score]--> Ranked stocks
   - `Portfolio` — cash/position management, buy/sell with cost modeling
   - `BacktestEngine` — 6 strategies: `run_equal_weight`, `run_rebalance`, `run_custom`, `run_volatility_trailing_stop`, `run_ma_filter`, `run_composite`
 
-- **`stock_db.py`** — `StockDB` class wrapping DuckDB. Three tables: `daily_prices`, `ticker_map`, `index_prices`. Handles incremental data fetching (only fetches dates not already in DB). Each method creates a new DuckDB connection for thread safety.
+- **`stock_db.py`** — `StockDB` class wrapping DuckDB. Four tables: `daily_prices`, `ticker_map`, `index_prices`, `screening_results`. Handles incremental market-data fetching and atomic KST-dated screening snapshot replacement. Each method creates a new DuckDB connection for thread safety.
 
 - **`stock_screener.py`** — Original standalone CLI script (uses `requests` + `pandas`). Generates a static HTML file. Not used by the web server.
 
@@ -73,7 +75,7 @@ Both refresh and backtest run in daemon threads. Status is polled from the front
 ### Data Storage
 
 - **`cache_data.json`** — Cached screening results (survives server restarts)
-- **`stock_data.duckdb`** — Historical price data, ticker mapping, KOSPI index data. Incremental: only fetches new dates from pykrx API with 0.3s delay between calls
+- **`stock_data.duckdb`** — Historical price data, ticker mapping, KOSPI index data, and daily screening-result snapshots. Market data is incremental; same-day screening reruns replace that day's complete snapshot.
 
 ### Frontend
 

@@ -135,7 +135,8 @@ uv run --managed-python --python 3.11 python --version
 
 ## 데이터 저장
 
-- `stock_data.duckdb`: 일봉 가격, KOSPI 지수, 종목코드 매핑을 증분 저장합니다.
+- `stock_data.duckdb`: 일봉 가격, KOSPI 지수, 종목코드 매핑과 날짜별 종합 스크리닝 결과를 저장합니다.
+- `screening_results`: KST 날짜별로 `종목명`, `점수`, `해당항목`, `상세정보`를 저장합니다. 같은 날 다시 갱신하면 해당 날짜의 종목 전체를 교체하고 이전 날짜 이력은 보존합니다.
 - `cache_data.json`: 마지막 스크리닝 결과를 버전과 함께 저장해 서버 재시작 시 복원합니다.
 - `nps_state.json`: 국민연금 보유 기준선과 만료 전 신규/추가매수 신호를 저장합니다. 로컬 전용 파일이며 Git에는 포함하지 않습니다.
 - `nps_state.json.lock/`: 웹·정적 CLI·일일 리포트가 동시에 실행될 때 상태의 읽기와 저장을 프로세스 간 직렬화하는 임시 잠금 디렉터리입니다. 정상 종료 시 자동으로 제거됩니다.
@@ -143,19 +144,21 @@ uv run --managed-python --python 3.11 python --version
 
 DuckDB 캐시 범위가 요청 기간을 포함하면 외부 가격 API를 다시 호출하지 않습니다. 티커 맵 신선도는 가장 최근의 성공적인 갱신 시각을 기준으로 판단하고, 새 DB이거나 KRX 갱신이 실패하면 `ticker_map.json`으로 초기화합니다. KRX 가격·지수 호출이 불가능하면 yfinance의 `.KS`/`.KQ` 종목과 `^KS11` 지수로 자동 대체합니다.
 
+Flask의 매일 08:00 자동갱신과 수동 재조회는 새 결과를 메모리와 JSON 캐시에 게시하기 전에 DuckDB 스냅샷부터 저장합니다. GitHub Actions도 같은 저장 규칙을 사용하며, `stock_data.duckdb`를 실행 전에 캐시에서 복원하고 성공 후 다시 저장합니다. 로컬 DuckDB와 GitHub Actions DuckDB는 서로 독립된 파일입니다.
+
 ## GitHub Actions 일일 리포트
 
 `.github/workflows/daily_report.yml`은 월~금 오전 8시(KST)에 다음 순서로 실행됩니다. 한국 공휴일은 별도로 판정하지 않습니다.
 
 1. 예약·수동 실행을 하나씩 직렬 처리
-2. 이전 실행의 `nps_state.json` 캐시 복원
+2. 이전 실행의 `nps_state.json`과 `stock_data.duckdb` 캐시 복원
 3. Python 3.11 및 의존성 설치
 4. 회귀 테스트 실행
-5. FnGuide 세 지표 수집과 종목 스코어링
+5. FnGuide 세 지표 수집, 종목 스코어링, 전체 종합결과의 DuckDB 저장
 6. 2점 이상 종목의 6개월 복합 전략 백테스트
 7. yfinance 가격과 KOSPI 벤치마크 수집
 8. 텔레그램 요약/CSV 전송
-9. 성공한 국민연금 상태를 실행 시도별 새 키로 캐시에 저장
+9. 성공한 국민연금 상태와 DuckDB를 실행 시도별 새 키로 캐시에 저장
 10. CSV를 GitHub Actions Artifact로 30일 보관
 
 워크플로에는 Chrome 설치 단계가 없습니다.
@@ -180,7 +183,7 @@ app.py                         Flask 웹 서버와 작업 오케스트레이션
 screening.py                   FnGuide 데이터 수집, 검증, 공통 점수 계산
 nps_tracker.py                 국민연금 매수 신호 날짜·상태 전이와 원자 저장
 backtester.py                  거래비용/FIFO 로트 기반 커스텀 백테스트 엔진
-stock_db.py                    DuckDB 증분 가격·지수·티커 캐시
+stock_db.py                    DuckDB 가격·지수·티커 캐시와 일일 종합결과 이력
 stock_screener.py              정적 HTML 리포트 CLI
 daily_report.py                GitHub Actions 일일 텔레그램 리포트
 ticker_map.json                종목명→종목코드 매핑

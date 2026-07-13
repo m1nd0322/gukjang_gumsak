@@ -31,7 +31,7 @@
 - Produces: `StockDB.replace_screening_results(results: List[dict], snapshot_date: Optional[date] = None) -> int`
 - Produces: DuckDB 테이블 `screening_results(snapshot_date, stock_name, score, matched_items, details, updated_at)`
 
-- [ ] **Step 1: 저장 필드와 테이블 노출을 검증하는 실패 테스트 작성**
+- [x] **Step 1: 저장 필드와 테이블 노출을 검증하는 실패 테스트 작성**
 
 ```python
 from datetime import date, datetime, timedelta
@@ -66,7 +66,7 @@ def test_screening_results_store_requested_fields_and_are_queryable(self):
     )
 ```
 
-- [ ] **Step 2: 동일 날짜 교체와 이전 날짜 보존 실패 테스트 작성**
+- [x] **Step 2: 동일 날짜 교체와 이전 날짜 보존 실패 테스트 작성**
 
 ```python
 def test_screening_results_replace_same_day_and_preserve_previous_days(self):
@@ -101,7 +101,7 @@ def test_screening_results_replace_same_day_and_preserve_previous_days(self):
     )
 ```
 
-- [ ] **Step 3: 빈 결과 교체 실패 테스트 작성**
+- [x] **Step 3: 빈 결과 교체 실패 테스트 작성**
 
 ```python
 def test_empty_screening_results_clear_only_requested_day(self):
@@ -127,13 +127,13 @@ def test_empty_screening_results_clear_only_requested_day(self):
     self.assertEqual(rows, [("2026-07-12", "A")])
 ```
 
-- [ ] **Step 4: 대상 테스트가 기능 부재로 실패하는지 확인**
+- [x] **Step 4: 대상 테스트가 기능 부재로 실패하는지 확인**
 
 Run: `uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_stock_db -v`
 
 Expected: `StockDB`에 `replace_screening_results`가 없어 FAIL.
 
-- [ ] **Step 5: 테이블과 원자 교체 메서드 최소 구현**
+- [x] **Step 5: 테이블과 원자 교체 메서드 최소 구현**
 
 ```python
 from datetime import date, datetime, timedelta
@@ -205,13 +205,13 @@ def replace_screening_results(
 
 `screening_results`를 `_ALLOWED_TABLES`에 추가하고 `query_table()` 문서의 허용 테이블 설명도 갱신한다.
 
-- [ ] **Step 6: 저장소 테스트 통과 확인**
+- [x] **Step 6: 저장소 테스트 통과 확인**
 
 Run: `uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_stock_db -v`
 
 Expected: 모든 `test_stock_db` 테스트 PASS.
 
-- [ ] **Step 7: 저장소 변경 커밋**
+- [x] **Step 7: 저장소 변경 커밋**
 
 ```bash
 git add stock_db.py tests/test_stock_db.py
@@ -230,7 +230,7 @@ git commit -m "Keep each daily screening snapshot queryable"
 - Consumes: Task 1의 `StockDB.replace_screening_results()`
 - Produces: 성공한 `refresh_data()`가 DuckDB 저장 후 메모리와 JSON 캐시를 게시하는 순서
 
-- [ ] **Step 1: DuckDB 저장이 게시보다 먼저 실행되는 실패 테스트 작성**
+- [x] **Step 1: DuckDB 저장이 게시보다 먼저 실행되는 실패 테스트 작성**
 
 ```python
 def test_refresh_persists_results_before_publishing_cache(self):
@@ -265,7 +265,7 @@ def test_refresh_persists_results_before_publishing_cache(self):
     self.assertEqual(cache["result"], result)
 ```
 
-- [ ] **Step 2: 저장 실패 시 이전 상태 보존 실패 테스트 작성**
+- [x] **Step 2: 저장 실패 시 이전 상태 보존 실패 테스트 작성**
 
 ```python
 def test_refresh_keeps_previous_state_when_duckdb_write_fails(self):
@@ -303,13 +303,13 @@ def test_refresh_keeps_previous_state_when_duckdb_write_fails(self):
     self.assertEqual(app_module.current_data["status"], "done")
 ```
 
-- [ ] **Step 3: Flask 대상 테스트가 저장 호출 부재로 실패하는지 확인**
+- [x] **Step 3: Flask 대상 테스트가 저장 호출 부재로 실패하는지 확인**
 
 Run: `uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_app.FlaskApiTest.test_refresh_persists_results_before_publishing_cache tests.test_app.FlaskApiTest.test_refresh_keeps_previous_state_when_duckdb_write_fails -v`
 
 Expected: `replace_screening_results`가 호출되지 않아 FAIL.
 
-- [ ] **Step 4: 점수 계산 직후 DuckDB 저장 호출 추가**
+- [x] **Step 4: 점수 계산 직후 DuckDB 저장 호출 추가**
 
 ```python
 result, stats = calculate_scores(turn, supply, nps)
@@ -319,13 +319,13 @@ now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 기존 `current_data`와 `cache_data.json` 갱신 코드는 이 호출 뒤에 둔다. 기존 캐시 버전 테스트에서는 `replace_screening_results`를 패치하여 실제 기본 DB를 변경하지 않게 한다.
 
-- [ ] **Step 5: Flask 테스트 통과 확인**
+- [x] **Step 5: Flask 테스트 통과 확인**
 
 Run: `uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_app -v`
 
 Expected: 모든 `test_app` 테스트 PASS.
 
-- [ ] **Step 6: Flask 연동 커밋**
+- [x] **Step 6: Flask 연동 커밋**
 
 ```bash
 git add app.py tests/test_app.py
@@ -348,7 +348,7 @@ git commit -m "Publish refreshed screening data only after DuckDB persistence"
 - Produces: 일일 리포트의 조기 종료 전 DuckDB 저장
 - Produces: GitHub Actions 실행 간 `stock_data.duckdb` 캐시 복원·저장
 
-- [ ] **Step 1: 2점 종목이 없어도 저장이 먼저 실행되는 실패 테스트 작성**
+- [x] **Step 1: 2점 종목이 없어도 저장이 먼저 실행되는 실패 테스트 작성**
 
 ```python
 @patch("daily_report.StockDB")
@@ -370,7 +370,7 @@ def test_persists_screening_results_before_no_high_score_exit(
     )
 ```
 
-- [ ] **Step 2: DuckDB 저장 실패가 일일 리포트를 실패시키는 테스트 작성**
+- [x] **Step 2: DuckDB 저장 실패가 일일 리포트를 실패시키는 테스트 작성**
 
 ```python
 @patch("daily_report.StockDB")
@@ -394,7 +394,7 @@ def test_aborts_when_screening_results_cannot_be_persisted(
     self.assertIn("DuckDB", send_telegram.call_args.args[0])
 ```
 
-- [ ] **Step 3: 워크플로 DuckDB 캐시 실패 테스트 작성**
+- [x] **Step 3: 워크플로 DuckDB 캐시 실패 테스트 작성**
 
 ```python
 def test_daily_report_restores_and_saves_screening_duckdb(self):
@@ -409,13 +409,13 @@ def test_daily_report_restores_and_saves_screening_duckdb(self):
     self.assertLess(report, save)
 ```
 
-- [ ] **Step 4: 일일 리포트와 워크플로 대상 테스트 실패 확인**
+- [x] **Step 4: 일일 리포트와 워크플로 대상 테스트 실패 확인**
 
 Run: `uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_daily_report tests.test_workflow.WorkflowStateCacheTest -v`
 
 Expected: `daily_report.StockDB`와 DuckDB 캐시 단계가 없어 FAIL.
 
-- [ ] **Step 5: 일일 리포트 저장 호출과 오류 처리 구현**
+- [x] **Step 5: 일일 리포트 저장 호출과 오류 처리 구현**
 
 ```python
 from stock_db import StockDB
@@ -434,7 +434,7 @@ logger.info("  DuckDB 종합결과: %d개 저장", saved_count)
 
 이 블록은 `high_score` 계산과 조기 종료보다 앞에 둔다.
 
-- [ ] **Step 6: GitHub Actions DuckDB 캐시 복원·저장 추가**
+- [x] **Step 6: GitHub Actions DuckDB 캐시 복원·저장 추가**
 
 ```yaml
 - name: DuckDB 종합결과 복원
@@ -455,13 +455,13 @@ logger.info("  DuckDB 종합결과: %d개 저장", saved_count)
 
 복원은 Python 실행 전, 저장은 `daily_report.py` 성공 후에 둔다.
 
-- [ ] **Step 7: 일일 리포트와 워크플로 테스트 통과 확인**
+- [x] **Step 7: 일일 리포트와 워크플로 테스트 통과 확인**
 
 Run: `uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_daily_report tests.test_workflow -v`
 
 Expected: 모든 `test_daily_report`, `test_workflow` 테스트 PASS.
 
-- [ ] **Step 8: 일일 자동화 연동 커밋**
+- [x] **Step 8: 일일 자동화 연동 커밋**
 
 ```bash
 git add daily_report.py .github/workflows/daily_report.yml tests/test_daily_report.py tests/test_workflow.py
@@ -482,7 +482,7 @@ git commit -m "Retain daily screening snapshots between report runs"
 - Consumes: Tasks 1-3의 최종 스키마와 실행 흐름
 - Produces: 운영자가 DuckDB 결과 저장과 GitHub Actions 보존 방식을 이해할 수 있는 문서
 
-- [ ] **Step 1: 데이터 저장 문서 갱신**
+- [x] **Step 1: 데이터 저장 문서 갱신**
 
 `README.md`에 다음 내용을 명시한다.
 
@@ -493,25 +493,25 @@ git commit -m "Retain daily screening snapshots between report runs"
 
 `CLAUDE.md`와 `stock_db.py` 모듈 설명의 테이블 수와 책임도 네 테이블 기준으로 갱신한다.
 
-- [ ] **Step 2: Ruff 검사 실행**
+- [x] **Step 2: Ruff 검사 실행**
 
 Run: `uvx ruff check app.py backtester.py daily_report.py nps_tracker.py screening.py stock_db.py stock_screener.py tests`
 
 Expected: `All checks passed!`
 
-- [ ] **Step 3: Python 컴파일 검사 실행**
+- [x] **Step 3: Python 컴파일 검사 실행**
 
 Run: `uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m py_compile app.py backtester.py daily_report.py nps_tracker.py screening.py stock_db.py stock_screener.py`
 
 Expected: exit code 0, 출력 없음.
 
-- [ ] **Step 4: 전체 회귀 테스트 실행**
+- [x] **Step 4: 전체 회귀 테스트 실행**
 
 Run: `uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest discover -s tests -v`
 
 Expected: 기존 80개와 새 테스트가 모두 PASS.
 
-- [ ] **Step 5: 임시 DuckDB 스모크 검증**
+- [x] **Step 5: 임시 DuckDB 스모크 검증**
 
 Run:
 
@@ -521,7 +521,7 @@ uv run --isolated --managed-python --python 3.11 --with-requirements requirement
 
 Expected: `screening_results smoke: OK`
 
-- [ ] **Step 6: 최종 변경 검토와 커밋**
+- [x] **Step 6: 최종 변경 검토와 커밋**
 
 ```bash
 git diff --check
