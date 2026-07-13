@@ -28,6 +28,14 @@ jobs:
           restore-keys: |
             nps-state-${{ runner.os }}-
 
+      - name: DuckDB 종합결과 복원
+        uses: actions/cache/restore@v4
+        with:
+          path: stock_data.duckdb
+          key: screening-db-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            screening-db-${{ runner.os }}-
+
       - name: Python 설치
         uses: actions/setup-python@v5
         with:
@@ -47,6 +55,13 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python daily_report.py
+
+      - name: DuckDB 종합결과 저장
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: stock_data.duckdb
+          key: screening-db-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: 국민연금 신호 상태 저장
         if: success()

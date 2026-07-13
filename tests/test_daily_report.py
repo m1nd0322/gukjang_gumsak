@@ -61,6 +61,60 @@ class DailyReportSourceValidationTest(unittest.TestCase):
         self.assertIn("&lt;b&gt;위조&lt;/b&gt;", message)
         self.assertIn("&lt;i&gt;위조&lt;/i&gt;", message)
 
+    @patch("daily_report.StockDB")
+    @patch("daily_report.send_telegram")
+    @patch(
+        "daily_report.calculate_scores",
+        return_value=(
+            [{"종목명": "A", "종합점수": 1, "출처": "연간실적호전"}],
+            {"score_3": 0, "score_2": 0, "score_1": 1},
+        ),
+    )
+    @patch("daily_report.fetch_all_data", return_value=([], [], []))
+    def test_persists_screening_results_before_no_high_score_exit(
+        self,
+        _fetch_all_data,
+        _calculate_scores,
+        _send_telegram,
+        stock_db_class,
+    ):
+        stock_db_class.return_value.replace_screening_results.return_value = 1
+
+        with self.assertRaises(SystemExit) as raised:
+            daily_report.main()
+
+        self.assertEqual(raised.exception.code, 0)
+        stock_db_class.return_value.replace_screening_results.assert_called_once_with(
+            [{"종목명": "A", "종합점수": 1, "출처": "연간실적호전"}]
+        )
+
+    @patch("daily_report.StockDB")
+    @patch("daily_report.send_telegram")
+    @patch(
+        "daily_report.calculate_scores",
+        return_value=(
+            [{"종목명": "A", "종합점수": 1, "출처": "연간실적호전"}],
+            {"score_3": 0, "score_2": 0, "score_1": 1},
+        ),
+    )
+    @patch("daily_report.fetch_all_data", return_value=([], [], []))
+    def test_aborts_when_screening_results_cannot_be_persisted(
+        self,
+        _fetch_all_data,
+        _calculate_scores,
+        send_telegram,
+        stock_db_class,
+    ):
+        stock_db_class.return_value.replace_screening_results.side_effect = (
+            RuntimeError("duckdb write failed")
+        )
+
+        with self.assertRaises(SystemExit) as raised:
+            daily_report.main()
+
+        self.assertEqual(raised.exception.code, 1)
+        self.assertIn("DuckDB", send_telegram.call_args.args[0])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -26,6 +26,20 @@ class WorkflowStateCacheTest(unittest.TestCase):
         self.assertIn("cancel-in-progress: false", workflow)
         self.assertGreaterEqual(workflow.count("github.run_attempt"), 2)
 
+    def test_daily_report_restores_and_saves_screening_duckdb(self):
+        workflow = Path(".github/workflows/daily_report.yml").read_text(
+            encoding="utf-8"
+        )
+
+        restore = workflow.index("DuckDB 종합결과 복원")
+        report = workflow.index("run: python daily_report.py")
+        save = workflow.index("DuckDB 종합결과 저장")
+
+        self.assertGreaterEqual(workflow.count("stock_data.duckdb"), 2)
+        self.assertGreaterEqual(workflow.count("screening-db-"), 3)
+        self.assertLess(restore, report)
+        self.assertLess(report, save)
+
 
 class ReadmeRunbookTest(unittest.TestCase):
     def test_dashboard_runbook_uses_uv_managed_python_on_every_os(self):

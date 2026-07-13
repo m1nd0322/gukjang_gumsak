@@ -26,6 +26,7 @@ import yfinance as yf
 
 from backtester import BacktestEngine
 from screening import calculate_scores, fetch_all_data
+from stock_db import StockDB
 
 logging.basicConfig(
     level=logging.INFO,
@@ -311,6 +312,15 @@ def main():
     logger.info("[2/5] 종목 스코어링...")
     scored_results, stats = calculate_scores(turn_data, supply_data, nps_data)
     logger.info(f"  3점: {stats['score_3']} | 2점: {stats['score_2']} | 1점: {stats['score_1']}")
+
+    try:
+        saved_count = StockDB().replace_screening_results(scored_results)
+    except Exception as exc:
+        msg = f"종합결과 DuckDB 저장 실패: {exc}"
+        logger.error(msg)
+        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{msg}")
+        sys.exit(1)
+    logger.info("  DuckDB 종합결과: %d개 저장", saved_count)
 
     high_score = [r for r in scored_results if r.get('종합점수', 0) >= 2]
     if not high_score:
