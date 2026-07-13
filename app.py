@@ -113,6 +113,7 @@ def _refresh_data_locked():
         turn, supply, nps = fetch_all_data(require_all=True)
 
         result, stats = calculate_scores(turn, supply, nps)
+        stock_db.replace_screening_results(result)
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         with data_lock:

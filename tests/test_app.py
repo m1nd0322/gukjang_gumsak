@@ -146,12 +146,97 @@ class FlaskApiTest(unittest.TestCase):
                 patch.object(
                     app_module, "calculate_scores", return_value=([], stats)
                 ),
+                patch.object(
+                    app_module.stock_db,
+                    "replace_screening_results",
+                    return_value=0,
+                ),
             ):
                 app_module.refresh_data()
 
             cache = json.loads(cache_path.read_text(encoding="utf-8"))
 
         self.assertEqual(cache["version"], app_module.CACHE_VERSION)
+
+    def test_refresh_persists_results_before_publishing_cache(self):
+        result = [
+            {"종목명": "A", "종합점수": 1, "출처": "연간실적호전"}
+        ]
+        stats = {"score_3": 0, "score_2": 0, "score_1": 1}
+        with tempfile.TemporaryDirectory() as directory:
+            cache_path = Path(directory) / "cache_data.json"
+
+            def persist(rows):
+                self.assertEqual(rows, result)
+                self.assertEqual(app_module.current_data["result"], [])
+                self.assertFalse(cache_path.exists())
+                return 1
+
+            with (
+                patch.object(app_module, "CACHE_FILE", str(cache_path)),
+                patch.object(
+                    app_module, "fetch_all_data", return_value=([], [], [])
+                ),
+                patch.object(
+                    app_module,
+                    "calculate_scores",
+                    return_value=(result, stats),
+                ),
+                patch.object(
+                    app_module.stock_db,
+                    "replace_screening_results",
+                    side_effect=persist,
+                ) as save_results,
+            ):
+                refreshed = app_module.refresh_data()
+
+            cache = json.loads(cache_path.read_text(encoding="utf-8"))
+
+        self.assertTrue(refreshed)
+        save_results.assert_called_once_with(result)
+        self.assertEqual(app_module.current_data["result"], result)
+        self.assertEqual(cache["result"], result)
+
+    def test_refresh_keeps_previous_state_when_duckdb_write_fails(self):
+        previous = [{"종목명": "기존", "종합점수": 1}]
+        with app_module.data_lock:
+            app_module.current_data.update(
+                result=previous,
+                last_updated="2026-07-12 08:00:00",
+                status="done",
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            cache_path = Path(directory) / "cache_data.json"
+            cache_path.write_text('{"result": ["기존"]}', encoding="utf-8")
+            original_cache = cache_path.read_bytes()
+
+            with (
+                patch.object(app_module, "CACHE_FILE", str(cache_path)),
+                patch.object(
+                    app_module, "fetch_all_data", return_value=([], [], [])
+                ),
+                patch.object(
+                    app_module,
+                    "calculate_scores",
+                    return_value=(
+                        [{"종목명": "신규", "종합점수": 1}],
+                        {"score_3": 0, "score_2": 0, "score_1": 1},
+                    ),
+                ),
+                patch.object(
+                    app_module.stock_db,
+                    "replace_screening_results",
+                    side_effect=RuntimeError("duckdb write failed"),
+                ),
+            ):
+                refreshed = app_module.refresh_data()
+
+            self.assertEqual(cache_path.read_bytes(), original_cache)
+
+        self.assertFalse(refreshed)
+        self.assertEqual(app_module.current_data["result"], previous)
+        self.assertEqual(app_module.current_data["status"], "done")
 
     def test_refresh_skips_when_another_refresh_holds_the_lock(self):
         self.assertTrue(app_module.refresh_lock.acquire(blocking=False))
