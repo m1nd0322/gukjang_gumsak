@@ -6,6 +6,7 @@ DuckDB 기반 주가 데이터 스토리지
 - 증분 수집: 이미 저장된 날짜는 스킵, 새로운 날짜만 pykrx에서 가져옴
 - 종목 매핑 캐시 (KRX 종목코드 ↔ 종목명)
 - KOSPI 지수 데이터 관리
+- 날짜별 종합 스크리닝 결과 저장
 
 사용 예시:
     from stock_db import StockDB
@@ -19,8 +20,9 @@ import logging
 import math
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Dict, List, Tuple, Optional
+from zoneinfo import ZoneInfo
 
 import duckdb
 import yfinance as yf
@@ -79,6 +81,17 @@ class StockDB:
                     PRIMARY KEY (index_code, date)
                 )
             """)
+            con.execute("""
+                CREATE TABLE IF NOT EXISTS screening_results (
+                    snapshot_date DATE NOT NULL,
+                    stock_name VARCHAR NOT NULL,
+                    score INTEGER NOT NULL,
+                    matched_items VARCHAR NOT NULL,
+                    details JSON NOT NULL,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (snapshot_date, stock_name)
+                )
+            """)
             # Indexes for faster reads
             con.execute("CREATE INDEX IF NOT EXISTS idx_daily_ticker ON daily_prices(ticker)")
             con.execute("CREATE INDEX IF NOT EXISTS idx_daily_date ON daily_prices(date)")
@@ -86,9 +99,102 @@ class StockDB:
             con.execute("CREATE INDEX IF NOT EXISTS idx_index_code ON index_prices(index_code)")
             con.execute("CREATE INDEX IF NOT EXISTS idx_index_code_date ON index_prices(index_code, date)")
             con.execute("CREATE INDEX IF NOT EXISTS idx_ticker_map_name ON ticker_map(name)")
+            con.execute(
+                "CREATE INDEX IF NOT EXISTS idx_screening_date "
+                "ON screening_results(snapshot_date)"
+            )
+            con.execute(
+                "CREATE INDEX IF NOT EXISTS idx_screening_score "
+                "ON screening_results(score)"
+            )
         finally:
             con.close()
         logger.info(f"DuckDB 초기화 완료: {self.db_path}")
+
+    # ----------------------------------------------------------
+    # 종합 스크리닝 결과
+    # ----------------------------------------------------------
+    def replace_screening_results(
+        self,
+        results: List[dict],
+        snapshot_date: Optional[date] = None,
+    ) -> int:
+        """KST 날짜의 종합결과 전체를 원자적으로 교체한다."""
+        snapshot_date = snapshot_date or datetime.now(
+            ZoneInfo("Asia/Seoul")
+        ).date()
+        rows = []
+        seen_names = set()
+
+        for result in results:
+            if not isinstance(result, dict):
+                raise ValueError("종합결과 행은 dict여야 합니다")
+
+            stock_name = str(result.get("종목명") or "").strip()
+            if not stock_name:
+                raise ValueError("종합결과에 종목명이 없습니다")
+            if stock_name in seen_names:
+                raise ValueError(f"종합결과에 중복 종목이 있습니다: {stock_name}")
+            seen_names.add(stock_name)
+
+            try:
+                score = int(result["종합점수"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"종합결과 점수가 올바르지 않습니다: {stock_name}"
+                ) from exc
+
+            matched_items = str(result.get("출처") or "")
+            details = {
+                key: value
+                for key, value in result.items()
+                if key not in {"종목명", "종합점수", "출처", "순위"}
+            }
+            try:
+                details_json = json.dumps(
+                    details,
+                    ensure_ascii=False,
+                    allow_nan=False,
+                )
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"종합결과 상세정보를 저장할 수 없습니다: {stock_name}"
+                ) from exc
+
+            rows.append(
+                (snapshot_date, stock_name, score, matched_items, details_json)
+            )
+
+        con = self._connect()
+        transaction_started = False
+        try:
+            con.execute("BEGIN TRANSACTION")
+            transaction_started = True
+            con.execute(
+                "DELETE FROM screening_results WHERE snapshot_date = ?",
+                [snapshot_date],
+            )
+            if rows:
+                con.executemany("""
+                    INSERT INTO screening_results
+                        (snapshot_date, stock_name, score, matched_items, details)
+                    VALUES (?, ?, ?, ?, ?)
+                """, rows)
+            con.execute("COMMIT")
+            transaction_started = False
+        except Exception:
+            if transaction_started:
+                con.execute("ROLLBACK")
+            raise
+        finally:
+            con.close()
+
+        logger.info(
+            "종합결과 저장: %s %d개",
+            snapshot_date.isoformat(),
+            len(rows),
+        )
+        return len(rows)
 
     # ----------------------------------------------------------
     # 종목 매핑
@@ -662,7 +768,12 @@ class StockDB:
     # DB 뷰어용 조회 메서드
     # ----------------------------------------------------------
 
-    _ALLOWED_TABLES = {'daily_prices', 'ticker_map', 'index_prices'}
+    _ALLOWED_TABLES = {
+        'daily_prices',
+        'ticker_map',
+        'index_prices',
+        'screening_results',
+    }
 
     def get_table_list(self) -> List[dict]:
         """Get list of all tables with row counts"""
@@ -696,7 +807,7 @@ class StockDB:
         """Paginated table query with optional filtering
 
         Args:
-            table_name: One of daily_prices, ticker_map, index_prices
+            table_name: One of the names in ``_ALLOWED_TABLES``
             page: 1-based page number
             page_size: rows per page
             order_by: column name to sort by (whitelisted against schema)

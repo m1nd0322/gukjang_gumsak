@@ -2,7 +2,7 @@ import os
 import json
 import tempfile
 import unittest
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
 import pandas as pd
@@ -145,6 +145,150 @@ class StockDbCacheTest(unittest.TestCase):
 
         self.assertEqual(added, 0)
         self.assertEqual(krx.index_calls, 0)
+
+    def test_screening_results_store_requested_fields_and_are_queryable(self):
+        saved = self.db.replace_screening_results(
+            [
+                {
+                    "종목명": "삼성전자",
+                    "종합점수": 2,
+                    "출처": "연간실적호전, 순매수전환",
+                    "순위": 1,
+                    "[턴]PER": "12.3",
+                    "[수급]수익률(%)": "4.2",
+                }
+            ],
+            snapshot_date=date(2026, 7, 13),
+        )
+
+        page = self.db.query_table("screening_results", order_by="stock_name")
+
+        self.assertEqual(saved, 1)
+        self.assertEqual(page["total"], 1)
+        self.assertEqual(page["rows"][0]["stock_name"], "삼성전자")
+        self.assertEqual(page["rows"][0]["score"], 2)
+        self.assertEqual(
+            page["rows"][0]["matched_items"],
+            "연간실적호전, 순매수전환",
+        )
+        self.assertEqual(
+            json.loads(page["rows"][0]["details"]),
+            {"[턴]PER": "12.3", "[수급]수익률(%)": "4.2"},
+        )
+
+    def test_screening_results_replace_same_day_and_preserve_previous_days(self):
+        self.db.replace_screening_results(
+            [
+                {
+                    "종목명": "전날종목",
+                    "종합점수": 1,
+                    "출처": "연간실적호전",
+                }
+            ],
+            snapshot_date=date(2026, 7, 12),
+        )
+        self.db.replace_screening_results(
+            [
+                {
+                    "종목명": "유지종목",
+                    "종합점수": 1,
+                    "출처": "연간실적호전",
+                },
+                {
+                    "종목명": "탈락종목",
+                    "종합점수": 2,
+                    "출처": "연간실적호전, 순매수전환",
+                },
+            ],
+            snapshot_date=date(2026, 7, 13),
+        )
+        self.db.replace_screening_results(
+            [
+                {
+                    "종목명": "유지종목",
+                    "종합점수": 3,
+                    "출처": (
+                        "연간실적호전, 순매수전환, "
+                        "국민연금 신규/추가매수"
+                    ),
+                }
+            ],
+            snapshot_date=date(2026, 7, 13),
+        )
+
+        connection = self.db._connect()
+        try:
+            rows = connection.execute(
+                "SELECT CAST(snapshot_date AS VARCHAR), stock_name, score "
+                "FROM screening_results ORDER BY snapshot_date, stock_name"
+            ).fetchall()
+        finally:
+            connection.close()
+
+        self.assertEqual(
+            rows,
+            [
+                ("2026-07-12", "전날종목", 1),
+                ("2026-07-13", "유지종목", 3),
+            ],
+        )
+
+    def test_empty_screening_results_clear_only_requested_day(self):
+        self.db.replace_screening_results(
+            [{"종목명": "A", "종합점수": 1, "출처": "연간실적호전"}],
+            snapshot_date=date(2026, 7, 12),
+        )
+        self.db.replace_screening_results(
+            [{"종목명": "B", "종합점수": 1, "출처": "순매수전환"}],
+            snapshot_date=date(2026, 7, 13),
+        )
+
+        saved = self.db.replace_screening_results(
+            [], snapshot_date=date(2026, 7, 13)
+        )
+
+        connection = self.db._connect()
+        try:
+            rows = connection.execute(
+                "SELECT CAST(snapshot_date AS VARCHAR), stock_name "
+                "FROM screening_results"
+            ).fetchall()
+        finally:
+            connection.close()
+
+        self.assertEqual(saved, 0)
+        self.assertEqual(rows, [("2026-07-12", "A")])
+
+    def test_invalid_screening_result_preserves_existing_snapshot(self):
+        existing = [
+            {"종목명": "기존종목", "종합점수": 1, "출처": "연간실적호전"}
+        ]
+        self.db.replace_screening_results(
+            existing, snapshot_date=date(2026, 7, 13)
+        )
+
+        with self.assertRaisesRegex(ValueError, "종목명"):
+            self.db.replace_screening_results(
+                [{"종합점수": 2, "출처": "연간실적호전, 순매수전환"}],
+                snapshot_date=date(2026, 7, 13),
+            )
+
+        page = self.db.query_table("screening_results")
+        self.assertEqual(page["total"], 1)
+        self.assertEqual(page["rows"][0]["stock_name"], "기존종목")
+
+    @patch("stock_db.datetime")
+    def test_default_screening_snapshot_date_uses_korea_timezone(self, clock):
+        clock.now.return_value = datetime(2026, 7, 13, 8, 0)
+
+        self.db.replace_screening_results(
+            [{"종목명": "A", "종합점수": 1, "출처": "연간실적호전"}]
+        )
+
+        timezone = clock.now.call_args.args[0]
+        self.assertEqual(str(timezone), "Asia/Seoul")
+        page = self.db.query_table("screening_results")
+        self.assertEqual(str(page["rows"][0]["snapshot_date"]), "2026-07-13")
 
 
 if __name__ == "__main__":
