@@ -258,6 +258,35 @@ class FlaskApiTest(unittest.TestCase):
         self.assertEqual(invalid_shape.status_code, 400)
         self.assertEqual(malformed_json.status_code, 400)
 
+    def test_backtest_page_exposes_score_and_item_filters(self):
+        template = app_module.BACKTEST_TEMPLATE
+
+        self.assertEqual(
+            template.count('<input type="checkbox" name="scoreFilter"'), 3
+        )
+        self.assertEqual(
+            template.count('<input type="checkbox" name="itemFilter"'), 3
+        )
+        self.assertIn('name="scoreFilter" value="3" checked', template)
+        self.assertIn('name="scoreFilter" value="2" checked', template)
+        self.assertIn('name="scoreFilter" value="1"', template)
+        self.assertIn('name="itemFilter" value="turnaround"', template)
+        self.assertIn('name="itemFilter" value="supply"', template)
+        self.assertIn('name="itemFilter" value="nps"', template)
+        self.assertIn("미선택 시 전체", template)
+        self.assertIn("여러 항목 선택 시 모두 만족", template)
+        self.assertNotIn("스크리닝 2점 이상 종목", template)
+
+    def test_backtest_page_sends_selected_filters(self):
+        template = app_module.BACKTEST_TEMPLATE
+
+        self.assertIn('input[name="scoreFilter"]:checked', template)
+        self.assertIn('input[name="itemFilter"]:checked', template)
+        self.assertIn("scores:", template)
+        self.assertIn("items:", template)
+        self.assertIn("if (!response.ok)", template)
+        self.assertIn("data.error", template)
+
     def test_db_routes_return_client_errors_for_invalid_requests(self):
         missing = self.client.get("/api/db/schema/not_a_table")
         bad_page_size = self.client.get("/api/db/query/daily_prices?page_size=0")

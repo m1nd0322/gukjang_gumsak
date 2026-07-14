@@ -1033,9 +1033,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
 .nav-back:hover{background:rgba(255,255,255,.25)}
 .config{background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
 .cfg-group{display:flex;flex-direction:column;gap:4px}
-.cfg-group label{font-size:12px;font-weight:600;color:#666}
-.cfg-group select,.cfg-group input{padding:8px 14px;border:2px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none}
-.cfg-group select:focus,.cfg-group input:focus{border-color:#302b63}
+.cfg-group>label{font-size:12px;font-weight:600;color:#666}
+.cfg-group>select,.cfg-group>input{padding:8px 14px;border:2px solid #e5e7eb;border-radius:8px;font-size:13px;outline:none}
+.cfg-group>select:focus,.cfg-group>input:focus{border-color:#302b63}
+.filter-config{flex:1 1 360px;min-width:300px}
+.filter-config>label{display:flex;align-items:baseline;gap:7px}
+.filter-config>label span{font-size:11px;font-weight:400;color:#9ca3af}
+.check-options{display:flex;gap:7px;flex-wrap:wrap}
+.check-options label{display:flex;align-items:center;gap:5px;padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:8px;background:#f8fafc;color:#4b5563;font-size:12px;font-weight:600;cursor:pointer;user-select:none}
+.check-options label:has(input:checked){border-color:#6366f1;background:#eef2ff;color:#4338ca}
+.check-options input{width:15px;height:15px;accent-color:#4f46e5}
 .run-btn{padding:10px 28px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;transition:all .3s;display:flex;align-items:center;gap:8px}
 .run-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(99,102,241,.4)}
 .run-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
@@ -1079,7 +1086,7 @@ tr:hover{background:#f8fafc}
         <div class="hd-top">
             <div>
                 <h1>백테스트</h1>
-                <p>스크리닝 2점 이상 종목의 과거 성과를 시뮬레이션합니다</p>
+                <p>종합점수와 항목 조건으로 선택한 종목의 과거 성과를 시뮬레이션합니다</p>
             </div>
             <div class="hd-nav">
                 <a href="/" class="nav-back">← 스크리닝 대시보드</a>
@@ -1115,6 +1122,22 @@ tr:hover{background:#f8fafc}
                 <option value="ma_filter">📊 이동평균 필터 (MA20)</option>
                 <option value="composite">🔒 복합 전략 (MA + 변동성 + 스탑)</option>
             </select>
+        </div>
+        <div class="cfg-group filter-config">
+            <label>종합점수 <span>미선택 시 전체</span></label>
+            <div class="check-options">
+                <label><input type="checkbox" name="scoreFilter" value="3" checked>3점</label>
+                <label><input type="checkbox" name="scoreFilter" value="2" checked>2점</label>
+                <label><input type="checkbox" name="scoreFilter" value="1">1점</label>
+            </div>
+        </div>
+        <div class="cfg-group filter-config">
+            <label>항목별 필터 <span>여러 항목 선택 시 모두 만족</span></label>
+            <div class="check-options">
+                <label><input type="checkbox" name="itemFilter" value="turnaround">연간실적호전</label>
+                <label><input type="checkbox" name="itemFilter" value="supply">순매수전환</label>
+                <label><input type="checkbox" name="itemFilter" value="nps">국민연금 매수</label>
+            </div>
         </div>
         <div class="cfg-group">
             <label>슬리피지 (%)</label>
@@ -1250,10 +1273,22 @@ function runBacktest() {
         slippage: +document.getElementById('cfgSlippage').value,
         commission: +document.getElementById('cfgCommission').value,
         tax: +document.getElementById('cfgTax').value,
+        scores: Array.from(
+            document.querySelectorAll('input[name="scoreFilter"]:checked'),
+            input => +input.value,
+        ),
+        items: Array.from(
+            document.querySelectorAll('input[name="itemFilter"]:checked'),
+            input => input.value,
+        ),
     });
 
     fetch('/api/backtest/run', {method:'POST', headers:{'Content-Type':'application/json'}, body})
-        .then(r => r.json())
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || '요청이 거부되었습니다.');
+            return data;
+        })
         .then(d => {
             if (d.status === 'already_loading') showToast('이미 실행 중입니다', 'info');
             else showToast('백테스트를 시작합니다...', 'info');
@@ -1262,6 +1297,8 @@ function runBacktest() {
         .catch(e => {
             showToast('요청 실패: ' + e.message, 'error');
             resetBtn();
+            document.getElementById('progressBar').classList.remove('show');
+            document.getElementById('emptyState').style.display = '';
         });
 }
 
