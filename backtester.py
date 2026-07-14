@@ -497,7 +497,8 @@ class BacktestEngine:
                                       lookback: int = 20,
                                       stop_pct: float = -10.0,
                                       cooldown: int = 5,
-                                      reentry: bool = True):
+                                      reentry: bool = True,
+                                      stop_loss_pct: Optional[float] = None):
         """
         변동성 가중 배분 + 트레일링 스탑
 
@@ -512,6 +513,8 @@ class BacktestEngine:
             stop_pct: 트레일링 스탑 비율 (기본 -10%, 고점 대비)
             cooldown: 매도 후 재진입 금지 일수 (기본 5일)
             reentry: 스탑 후 재진입 허용 여부 (기본 True)
+            stop_loss_pct: 실제 평균 체결가 기준 고정 손절 비율
+                           (양수 %, None이면 비활성화)
         """
         self._build_dates()
         if not self.all_dates:
@@ -548,15 +551,26 @@ class BacktestEngine:
                 # 피크 갱신
                 if p > peaks.get(t, 0):
                     peaks[t] = p
-                # 스탑 체크
+                # 트레일링 스탑과 평균 체결가 기준 스탑로스 체크
                 pk = peaks.get(t, p)
+                trailing_stop_hit = False
                 if pk > 0:
-                    dd_pct = (p / pk - 1) * 100
-                    if dd_pct <= stop_pct:
-                        if t in self.portfolio.positions:
-                            self.portfolio.sell(t, p, self.portfolio.positions[t]['shares'], date)
-                        holding[t] = False
-                        sold_day[t] = i
+                    trailing_stop_price = pk * (1 + stop_pct / 100)
+                    trailing_stop_hit = p <= trailing_stop_price
+
+                position = self.portfolio.positions.get(t)
+                entry_stop_hit = False
+                if position is not None and stop_loss_pct is not None:
+                    entry_stop_price = position['avg_price'] * (
+                        1 - stop_loss_pct / 100
+                    )
+                    entry_stop_hit = p <= entry_stop_price
+
+                if trailing_stop_hit or entry_stop_hit:
+                    if position is not None:
+                        self.portfolio.sell(t, p, position['shares'], date)
+                    holding[t] = False
+                    sold_day[t] = i
 
             # ---- 변동성 가중 매수 ----
             # 첫 매수 또는 재진입
