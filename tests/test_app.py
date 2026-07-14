@@ -338,6 +338,25 @@ class FlaskApiTest(unittest.TestCase):
         self.assertIn("if (!response.ok)", template)
         self.assertIn("data.error", template)
 
+    def test_backtest_page_exposes_and_sends_custom_stop_loss(self):
+        template = app_module.BACKTEST_TEMPLATE
+
+        self.assertIn(
+            '<option value="vol_trailing_stop_loss">'
+            '🛡️ 변동성 가중 + 트레일링 스탑 + 스탑로스</option>',
+            template,
+        )
+        self.assertIn('id="cfgStopLoss"', template)
+        self.assertIn('value="7"', template)
+        self.assertIn('min="0.1"', template)
+        self.assertIn('max="50"', template)
+        self.assertIn('step="0.5"', template)
+        self.assertIn("새 스탑로스 전략에만 적용", template)
+        self.assertIn(
+            "stop_loss: +document.getElementById('cfgStopLoss').value",
+            template,
+        )
+
     def test_db_routes_return_client_errors_for_invalid_requests(self):
         missing = self.client.get("/api/db/schema/not_a_table")
         bad_page_size = self.client.get("/api/db/query/daily_prices?page_size=0")

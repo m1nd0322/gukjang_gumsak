@@ -1054,7 +1054,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
 .cfg-group>select:focus,.cfg-group>input:focus{border-color:#302b63}
 .filter-config{flex:1 1 360px;min-width:300px}
 .filter-config>label{display:flex;align-items:baseline;gap:7px}
-.filter-config>label span{font-size:11px;font-weight:400;color:#9ca3af}
+.cfg-group>label span{font-size:11px;font-weight:400;color:#9ca3af}
 .check-options{display:flex;gap:7px;flex-wrap:wrap}
 .check-options label{display:flex;align-items:center;gap:5px;padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:8px;background:#f8fafc;color:#4b5563;font-size:12px;font-weight:600;cursor:pointer;user-select:none}
 .check-options label:has(input:checked){border-color:#6366f1;background:#eef2ff;color:#4338ca}
@@ -1135,9 +1135,14 @@ tr:hover{background:#f8fafc}
                 <option value="equal_weight">동일 비중 Buy & Hold</option>
                 <option value="rebalance">월간 리밸런싱 (20일)</option>
                 <option value="vol_trailing_stop">🛡️ 변동성 가중 + 트레일링 스탑</option>
+                <option value="vol_trailing_stop_loss">🛡️ 변동성 가중 + 트레일링 스탑 + 스탑로스</option>
                 <option value="ma_filter">📊 이동평균 필터 (MA20)</option>
                 <option value="composite">🔒 복합 전략 (MA + 변동성 + 스탑)</option>
             </select>
+        </div>
+        <div class="cfg-group">
+            <label>스탑로스 (%) <span>새 스탑로스 전략에만 적용</span></label>
+            <input type="number" id="cfgStopLoss" value="7" min="0.1" max="50" step="0.5" style="width:90px">
         </div>
         <div class="cfg-group filter-config">
             <label>종합점수 <span>미선택 시 전체</span></label>
@@ -1286,6 +1291,7 @@ function runBacktest() {
         period: +document.getElementById('cfgPeriod').value,
         capital: +document.getElementById('cfgCapital').value,
         strategy: document.getElementById('cfgStrategy').value,
+        stop_loss: +document.getElementById('cfgStopLoss').value,
         slippage: +document.getElementById('cfgSlippage').value,
         commission: +document.getElementById('cfgCommission').value,
         tax: +document.getElementById('cfgTax').value,

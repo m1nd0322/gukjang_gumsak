@@ -8,7 +8,7 @@ FnGuide 공개 데이터를 이용해 한국 주식 종목을 3개 기준으로 
 
 | 실행 경로 | 진입점 | 주요 기능 | 자동 실행 |
 | --- | --- | --- | --- |
-| 로컬 웹 | `app.py` | 스크리닝 대시보드, 수동 갱신, 5개 백테스트 전략, CSV 다운로드, DuckDB 뷰어 | 매일 08:00 KST |
+| 로컬 웹 | `app.py` | 스크리닝 대시보드, 수동 갱신, 6개 백테스트 전략, CSV 다운로드, DuckDB 뷰어 | 매일 08:00 KST |
 | 정적 리포트 | `stock_screener.py` | 현재 스크리닝 결과를 단일 HTML 파일로 생성 | 없음 |
 | GitHub Actions | `daily_report.py` | 스크리닝, 6개월 복합전략 백테스트, 텔레그램 요약·CSV 전송 | 평일 08:00 KST |
 
@@ -147,7 +147,8 @@ curl http://localhost:5000/api/status
 {
   "period": 6,
   "capital": 100000000,
-  "strategy": "equal_weight",
+  "strategy": "vol_trailing_stop_loss",
+  "stop_loss": 7,
   "scores": [3, 2],
   "items": ["turnaround", "nps"]
 }
@@ -160,10 +161,13 @@ curl http://localhost:5000/api/status
 | `equal_weight` | 동일 비중 Buy & Hold | 첫 거래일에 동일 금액으로 매수 후 보유 |
 | `rebalance` | 월간 리밸런싱 | 20거래일마다 동일 비중으로 재배분 |
 | `vol_trailing_stop` | 변동성 가중 + 트레일링 스탑 | 저변동성 비중 확대와 고점 대비 하락 시 매도 |
+| `vol_trailing_stop_loss` | 변동성 가중 + 트레일링 스탑 + 스탑로스 | 저변동성 비중 확대, 최고가 대비 10% 하락 또는 평균 체결가 대비 설정 손실률 도달 시 매도 |
 | `ma_filter` | 이동평균 필터 | 종가가 MA20보다 높을 때만 보유 |
 | `composite` | 복합 전략 | MA 필터, 변동성 가중, 트레일링 스탑 결합 |
 
-웹 화면에서 기간, 초기 자본금, 슬리피지, 매수·매도 수수료, 매도 증권거래세를 설정할 수 있습니다. 가격과 KOSPI 벤치마크는 DuckDB 캐시를 먼저 사용하고 부족한 구간만 pykrx 또는 yfinance로 보충합니다.
+`vol_trailing_stop_loss`의 스탑로스 기본값은 7%이며 웹과 API에서 0.1%~50% 범위로 변경할 수 있습니다. 기존 트레일링 스탑은 보유 중 최고 종가 대비 10% 하락을 추적하고, 새 스탑로스는 매수 슬리피지를 포함한 실제 평균 체결가 대비 손실을 제한합니다. 둘 중 하나가 충족되면 전량 매도하며 5거래일 쿨다운 뒤 재진입할 수 있습니다.
+
+웹 화면에서 기간, 초기 자본금, 스탑로스, 슬리피지, 매수·매도 수수료, 매도 증권거래세를 설정할 수 있습니다. 가격과 KOSPI 벤치마크는 DuckDB 캐시를 먼저 사용하고 부족한 구간만 pykrx 또는 yfinance로 보충합니다.
 
 엔진은 다음을 반영합니다.
 
@@ -228,6 +232,8 @@ uv run --isolated --managed-python --python 3.11 --with-requirements requirement
 8. 텔레그램 요약과 CSV 전송
 9. 성공한 상태 파일과 DuckDB를 새 캐시 키로 저장
 10. 생성된 CSV를 Actions Artifact로 30일 보관
+
+GitHub Actions 일일 리포트는 웹의 새 스탑로스 전략과 무관하게 기존 6개월 복합전략을 계속 사용합니다.
 
 워크플로 제한 시간은 30분이며 Chrome 설치 단계는 없습니다.
 
