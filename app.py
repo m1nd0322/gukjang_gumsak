@@ -284,7 +284,8 @@ def normalize_backtest_filters(params):
 
 def run_backtest_task(period_months, initial_capital, strategy,
                       slippage_pct=0.3, commission_pct=0.015, tax_pct=0.20,
-                      score_filters=DEFAULT_BACKTEST_SCORES, item_filters=()):
+                      score_filters=DEFAULT_BACKTEST_SCORES, item_filters=(),
+                      stop_loss_pct=7.0):
     """백테스트 실행 (별도 스레드) - DuckDB 증분 수집"""
     global backtest_state
 
@@ -395,6 +396,11 @@ def run_backtest_task(period_months, initial_capital, strategy,
             engine.run_volatility_trailing_stop(
                 tickers, lookback=20, stop_pct=-10.0,
                 cooldown=5, reentry=True)
+        elif strategy == 'vol_trailing_stop_loss':
+            engine.run_volatility_trailing_stop(
+                tickers, lookback=20, stop_pct=-10.0,
+                cooldown=5, reentry=True,
+                stop_loss_pct=stop_loss_pct)
         elif strategy == 'ma_filter':
             engine.run_ma_filter(
                 tickers, ma_period=20, rebalance_period=5)
@@ -413,6 +419,7 @@ def run_backtest_task(period_months, initial_capital, strategy,
             'equal_weight': '동일 비중 Buy & Hold',
             'rebalance': '월간 리밸런싱 (20일)',
             'vol_trailing_stop': '변동성 가중 + 트레일링 스탑',
+            'vol_trailing_stop_loss': '변동성 가중 + 트레일링 스탑 + 스탑로스',
             'ma_filter': '이동평균 필터 (MA20)',
             'composite': '복합 전략 (MA + 변동성 + 스탑)',
         }
@@ -421,6 +428,7 @@ def run_backtest_task(period_months, initial_capital, strategy,
             'initial_capital': initial_capital,
             'strategy': strategy,
             'strategy_name': strategy_names.get(strategy, strategy),
+            'stop_loss_pct': stop_loss_pct,
             'total_stocks': len(matched),
             'loaded_stocks': len(engine.price_data),
             'unmatched': unmatched,
@@ -478,10 +486,17 @@ def api_backtest_run():
         tax = float(params.get('tax', 0.20))
     except (TypeError, ValueError):
         return jsonify({'error': '기간, 자본금, 거래비용은 숫자여야 합니다.'}), 400
+    try:
+        stop_loss = float(params.get('stop_loss', 7.0))
+    except (TypeError, ValueError):
+        return jsonify({'error': '스탑로스는 0.1~50 사이의 숫자여야 합니다.'}), 400
+    if not math.isfinite(stop_loss) or not 0.1 <= stop_loss <= 50.0:
+        return jsonify({'error': '스탑로스는 0.1~50 사이의 숫자여야 합니다.'}), 400
 
     strategy = params.get('strategy', 'equal_weight')
     allowed_strategies = {
-        'equal_weight', 'rebalance', 'vol_trailing_stop', 'ma_filter', 'composite'
+        'equal_weight', 'rebalance', 'vol_trailing_stop',
+        'vol_trailing_stop_loss', 'ma_filter', 'composite',
     }
     if strategy not in allowed_strategies:
         return jsonify({'error': '지원하지 않는 백테스트 전략입니다.'}), 400
@@ -514,6 +529,7 @@ def api_backtest_run():
             period, capital, strategy, slippage, commission, tax,
             score_filters, item_filters,
         ),
+        kwargs={'stop_loss_pct': stop_loss},
         daemon=True,
     )
     try:

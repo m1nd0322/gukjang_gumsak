@@ -143,7 +143,43 @@ class FlaskApiTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         args = thread.call_args.kwargs["args"]
         self.assertEqual(args[-2:], ((3, 2), ()))
+        self.assertEqual(
+            thread.call_args.kwargs["kwargs"],
+            {"stop_loss_pct": 7.0},
+        )
         thread.return_value.start.assert_called_once_with()
+
+    def test_backtest_api_accepts_new_strategy_and_custom_stop_loss(self):
+        with patch.object(app_module.threading, "Thread") as thread:
+            response = self.client.post(
+                "/api/backtest/run",
+                json={
+                    "strategy": "vol_trailing_stop_loss",
+                    "stop_loss": "12.5",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            thread.call_args.kwargs["kwargs"],
+            {"stop_loss_pct": 12.5},
+        )
+        thread.return_value.start.assert_called_once_with()
+
+    def test_backtest_api_rejects_invalid_stop_loss_before_starting_worker(self):
+        invalid_values = ("not-a-number", "nan", "inf", 0, 0.09, 50.01)
+        for value in invalid_values:
+            with self.subTest(value=value):
+                with app_module.bt_lock:
+                    app_module.backtest_state["status"] = "idle"
+                with patch.object(app_module.threading, "Thread") as thread:
+                    response = self.client.post(
+                        "/api/backtest/run",
+                        json={"stop_loss": value},
+                    )
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("스탑로스", response.get_json()["error"])
+                thread.assert_not_called()
 
     def test_backtest_api_normalizes_selected_filters(self):
         with patch.object(app_module.threading, "Thread") as thread:
@@ -232,12 +268,27 @@ class FlaskApiTest(unittest.TestCase):
             app_module.run_backtest_task(
                 6,
                 100_000_000,
-                "equal_weight",
+                "vol_trailing_stop_loss",
                 score_filters=(),
                 item_filters=("turnaround",),
+                stop_loss_pct=12.5,
             )
 
         config = app_module.backtest_state["results"]["config"]
+        engine.run_volatility_trailing_stop.assert_called_once_with(
+            ["000001"],
+            lookback=20,
+            stop_pct=-10.0,
+            cooldown=5,
+            reentry=True,
+            stop_loss_pct=12.5,
+        )
+        self.assertEqual(config["strategy"], "vol_trailing_stop_loss")
+        self.assertEqual(
+            config["strategy_name"],
+            "변동성 가중 + 트레일링 스탑 + 스탑로스",
+        )
+        self.assertEqual(config["stop_loss_pct"], 12.5)
         self.assertEqual(config["score_filters"], [3, 2, 1])
         self.assertEqual(config["item_filters"], ["turnaround"])
         self.assertEqual(config["item_filter_labels"], ["연간실적호전"])
