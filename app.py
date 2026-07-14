@@ -259,8 +259,32 @@ def filter_backtest_candidates(results, selected_scores, required_items):
     return filtered
 
 
+def normalize_backtest_filters(params):
+    """백테스트 필터 요청을 검증하고 정해진 순서로 중복 제거한다."""
+    raw_scores = params.get('scores', list(DEFAULT_BACKTEST_SCORES))
+    raw_items = params.get('items', [])
+    if not isinstance(raw_scores, list):
+        raise ValueError('종합점수 필터는 배열이어야 합니다.')
+    if any(
+        type(score) is not int or score not in BACKTEST_SCORE_OPTIONS
+        for score in raw_scores
+    ):
+        raise ValueError('종합점수는 1, 2, 3만 선택할 수 있습니다.')
+    if not isinstance(raw_items, list):
+        raise ValueError('항목별 필터는 배열이어야 합니다.')
+    if any(
+        type(item) is not str or item not in BACKTEST_ITEM_SOURCES
+        for item in raw_items
+    ):
+        raise ValueError('지원하지 않는 항목별 필터입니다.')
+    scores = tuple(score for score in BACKTEST_SCORE_OPTIONS if score in raw_scores)
+    items = tuple(key for key in BACKTEST_ITEM_SOURCES if key in raw_items)
+    return scores, items
+
+
 def run_backtest_task(period_months, initial_capital, strategy,
-                      slippage_pct=0.3, commission_pct=0.015, tax_pct=0.20):
+                      slippage_pct=0.3, commission_pct=0.015, tax_pct=0.20,
+                      score_filters=DEFAULT_BACKTEST_SCORES, item_filters=()):
     """백테스트 실행 (별도 스레드) - DuckDB 증분 수집"""
     global backtest_state
 
@@ -270,15 +294,17 @@ def run_backtest_task(period_months, initial_capital, strategy,
             backtest_state['progress'] = '종목 코드 매핑 중...'
             backtest_state['error_msg'] = ''
 
-        # 1. 2점 이상 종목 추출
+        # 1. 선택한 점수와 항목을 모두 만족하는 종목 추출
         with data_lock:
             results = current_data.get('result', [])
-        high_score = [r for r in results if r.get('종합점수', 0) >= 2]
+        candidates = filter_backtest_candidates(
+            results, score_filters, item_filters
+        )
 
-        if not high_score:
-            raise Exception("2점 이상 종목이 없습니다. 먼저 스크리닝을 실행하세요.")
+        if not candidates:
+            raise Exception('선택한 필터 조건에 맞는 종목이 없습니다.')
 
-        stock_names = [r['종목명'] for r in high_score]
+        stock_names = [r['종목명'] for r in candidates]
         logger.info(f"백테스트 대상: {len(stock_names)}개 종목 ({', '.join(stock_names[:5])}...)")
 
         # 2. 종목코드 매핑 (DuckDB 캐시 + pykrx 갱신)
@@ -398,6 +424,11 @@ def run_backtest_task(period_months, initial_capital, strategy,
             'total_stocks': len(matched),
             'loaded_stocks': len(engine.price_data),
             'unmatched': unmatched,
+            'score_filters': list(score_filters or BACKTEST_SCORE_OPTIONS),
+            'item_filters': list(item_filters),
+            'item_filter_labels': [
+                BACKTEST_ITEM_SOURCES[key] for key in item_filters
+            ],
         }
         results['db_stats'] = db_stats
 
@@ -461,6 +492,10 @@ def api_backtest_run():
     costs = (slippage, commission, tax)
     if not all(math.isfinite(value) and 0 <= value < 100 for value in costs):
         return jsonify({'error': '거래비용은 0 이상 100 미만이어야 합니다.'}), 400
+    try:
+        score_filters, item_filters = normalize_backtest_filters(params)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
 
     with bt_lock:
         if backtest_state['status'] == 'loading':
@@ -475,7 +510,10 @@ def api_backtest_run():
 
     thread = threading.Thread(
         target=run_backtest_task,
-        args=(period, capital, strategy, slippage, commission, tax),
+        args=(
+            period, capital, strategy, slippage, commission, tax,
+            score_filters, item_filters,
+        ),
         daemon=True,
     )
     try:

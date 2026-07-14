@@ -6,7 +6,7 @@ import unittest
 from datetime import datetime, timedelta
 from itertools import combinations
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import app as app_module
 
@@ -135,6 +135,112 @@ class FlaskApiTest(unittest.TestCase):
         self.assertEqual(first.status_code, 200)
         self.assertEqual(first.get_json()["status"], "started")
         self.assertEqual(second.get_json()["status"], "already_loading")
+
+    def test_backtest_api_passes_default_filters_to_worker(self):
+        with patch.object(app_module.threading, "Thread") as thread:
+            response = self.client.post("/api/backtest/run", json={})
+
+        self.assertEqual(response.status_code, 200)
+        args = thread.call_args.kwargs["args"]
+        self.assertEqual(args[-2:], ((3, 2), ()))
+        thread.return_value.start.assert_called_once_with()
+
+    def test_backtest_api_normalizes_selected_filters(self):
+        with patch.object(app_module.threading, "Thread") as thread:
+            response = self.client.post(
+                "/api/backtest/run",
+                json={
+                    "scores": [1, 3, 3],
+                    "items": ["nps", "turnaround", "nps"],
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        args = thread.call_args.kwargs["args"]
+        self.assertEqual(args[-2:], ((3, 1), ("turnaround", "nps")))
+
+    def test_backtest_api_rejects_invalid_filters_before_starting_worker(self):
+        invalid_requests = (
+            {"scores": "3"},
+            {"scores": [True]},
+            {"scores": [0]},
+            {"scores": [4]},
+            {"items": "nps"},
+            {"items": [1]},
+            {"items": ["unknown"]},
+        )
+        for payload in invalid_requests:
+            with self.subTest(payload=payload):
+                with patch.object(app_module.threading, "Thread") as thread:
+                    response = self.client.post("/api/backtest/run", json=payload)
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("error", response.get_json())
+                thread.assert_not_called()
+
+    def test_backtest_task_reports_when_filters_match_no_stocks(self):
+        with app_module.data_lock:
+            app_module.current_data["result"] = [
+                {"종목명": "A", "종합점수": 1, "출처": "연간실적호전"}
+            ]
+
+        app_module.run_backtest_task(
+            6,
+            100_000_000,
+            "equal_weight",
+            score_filters=(3,),
+            item_filters=("nps",),
+        )
+
+        self.assertEqual(app_module.backtest_state["status"], "error")
+        self.assertEqual(
+            app_module.backtest_state["error_msg"],
+            "선택한 필터 조건에 맞는 종목이 없습니다.",
+        )
+
+    def test_backtest_result_records_effective_filters(self):
+        with app_module.data_lock:
+            app_module.current_data["result"] = [
+                {"종목명": "A", "종합점수": 1, "출처": "연간실적호전"}
+            ]
+
+        engine = MagicMock()
+        engine.price_data = {"000001": object()}
+        engine.get_results.return_value = {
+            "metrics": {"total_return": 0, "mdd": 0}
+        }
+        with (
+            patch.object(
+                app_module.stock_db,
+                "get_or_refresh_ticker_map",
+                return_value=({"A": "000001"}, {"000001": "A"}),
+            ),
+            patch.object(
+                app_module.stock_db,
+                "ensure_price_data",
+                return_value={"fetched": 0, "new_days": 0},
+            ),
+            patch.object(app_module.stock_db, "get_prices", return_value=[1]),
+            patch.object(app_module.stock_db, "ensure_index_data"),
+            patch.object(app_module.stock_db, "get_index_prices", return_value=[]),
+            patch.object(
+                app_module.stock_db,
+                "get_db_stats",
+                return_value={"db_size_mb": 0},
+            ),
+            patch.object(app_module, "BacktestEngine", return_value=engine),
+        ):
+            app_module.run_backtest_task(
+                6,
+                100_000_000,
+                "equal_weight",
+                score_filters=(),
+                item_filters=("turnaround",),
+            )
+
+        config = app_module.backtest_state["results"]["config"]
+        self.assertEqual(config["score_filters"], [3, 2, 1])
+        self.assertEqual(config["item_filters"], ["turnaround"])
+        self.assertEqual(config["item_filter_labels"], ["연간실적호전"])
 
     def test_backtest_rejects_invalid_numeric_and_strategy_inputs(self):
         invalid_number = self.client.post("/api/backtest/run", json={"period": "six"})
