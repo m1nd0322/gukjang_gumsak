@@ -1,6 +1,9 @@
 import json
 import tempfile
+import threading
+import time
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
@@ -248,6 +251,34 @@ class FlaskApiTest(unittest.TestCase):
 
         self.assertFalse(started)
         fetch.assert_not_called()
+
+    def test_daily_refresh_runs_after_scheduler_wakes_up_late(self):
+        refreshed = threading.Event()
+        scheduler = app_module.scheduler
+        scheduler.start(paused=True)
+        try:
+            scheduler.modify_job(
+                "daily_refresh",
+                func=refreshed.set,
+            )
+            scheduler.reschedule_job(
+                "daily_refresh",
+                trigger="date",
+                run_date=datetime.now(scheduler.timezone) - timedelta(seconds=2),
+            )
+            scheduler.resume()
+
+            self.assertTrue(
+                refreshed.wait(timeout=2),
+                "08:00을 놓친 뒤 깨어나도 당일 자동 갱신이 실행되어야 합니다",
+            )
+            deadline = time.monotonic() + 2
+            while scheduler.get_job("daily_refresh") is not None:
+                if time.monotonic() >= deadline:
+                    self.fail("실행이 끝난 일회성 검증 잡이 제거되지 않았습니다")
+                time.sleep(0.01)
+        finally:
+            scheduler.shutdown(wait=False)
 
     def test_dashboard_describes_time_bounded_nps_signal(self):
         self.assertIn("국민연금 신규/추가매수", app_module.HTML_TEMPLATE)

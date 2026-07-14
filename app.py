@@ -20,6 +20,7 @@ import os
 import logging
 import threading
 import traceback
+from zoneinfo import ZoneInfo
 
 from backtester import BacktestEngine
 from screening import calculate_scores, fetch_all_data
@@ -35,6 +36,7 @@ logger = logging.getLogger(__name__)
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(DATA_DIR, 'cache_data.json')
 CACHE_VERSION = 2
+KST = ZoneInfo('Asia/Seoul')
 
 # 글로벌 데이터 저장소
 current_data = {
@@ -1987,8 +1989,24 @@ function renderTickerSummary(summary) {
 # ============================================================
 # 스케줄러 설정
 # ============================================================
-scheduler = BackgroundScheduler()
-scheduler.add_job(refresh_data, 'cron', hour=8, minute=0, id='daily_refresh')
+def create_scheduler():
+    """절전에서 늦게 깨어나도 놓친 일일 갱신을 한 번 실행한다."""
+    daily_scheduler = BackgroundScheduler(timezone=KST)
+    daily_scheduler.add_job(
+        refresh_data,
+        'cron',
+        hour=8,
+        minute=0,
+        timezone=KST,
+        id='daily_refresh',
+        misfire_grace_time=None,
+        coalesce=True,
+        max_instances=1,
+    )
+    return daily_scheduler
+
+
+scheduler = create_scheduler()
 
 
 # ============================================================
