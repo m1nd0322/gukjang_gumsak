@@ -37,6 +37,13 @@ DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(DATA_DIR, 'cache_data.json')
 CACHE_VERSION = 2
 KST = ZoneInfo('Asia/Seoul')
+BACKTEST_SCORE_OPTIONS = (3, 2, 1)
+DEFAULT_BACKTEST_SCORES = (3, 2)
+BACKTEST_ITEM_SOURCES = {
+    'turnaround': '연간실적호전',
+    'supply': '순매수전환',
+    'nps': '국민연금 신규/추가매수',
+}
 
 # 글로벌 데이터 저장소
 current_data = {
@@ -231,6 +238,27 @@ def api_status():
 # ============================================================
 # 백테스트 - DuckDB 기반 데이터 수집 및 실행
 # ============================================================
+def filter_backtest_candidates(results, selected_scores, required_items):
+    """선택한 점수와 필수 출처를 모두 만족하는 스크리닝 결과를 반환한다."""
+    effective_scores = set(selected_scores or BACKTEST_SCORE_OPTIONS)
+    required_sources = {
+        BACKTEST_ITEM_SOURCES[item_key] for item_key in required_items
+    }
+    filtered = []
+    for result in results:
+        sources = {
+            source.strip()
+            for source in str(result.get('출처', '')).split(',')
+            if source.strip()
+        }
+        if (
+            result.get('종합점수') in effective_scores
+            and required_sources.issubset(sources)
+        ):
+            filtered.append(result)
+    return filtered
+
+
 def run_backtest_task(period_months, initial_capital, strategy,
                       slippage_pct=0.3, commission_pct=0.015, tax_pct=0.20):
     """백테스트 실행 (별도 스레드) - DuckDB 증분 수집"""

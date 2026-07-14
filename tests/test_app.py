@@ -4,6 +4,7 @@ import threading
 import time
 import unittest
 from datetime import datetime, timedelta
+from itertools import combinations
 from pathlib import Path
 from unittest.mock import patch
 
@@ -17,6 +18,61 @@ class DeferredThread:
 
     def start(self):
         return None
+
+
+class BacktestFilterTest(unittest.TestCase):
+    @staticmethod
+    def all_subsets(values):
+        return [
+            subset
+            for size in range(len(values) + 1)
+            for subset in combinations(values, size)
+        ]
+
+    def test_all_64_score_and_item_filter_combinations(self):
+        item_keys = tuple(app_module.BACKTEST_ITEM_SOURCES)
+        item_sources = tuple(app_module.BACKTEST_ITEM_SOURCES.values())
+        rows = []
+        for index, sources in enumerate(self.all_subsets(item_sources)[1:], start=1):
+            rows.append(
+                {
+                    "종목명": f"종목{index}",
+                    "종합점수": len(sources),
+                    "출처": ", ".join(sources),
+                }
+            )
+
+        case_count = 0
+        for selected_scores in self.all_subsets(app_module.BACKTEST_SCORE_OPTIONS):
+            for required_items in self.all_subsets(item_keys):
+                effective_scores = set(
+                    selected_scores or app_module.BACKTEST_SCORE_OPTIONS
+                )
+                required_sources = {
+                    app_module.BACKTEST_ITEM_SOURCES[key] for key in required_items
+                }
+                expected = [
+                    row
+                    for row in rows
+                    if row["종합점수"] in effective_scores
+                    and required_sources.issubset(
+                        {source.strip() for source in row["출처"].split(",")}
+                    )
+                ]
+
+                with self.subTest(
+                    selected_scores=selected_scores,
+                    required_items=required_items,
+                ):
+                    self.assertEqual(
+                        app_module.filter_backtest_candidates(
+                            rows, selected_scores, required_items
+                        ),
+                        expected,
+                    )
+                case_count += 1
+
+        self.assertEqual(case_count, 64)
 
 
 class FlaskApiTest(unittest.TestCase):
