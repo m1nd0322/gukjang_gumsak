@@ -260,19 +260,26 @@ def format_telegram_message(scored_results: list, stats: dict,
     else:
         lines.append("<i>KOSPI 벤치마크 데이터 없음</i>")
 
-    # 개별 종목 성과
-    stock_perf = bt_results.get('stock_performance', [])
-    if stock_perf:
+    # 전략 종목별 손익
+    strategy_perf = bt_results.get('strategy_stock_performance', [])
+    if strategy_perf:
         lines.append("")
-        lines.append("<b>▸ 개별 종목 수익률</b>")
-        sorted_perf = sorted(stock_perf, key=lambda x: x.get('return_pct', 0), reverse=True)
-        for sp in sorted_perf[:10]:
-            ret = sp.get('return_pct', 0)
-            icon = "📈" if ret >= 0 else "📉"
-            name = escape(str(sp['name']))
+        lines.append("<b>▸ 전략 종목별 손익</b>")
+        sorted_perf = sorted(
+            strategy_perf,
+            key=lambda row: row.get('total_pnl', 0),
+            reverse=True,
+        )
+        for stock in sorted_perf[:10]:
+            total_pnl = stock.get('total_pnl', 0)
+            return_pct = stock.get('return_pct', 0)
+            icon = "📈" if total_pnl >= 0 else "📉"
+            pnl_sign = "+" if total_pnl > 0 else ""
+            return_sign = "+" if return_pct > 0 else ""
+            name = escape(str(stock['name']))
             lines.append(
-                f"  {icon} {name}: {ret:+.2f}% "
-                f"(MDD {sp.get('mdd', 0):.1f}%)"
+                f"  {icon} {name}: {pnl_sign}{total_pnl:,.0f}원 "
+                f"({return_sign}{return_pct:.2f}%)"
             )
 
     return "\n".join(lines)

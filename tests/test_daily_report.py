@@ -35,7 +35,7 @@ class DailyReportSourceValidationTest(unittest.TestCase):
                 }
             ],
             {"nps_count": 1, "score_1": 1},
-            {"metrics": {}, "stock_performance": []},
+            {"metrics": {}, "strategy_stock_performance": []},
             {},
         )
 
@@ -53,13 +53,51 @@ class DailyReportSourceValidationTest(unittest.TestCase):
                 }
             ],
             {"nps_count": 1, "score_1": 1},
-            {"metrics": {}, "stock_performance": []},
+            {"metrics": {}, "strategy_stock_performance": []},
             {},
         )
 
         self.assertNotIn("<b>위조</b>", message)
         self.assertIn("&lt;b&gt;위조&lt;/b&gt;", message)
         self.assertIn("&lt;i&gt;위조&lt;/i&gt;", message)
+
+    def test_message_uses_strategy_stock_pnl_instead_of_raw_performance(self):
+        message = daily_report.format_telegram_message(
+            [],
+            {},
+            {
+                "metrics": {},
+                "strategy_stock_performance": [
+                    {
+                        "name": "손실종목",
+                        "total_pnl": -500,
+                        "return_pct": -2.0,
+                    },
+                    {
+                        "name": "<b>수익종목</b>",
+                        "total_pnl": 1_234,
+                        "return_pct": 5.5,
+                    },
+                    {
+                        "name": "보합종목",
+                        "total_pnl": 0,
+                        "return_pct": 0.0,
+                    },
+                ],
+            },
+            {},
+        )
+
+        self.assertIn("<b>▸ 전략 종목별 손익</b>", message)
+        self.assertIn(
+            "📈 &lt;b&gt;수익종목&lt;/b&gt;: +1,234원 (+5.50%)",
+            message,
+        )
+        self.assertIn("📉 손실종목: -500원 (-2.00%)", message)
+        self.assertIn("📈 보합종목: 0원 (0.00%)", message)
+        self.assertLess(message.index("수익종목"), message.index("손실종목"))
+        self.assertNotIn("▸ 개별 종목 수익률", message)
+        self.assertNotIn("(MDD", message)
 
     @patch("daily_report.StockDB")
     @patch("daily_report.send_telegram")
