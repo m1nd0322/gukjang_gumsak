@@ -889,7 +889,9 @@ class BacktestEngine:
                 'commission_pct': self.cost_config.commission_pct,
                 'tax_pct': self.cost_config.tax_pct,
             },
-            'stock_performance': self._calc_stock_performance(),
+            'strategy_stock_performance': (
+                self._calc_strategy_stock_performance()
+            ),
             'benchmark': self._calc_benchmark(equities, dates),
             'trades': self._build_trade_details(),
             'trades_by_stock': self._group_trades_by_stock(),
@@ -1159,36 +1161,65 @@ class BacktestEngine:
 
         return rows
 
-    def _calc_stock_performance(self) -> List[dict]:
-        """종목별 성과 계산"""
-        perf = []
-        for ticker, data in self.price_data.items():
-            if len(data) < 2:
+    def _calc_strategy_stock_performance(self) -> List[dict]:
+        """실제 거래 로트를 종목별 전략 손익으로 집계한다."""
+        grouped: Dict[str, dict] = {}
+
+        for trade in self.portfolio.trades:
+            row = grouped.setdefault(
+                trade.ticker,
+                {
+                    'ticker': trade.ticker,
+                    'name': trade.name,
+                    'trade_count': 0,
+                    'closed_count': 0,
+                    'open_count': 0,
+                    'total_buy_amount': 0.0,
+                    'realized_pnl': 0.0,
+                    'unrealized_pnl': 0.0,
+                },
+            )
+            buy_cost = trade.exec_price * trade.shares + trade.entry_cost
+            row['trade_count'] += 1
+            row['total_buy_amount'] += buy_cost
+
+            if trade.status == 'closed':
+                row['closed_count'] += 1
+                row['realized_pnl'] += trade.pnl
                 continue
-            first_close = data[0]['close']
-            last_close = data[-1]['close']
-            ret = (last_close / first_close - 1) * 100 if first_close > 0 else 0
 
-            pk = first_close
-            smdd = 0
-            for row in data:
-                if row['close'] > pk:
-                    pk = row['close']
-                dd = (row['close'] / pk - 1) * 100 if pk > 0 else 0
-                if dd < smdd:
-                    smdd = dd
+            price_rows = self.price_data.get(trade.ticker)
+            if not price_rows:
+                raise ValueError(
+                    f"열린 거래 종목 {trade.ticker}의 마지막 가격 데이터가 없습니다."
+                )
+            row['open_count'] += 1
+            last_close = price_rows[-1]['close']
+            row['unrealized_pnl'] += last_close * trade.shares - buy_cost
 
-            perf.append({
-                'ticker': ticker,
-                'name': self.ticker_names.get(ticker, ticker),
-                'return_pct': round(ret, 2),
-                'mdd': round(smdd, 2),
-                'start_price': round(first_close),
-                'end_price': round(last_close),
+        performance = []
+        for row in grouped.values():
+            total_pnl = row['realized_pnl'] + row['unrealized_pnl']
+            total_buy_amount = row['total_buy_amount']
+            return_pct = (
+                total_pnl / total_buy_amount * 100
+                if total_buy_amount > 0 else 0.0
+            )
+            performance.append({
+                'ticker': row['ticker'],
+                'name': row['name'],
+                'trade_count': row['trade_count'],
+                'closed_count': row['closed_count'],
+                'open_count': row['open_count'],
+                'total_buy_amount': round(total_buy_amount),
+                'realized_pnl': round(row['realized_pnl']),
+                'unrealized_pnl': round(row['unrealized_pnl']),
+                'total_pnl': round(total_pnl),
+                'return_pct': round(return_pct, 2),
             })
 
-        perf.sort(key=lambda x: -x['return_pct'])
-        return perf
+        performance.sort(key=lambda item: (-item['total_pnl'], item['ticker']))
+        return performance
 
     def _calc_benchmark(self, equities: List[float],
                         dates: List[str]) -> Optional[dict]:

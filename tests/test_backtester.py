@@ -61,6 +61,91 @@ class BacktestAccountingTest(unittest.TestCase):
         self.assertAlmostEqual(sum(trade.pnl for trade in portfolio.trades), 158.0)
         self.assertAlmostEqual(portfolio.cash, 10_158.0)
 
+    def test_strategy_stock_performance_combines_realized_and_open_pnl(self):
+        engine = BacktestEngine(initial_capital=2_000, commission_pct=1.0)
+        engine.add_price_data(
+            "AAA",
+            [
+                price("2026-01-02", 100),
+                price("2026-01-05", 110),
+                price("2026-01-06", 100),
+                price("2026-01-07", 120),
+            ],
+            name="전략종목",
+        )
+        engine.add_price_data(
+            "BBB",
+            [price("2026-01-02", 50), price("2026-01-07", 40)],
+            name="미거래종목",
+        )
+
+        engine.portfolio.buy("AAA", 100, 10, "2026-01-02", "전략종목")
+        engine.portfolio.sell("AAA", 110, 10, "2026-01-05")
+        engine.portfolio.buy("AAA", 100, 5, "2026-01-06", "전략종목")
+        engine.portfolio.snapshot("2026-01-07", {"AAA": 120, "BBB": 40})
+
+        results = engine.get_results()
+
+        self.assertNotIn("stock_performance", results)
+        self.assertEqual(
+            results["strategy_stock_performance"],
+            [
+                {
+                    "ticker": "AAA",
+                    "name": "전략종목",
+                    "trade_count": 2,
+                    "closed_count": 1,
+                    "open_count": 1,
+                    "total_buy_amount": 1_515,
+                    "realized_pnl": 79,
+                    "unrealized_pnl": 95,
+                    "total_pnl": 174,
+                    "return_pct": 11.49,
+                }
+            ],
+        )
+        self.assertEqual(results["metrics"]["profit_loss"], 174)
+        self.assertEqual(
+            sum(
+                row["total_pnl"]
+                for row in results["strategy_stock_performance"]
+            ),
+            results["metrics"]["profit_loss"],
+        )
+
+    def test_strategy_stock_performance_reconciles_partial_sale_lots(self):
+        engine = BacktestEngine(initial_capital=10_000, commission_pct=1.0)
+        engine.add_price_data(
+            "AAA",
+            [price("2026-01-02", 100), price("2026-01-07", 120)],
+            name="부분청산",
+        )
+        engine.portfolio.buy("AAA", 100, 10, "2026-01-02", "부분청산")
+        engine.portfolio.buy("AAA", 100, 10, "2026-01-05", "부분청산")
+        engine.portfolio.sell("AAA", 110, 15, "2026-01-06")
+        engine.portfolio.snapshot("2026-01-07", {"AAA": 120})
+
+        results = engine.get_results()
+        row = results["strategy_stock_performance"][0]
+
+        self.assertEqual(row["trade_count"], 3)
+        self.assertEqual(row["closed_count"], 2)
+        self.assertEqual(row["open_count"], 1)
+        self.assertEqual(row["total_buy_amount"], 2_020)
+        self.assertEqual(row["realized_pnl"], 118)
+        self.assertEqual(row["unrealized_pnl"], 95)
+        self.assertEqual(row["total_pnl"], 214)
+        self.assertEqual(row["return_pct"], 10.57)
+        self.assertEqual(row["total_pnl"], results["metrics"]["profit_loss"])
+
+    def test_strategy_stock_performance_rejects_open_trade_without_price(self):
+        engine = BacktestEngine(initial_capital=1_000)
+        engine.portfolio.buy("AAA", 100, 1, "2026-01-02", "가격없음")
+        engine.portfolio.snapshot("2026-01-02", {"AAA": 100})
+
+        with self.assertRaisesRegex(ValueError, "AAA.*가격 데이터"):
+            engine.get_results()
+
 
 class VolatilityTrailingStopLossTest(unittest.TestCase):
     @staticmethod
