@@ -1199,14 +1199,17 @@ tr:hover{background:#f8fafc}
             </div>
         </div>
         <div class="tbl-box">
-            <h3>종목별 성과</h3>
+            <h3>전략 종목별 손익</h3>
             <table>
                 <thead><tr>
                     <th>종목명</th><th>종목코드</th>
-                    <th class="r">시작가</th><th class="r">종료가</th>
-                    <th class="r">수익률</th><th class="r">MDD</th>
+                    <th class="r">거래건수</th><th class="r">청산건수</th>
+                    <th class="r">보유건수</th>
+                    <th class="r">누적 총매입금액</th>
+                    <th class="r">실현손익</th><th class="r">평가손익</th>
+                    <th class="r">총손익</th><th class="r">손익률</th>
                 </tr></thead>
-                <tbody id="stockBody"></tbody>
+                <tbody id="strategyStockBody"></tbody>
             </table>
         </div>
 
@@ -1395,7 +1398,7 @@ function renderResults(r) {
 
     renderEquityChart(r);
     renderDDChart(r);
-    renderStockTable(r);
+    renderStrategyStockTable(r);
     renderTradeHistory(r);
 }
 
@@ -1481,18 +1484,26 @@ function renderDDChart(r) {
     });
 }
 
-function renderStockTable(r) {
-    const body = document.getElementById('stockBody');
+function renderStrategyStockTable(r) {
+    const body = document.getElementById('strategyStockBody');
     body.innerHTML = '';
-    (r.stock_performance || []).forEach(s => {
-        const retCls = s.return_pct >= 0 ? 'pos-text' : 'neg-text';
+    const pnlClass = value => value > 0 ? 'pos-text' : value < 0 ? 'neg-text' : '';
+    const signed = (value, suffix = '') => {
+        const sign = value > 0 ? '+' : '';
+        return `${sign}${fmt(value)}${suffix}`;
+    };
+    (r.strategy_stock_performance || []).forEach(s => {
         body.innerHTML += `<tr>
             <td><b>${s.name}</b></td>
             <td class="c">${s.ticker}</td>
-            <td class="r">${fmt(s.start_price)}</td>
-            <td class="r">${fmt(s.end_price)}</td>
-            <td class="r ${retCls}">${s.return_pct > 0 ? '+' : ''}${s.return_pct}%</td>
-            <td class="r neg-text">${s.mdd}%</td>
+            <td class="r">${fmt(s.trade_count)}</td>
+            <td class="r">${fmt(s.closed_count)}</td>
+            <td class="r">${fmt(s.open_count)}</td>
+            <td class="r">${fmt(s.total_buy_amount)}</td>
+            <td class="r ${pnlClass(s.realized_pnl)}">${signed(s.realized_pnl)}</td>
+            <td class="r ${pnlClass(s.unrealized_pnl)}">${signed(s.unrealized_pnl)}</td>
+            <td class="r ${pnlClass(s.total_pnl)}">${signed(s.total_pnl)}</td>
+            <td class="r ${pnlClass(s.return_pct)}">${signed(s.return_pct, '%')}</td>
         </tr>`;
     });
 }

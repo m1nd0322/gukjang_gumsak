@@ -357,6 +357,28 @@ class FlaskApiTest(unittest.TestCase):
             template,
         )
 
+    def test_backtest_page_renders_strategy_stock_pnl_table(self):
+        template = app_module.BACKTEST_TEMPLATE
+
+        self.assertIn("<h3>전략 종목별 손익</h3>", template)
+        for heading in (
+            "종목명", "종목코드", "거래건수", "청산건수", "보유건수",
+            "누적 총매입금액", "실현손익", "평가손익", "총손익", "손익률",
+        ):
+            self.assertIn(f">{heading}</th>", template)
+        self.assertIn('id="strategyStockBody"', template)
+        self.assertIn("renderStrategyStockTable(r);", template)
+        self.assertIn("(r.strategy_stock_performance || [])", template)
+        self.assertIn(
+            "value > 0 ? 'pos-text' : value < 0 ? 'neg-text' : ''",
+            template,
+        )
+        self.assertIn("value > 0 ? '+' : ''", template)
+        self.assertNotIn("<h3>종목별 성과</h3>", template)
+        self.assertNotIn("(r.stock_performance || [])", template)
+        self.assertNotIn('<th class="r">시작가</th>', template)
+        self.assertNotIn('<th class="r">종료가</th>', template)
+
     def test_db_routes_return_client_errors_for_invalid_requests(self):
         missing = self.client.get("/api/db/schema/not_a_table")
         bad_page_size = self.client.get("/api/db/query/daily_prices?page_size=0")
