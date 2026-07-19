@@ -414,19 +414,35 @@ class StockDB:
 
         con = self._connect()
         try:
+            name_row = con.execute(
+                "SELECT name FROM ticker_map WHERE ticker = ?",
+                [ticker],
+            ).fetchone()
+            name = name_row[0] if name_row else None
             rows = [
-                (ticker, d['date'], d['open'], d['high'], d['low'], d['close'], d['volume'])
+                (
+                    ticker,
+                    d['date'],
+                    d['open'],
+                    d['high'],
+                    d['low'],
+                    d['close'],
+                    d['volume'],
+                    name,
+                )
                 for d in data
             ]
             con.executemany("""
-                INSERT INTO daily_prices (ticker, date, open, high, low, close, volume)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO daily_prices
+                    (ticker, date, open, high, low, close, volume, name)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (ticker, date) DO UPDATE SET
                     open = EXCLUDED.open,
                     high = EXCLUDED.high,
                     low = EXCLUDED.low,
                     close = EXCLUDED.close,
-                    volume = EXCLUDED.volume
+                    volume = EXCLUDED.volume,
+                    name = COALESCE(EXCLUDED.name, daily_prices.name)
             """, rows)
             logger.debug(f"  {ticker}: {len(rows)}일 저장")
         finally:

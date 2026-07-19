@@ -115,6 +115,134 @@ class StockDbCacheTest(unittest.TestCase):
             if os.path.exists(legacy_path):
                 os.unlink(legacy_path)
 
+    def test_save_prices_persists_mapped_name(self):
+        connection = self.db._connect()
+        try:
+            connection.execute(
+                "INSERT INTO ticker_map (ticker, name) VALUES (?, ?)",
+                ["005930", "삼성전자"],
+            )
+        finally:
+            connection.close()
+
+        self.db.save_prices("005930", [{
+            "date": "2026-01-05",
+            "open": 70000,
+            "high": 71000,
+            "low": 69500,
+            "close": 70500,
+            "volume": 1000,
+        }])
+
+        connection = self.db._connect()
+        try:
+            name = connection.execute(
+                "SELECT name FROM daily_prices "
+                "WHERE ticker = ? AND date = ?",
+                ["005930", "2026-01-05"],
+            ).fetchone()[0]
+        finally:
+            connection.close()
+
+        self.assertEqual(name, "삼성전자")
+
+    def test_save_prices_does_not_erase_existing_name_without_mapping(self):
+        connection = self.db._connect()
+        try:
+            connection.execute(
+                "INSERT INTO ticker_map (ticker, name) VALUES (?, ?)",
+                ["005930", "삼성전자"],
+            )
+        finally:
+            connection.close()
+
+        self.db.save_prices("005930", [{
+            "date": "2026-01-05",
+            "open": 70000,
+            "high": 71000,
+            "low": 69500,
+            "close": 70500,
+            "volume": 1000,
+        }])
+
+        connection = self.db._connect()
+        try:
+            connection.execute(
+                "DELETE FROM ticker_map WHERE ticker = ?", ["005930"]
+            )
+        finally:
+            connection.close()
+
+        self.db.save_prices("005930", [{
+            "date": "2026-01-05",
+            "open": 70500,
+            "high": 71500,
+            "low": 70000,
+            "close": 71200,
+            "volume": 1200,
+        }])
+
+        connection = self.db._connect()
+        try:
+            row = connection.execute(
+                "SELECT name, close FROM daily_prices "
+                "WHERE ticker = ? AND date = ?",
+                ["005930", "2026-01-05"],
+            ).fetchone()
+        finally:
+            connection.close()
+
+        self.assertEqual(row, ("삼성전자", 71200.0))
+
+    def test_save_prices_stores_null_name_for_unmapped_ticker(self):
+        self.db.save_prices("999999", [{
+            "date": "2026-01-05",
+            "open": 1000,
+            "high": 1100,
+            "low": 900,
+            "close": 1050,
+            "volume": 100,
+        }])
+
+        page = self.db.query_table(
+            "daily_prices", filter_col="ticker", filter_val="999999"
+        )
+
+        self.assertEqual(page["total"], 1)
+        self.assertIsNone(page["rows"][0]["name"])
+
+    def test_daily_prices_viewer_filters_by_stored_name(self):
+        connection = self.db._connect()
+        try:
+            connection.execute(
+                "INSERT INTO ticker_map (ticker, name) VALUES (?, ?)",
+                ["005930", "삼성전자"],
+            )
+        finally:
+            connection.close()
+        self.db.save_prices("005930", [{
+            "date": "2026-01-05",
+            "open": 70000,
+            "high": 71000,
+            "low": 69500,
+            "close": 70500,
+            "volume": 1000,
+        }])
+
+        page = self.db.query_table(
+            "daily_prices", filter_col="name", filter_val="삼성"
+        )
+        prices = self.db.get_prices(
+            "005930", "2026-01-05", "2026-01-05"
+        )
+
+        self.assertEqual(page["total"], 1)
+        self.assertEqual(page["rows"][0]["name"], "삼성전자")
+        self.assertEqual(
+            set(prices[0]),
+            {"date", "open", "high", "low", "close", "volume"},
+        )
+
     def test_ticker_cache_uses_latest_successful_refresh_time(self):
         old = (datetime.now() - timedelta(days=30)).isoformat()
         recent = datetime.now().isoformat()
