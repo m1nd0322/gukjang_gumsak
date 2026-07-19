@@ -67,6 +67,17 @@ class StockDbCacheTest(unittest.TestCase):
         self.assertEqual(name_column[2], "VARCHAR")
         self.assertFalse(name_column[3])
 
+    def test_memory_database_path_is_rejected_without_creating_file(self):
+        original_directory = os.getcwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                with self.assertRaisesRegex(ValueError, "filesystem path"):
+                    StockDB(":memory:")
+                self.assertFalse(os.path.exists(":memory:"))
+            finally:
+                os.chdir(original_directory)
+
     def test_legacy_daily_prices_schema_is_migrated_and_backfilled(self):
         handle = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)
         legacy_path = handle.name
@@ -160,14 +171,10 @@ class StockDbCacheTest(unittest.TestCase):
 
         self.assertEqual(name, "삼성전자")
 
-    def test_ticker_map_load_wins_over_inflight_price_save(self):
-        alias_path = os.path.join(
-            os.path.dirname(self.db_path),
-            ".",
-            os.path.basename(self.db_path),
-        )
-        mapping_db = StockDB(alias_path)
-        connection = self.db._connect()
+    def _assert_ticker_map_load_wins_over_inflight_price_save(
+        self, price_db, mapping_db
+    ):
+        connection = price_db._connect()
         try:
             connection.execute(
                 "INSERT INTO ticker_map (ticker, name) VALUES (?, ?)",
@@ -179,9 +186,16 @@ class StockDbCacheTest(unittest.TestCase):
         selected_old_name = threading.Event()
         release_price_save = threading.Event()
         map_load_started = threading.Event()
+        allow_map_load = threading.Event()
+        map_lock_attempted = threading.Event()
         map_load_finished = threading.Event()
         thread_errors = []
-        original_connect = self.db._connect
+        original_connect = price_db._connect
+        price_lock = getattr(price_db, "_mutation_lock", None)
+        mapping_lock = getattr(mapping_db, "_mutation_lock", None)
+        has_shared_lock = (
+            price_lock is not None and price_lock is mapping_lock
+        )
 
         class PausingConnection:
             def __init__(self, connection):
@@ -201,9 +215,21 @@ class StockDbCacheTest(unittest.TestCase):
             def __getattr__(self, name):
                 return getattr(self._connection, name)
 
+        class NotifyingLock:
+            def __init__(self, lock):
+                self._lock = lock
+
+            def __enter__(self):
+                map_lock_attempted.set()
+                self._lock.acquire()
+                return self
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                self._lock.release()
+
         def save_prices():
             try:
-                self.db.save_prices("005930", [{
+                price_db.save_prices("005930", [{
                     "date": "2026-01-05",
                     "open": 70000,
                     "high": 71000,
@@ -224,6 +250,8 @@ class StockDbCacheTest(unittest.TestCase):
             def load_ticker_map():
                 try:
                     map_load_started.set()
+                    if not allow_map_load.wait(5):
+                        raise AssertionError("종목 매핑 적재 허용 신호가 없습니다")
                     mapping_db.load_ticker_map_file(map_file.name)
                 except Exception as exc:
                     thread_errors.append(exc)
@@ -232,8 +260,10 @@ class StockDbCacheTest(unittest.TestCase):
 
             save_thread = threading.Thread(target=save_prices)
             load_thread = threading.Thread(target=load_ticker_map)
+            if has_shared_lock:
+                mapping_db._mutation_lock = NotifyingLock(mapping_lock)
             with patch.object(
-                self.db,
+                price_db,
                 "_connect",
                 side_effect=lambda: PausingConnection(original_connect()),
             ):
@@ -248,26 +278,36 @@ class StockDbCacheTest(unittest.TestCase):
                         map_load_started.wait(5),
                         "종목 매핑 적재가 시작되지 않았습니다",
                     )
-                    shared_lock = getattr(self.db, "_mutation_lock", None)
-                    if shared_lock is not getattr(
-                        mapping_db, "_mutation_lock", None
-                    ):
+                    allow_map_load.set()
+                    if has_shared_lock:
+                        self.assertTrue(
+                            map_lock_attempted.wait(5),
+                            "매핑 적재가 공용 잠금 획득을 시도하지 않았습니다",
+                        )
+                        self.assertFalse(
+                            map_load_finished.is_set(),
+                            "매핑 적재가 가격 저장 잠금에서 차단되지 않았습니다",
+                        )
+                    else:
                         self.assertTrue(
                             map_load_finished.wait(5),
                             "종목 매핑 적재가 완료되지 않았습니다",
                         )
                 finally:
+                    allow_map_load.set()
                     release_price_save.set()
                     save_thread.join(5)
                     if load_thread.ident is not None:
                         load_thread.join(5)
+                    if has_shared_lock:
+                        mapping_db._mutation_lock = mapping_lock
 
             self.assertFalse(save_thread.is_alive(), "가격 저장 스레드가 멈췄습니다")
             self.assertFalse(load_thread.is_alive(), "매핑 적재 스레드가 멈췄습니다")
             if thread_errors:
                 raise thread_errors[0]
 
-            connection = self.db._connect()
+            connection = price_db._connect()
             try:
                 names = connection.execute("""
                     SELECT dp.name, tm.name
@@ -279,11 +319,80 @@ class StockDbCacheTest(unittest.TestCase):
                 connection.close()
 
             self.assertEqual(names, ("변경이름", "변경이름"))
-            self.assertIs(self.db._mutation_lock, mapping_db._mutation_lock)
+            self.assertIs(price_db._mutation_lock, mapping_db._mutation_lock)
         finally:
             if not map_file.closed:
                 map_file.close()
             os.unlink(map_file.name)
+
+    def test_ticker_map_load_wins_over_inflight_price_save(self):
+        alias_path = os.path.join(
+            os.path.dirname(self.db_path),
+            ".",
+            os.path.basename(self.db_path),
+        )
+        mapping_db = StockDB(alias_path)
+
+        self._assert_ticker_map_load_wins_over_inflight_price_save(
+            self.db, mapping_db
+        )
+
+    def test_case_aliases_share_mutation_lock(self):
+        with tempfile.TemporaryDirectory() as directory:
+            upper_path = os.path.join(directory, "RaceCase.duckdb")
+            lower_path = os.path.join(directory, "racecase.duckdb")
+            price_db = StockDB(upper_path)
+            if not os.path.exists(lower_path):
+                self.skipTest("case-sensitive filesystem")
+            self.assertTrue(os.path.samefile(upper_path, lower_path))
+            mapping_db = StockDB(lower_path)
+
+            self._assert_ticker_map_load_wins_over_inflight_price_save(
+                price_db, mapping_db
+            )
+
+    def test_concurrent_case_alias_creation_shares_mutation_lock(self):
+        with tempfile.TemporaryDirectory() as directory:
+            probe_path = os.path.join(directory, "CaseProbe")
+            os.mkdir(probe_path)
+            if not os.path.exists(os.path.join(directory, "caseprobe")):
+                self.skipTest("case-sensitive filesystem")
+
+            upper_path = os.path.join(directory, "RaceCase.duckdb")
+            lower_path = os.path.join(directory, "racecase.duckdb")
+            start_construction = threading.Event()
+            instances = []
+            thread_errors = []
+
+            def create_database(path):
+                try:
+                    if not start_construction.wait(5):
+                        raise AssertionError("DB 생성 시작 신호가 없습니다")
+                    instances.append(StockDB(path))
+                except Exception as exc:
+                    thread_errors.append(exc)
+
+            threads = [
+                threading.Thread(target=create_database, args=(upper_path,)),
+                threading.Thread(target=create_database, args=(lower_path,)),
+            ]
+            for thread in threads:
+                thread.start()
+            start_construction.set()
+            for thread in threads:
+                thread.join(5)
+
+            self.assertFalse(any(thread.is_alive() for thread in threads))
+            self.assertFalse(
+                thread_errors,
+                f"동시 DB 생성이 실패했습니다: {thread_errors}",
+            )
+            self.assertEqual(len(instances), 2)
+            self.assertTrue(os.path.samefile(upper_path, lower_path))
+            self.assertIs(
+                instances[0]._mutation_lock,
+                instances[1]._mutation_lock,
+            )
 
     def test_save_prices_does_not_erase_existing_name_without_mapping(self):
         connection = self.db._connect()

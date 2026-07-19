@@ -38,6 +38,7 @@ class StockDB:
     """DuckDB 기반 주가 데이터 관리"""
 
     _mutation_locks = {}
+    _mutation_locks_by_identity = {}
     _mutation_locks_guard = threading.Lock()
 
     def __init__(self, db_path: str = None):
@@ -46,22 +47,51 @@ class StockDB:
                 os.path.dirname(os.path.abspath(__file__)),
                 'stock_data.duckdb'
             )
+        db_path = os.fspath(db_path)
+        if db_path in (':memory:', b':memory:'):
+            raise ValueError(
+                "StockDB requires a filesystem path; ':memory:' is unsupported"
+            )
         self.db_path = os.path.normcase(
             os.path.realpath(os.path.abspath(os.path.expanduser(db_path)))
         )
-        self._mutation_lock = self._get_mutation_lock(self.db_path)
-        with self._mutation_lock:
-            self._init_tables()
+        # 파일이 아직 없을 때도 alias constructor가 서로 다른 잠금을
+        # 선택하지 않도록 초기화와 identity 등록까지 한 번에 직렬화한다.
+        with self._mutation_locks_guard:
+            self._mutation_lock = self._get_mutation_lock(self.db_path)
+            with self._mutation_lock:
+                self._init_tables()
+            self._register_mutation_lock_identity(
+                self.db_path, self._mutation_lock
+            )
+
+    @staticmethod
+    def _get_file_identity(db_path: str):
+        try:
+            stat_result = os.stat(db_path)
+        except FileNotFoundError:
+            return None
+        return stat_result.st_dev, stat_result.st_ino
 
     @classmethod
     def _get_mutation_lock(cls, db_path: str):
-        """동일한 DB 경로의 변경 작업을 프로세스 안에서 직렬화한다."""
-        with cls._mutation_locks_guard:
+        """registry guard 아래에서 실제 DB 파일의 공용 잠금을 찾는다."""
+        identity = cls._get_file_identity(db_path)
+        lock = None
+        if identity is not None:
+            lock = cls._mutation_locks_by_identity.get(identity)
+        if lock is None:
             lock = cls._mutation_locks.get(db_path)
-            if lock is None:
-                lock = threading.RLock()
-                cls._mutation_locks[db_path] = lock
-            return lock
+        if lock is None:
+            lock = threading.RLock()
+        cls._mutation_locks[db_path] = lock
+        return lock
+
+    @classmethod
+    def _register_mutation_lock_identity(cls, db_path: str, lock) -> None:
+        identity = cls._get_file_identity(db_path)
+        if identity is not None:
+            cls._mutation_locks_by_identity[identity] = lock
 
     def _connect(self):
         """DuckDB 연결 (매 호출마다 새 연결 - 스레드 안전)"""
