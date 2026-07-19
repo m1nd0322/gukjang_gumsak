@@ -19,6 +19,7 @@ import json
 import logging
 import math
 import os
+import threading
 import time
 from datetime import date, datetime, timedelta
 from typing import Dict, List, Tuple, Optional
@@ -36,14 +37,31 @@ DEFAULT_TICKER_MAP_PATH = os.path.join(
 class StockDB:
     """DuckDB 기반 주가 데이터 관리"""
 
+    _mutation_locks = {}
+    _mutation_locks_guard = threading.Lock()
+
     def __init__(self, db_path: str = None):
         if db_path is None:
             db_path = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 'stock_data.duckdb'
             )
-        self.db_path = db_path
-        self._init_tables()
+        self.db_path = os.path.normcase(
+            os.path.realpath(os.path.abspath(os.path.expanduser(db_path)))
+        )
+        self._mutation_lock = self._get_mutation_lock(self.db_path)
+        with self._mutation_lock:
+            self._init_tables()
+
+    @classmethod
+    def _get_mutation_lock(cls, db_path: str):
+        """동일한 DB 경로의 변경 작업을 프로세스 안에서 직렬화한다."""
+        with cls._mutation_locks_guard:
+            lock = cls._mutation_locks.get(db_path)
+            if lock is None:
+                lock = threading.RLock()
+                cls._mutation_locks[db_path] = lock
+            return lock
 
     def _connect(self):
         """DuckDB 연결 (매 호출마다 새 연결 - 스레드 안전)"""
@@ -64,21 +82,22 @@ class StockDB:
         self, upsert_sql: str, rows: List[tuple]
     ) -> None:
         """티커 매핑과 저장된 일봉 종목명을 한 트랜잭션으로 갱신한다."""
-        con = self._connect()
-        transaction_started = False
-        try:
-            con.execute("BEGIN TRANSACTION")
-            transaction_started = True
-            con.executemany(upsert_sql, rows)
-            self._sync_daily_price_names(con)
-            con.execute("COMMIT")
+        with self._mutation_lock:
+            con = self._connect()
             transaction_started = False
-        except Exception:
-            if transaction_started:
-                con.execute("ROLLBACK")
-            raise
-        finally:
-            con.close()
+            try:
+                con.execute("BEGIN TRANSACTION")
+                transaction_started = True
+                con.executemany(upsert_sql, rows)
+                self._sync_daily_price_names(con)
+                con.execute("COMMIT")
+                transaction_started = False
+            except Exception:
+                if transaction_started:
+                    con.execute("ROLLBACK")
+                raise
+            finally:
+                con.close()
 
     def _init_tables(self):
         """테이블 초기화"""
@@ -423,41 +442,42 @@ class StockDB:
         if not data:
             return
 
-        con = self._connect()
-        try:
-            name_row = con.execute(
-                "SELECT name FROM ticker_map WHERE ticker = ?",
-                [ticker],
-            ).fetchone()
-            name = name_row[0] if name_row else None
-            rows = [
-                (
-                    ticker,
-                    d['date'],
-                    d['open'],
-                    d['high'],
-                    d['low'],
-                    d['close'],
-                    d['volume'],
-                    name,
-                )
-                for d in data
-            ]
-            con.executemany("""
-                INSERT INTO daily_prices
-                    (ticker, date, open, high, low, close, volume, name)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT (ticker, date) DO UPDATE SET
-                    open = EXCLUDED.open,
-                    high = EXCLUDED.high,
-                    low = EXCLUDED.low,
-                    close = EXCLUDED.close,
-                    volume = EXCLUDED.volume,
-                    name = COALESCE(EXCLUDED.name, daily_prices.name)
-            """, rows)
-            logger.debug(f"  {ticker}: {len(rows)}일 저장")
-        finally:
-            con.close()
+        with self._mutation_lock:
+            con = self._connect()
+            try:
+                name_row = con.execute(
+                    "SELECT name FROM ticker_map WHERE ticker = ?",
+                    [ticker],
+                ).fetchone()
+                name = name_row[0] if name_row else None
+                rows = [
+                    (
+                        ticker,
+                        d['date'],
+                        d['open'],
+                        d['high'],
+                        d['low'],
+                        d['close'],
+                        d['volume'],
+                        name,
+                    )
+                    for d in data
+                ]
+                con.executemany("""
+                    INSERT INTO daily_prices
+                        (ticker, date, open, high, low, close, volume, name)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (ticker, date) DO UPDATE SET
+                        open = EXCLUDED.open,
+                        high = EXCLUDED.high,
+                        low = EXCLUDED.low,
+                        close = EXCLUDED.close,
+                        volume = EXCLUDED.volume,
+                        name = COALESCE(EXCLUDED.name, daily_prices.name)
+                """, rows)
+                logger.debug(f"  {ticker}: {len(rows)}일 저장")
+            finally:
+                con.close()
 
     def get_prices(self, ticker: str, start_date: str, end_date: str) -> List[dict]:
         """

@@ -1,6 +1,7 @@
 import os
 import json
 import tempfile
+import threading
 import unittest
 from datetime import date, datetime, timedelta
 from unittest.mock import patch
@@ -158,6 +159,131 @@ class StockDbCacheTest(unittest.TestCase):
             connection.close()
 
         self.assertEqual(name, "삼성전자")
+
+    def test_ticker_map_load_wins_over_inflight_price_save(self):
+        alias_path = os.path.join(
+            os.path.dirname(self.db_path),
+            ".",
+            os.path.basename(self.db_path),
+        )
+        mapping_db = StockDB(alias_path)
+        connection = self.db._connect()
+        try:
+            connection.execute(
+                "INSERT INTO ticker_map (ticker, name) VALUES (?, ?)",
+                ["005930", "기존이름"],
+            )
+        finally:
+            connection.close()
+
+        selected_old_name = threading.Event()
+        release_price_save = threading.Event()
+        map_load_started = threading.Event()
+        map_load_finished = threading.Event()
+        thread_errors = []
+        original_connect = self.db._connect
+
+        class PausingConnection:
+            def __init__(self, connection):
+                self._connection = connection
+
+            def execute(self, sql, parameters=None):
+                if parameters is None:
+                    result = self._connection.execute(sql)
+                else:
+                    result = self._connection.execute(sql, parameters)
+                if "SELECT name FROM ticker_map" in " ".join(sql.split()):
+                    selected_old_name.set()
+                    if not release_price_save.wait(5):
+                        raise AssertionError("가격 저장 재개 신호를 받지 못했습니다")
+                return result
+
+            def __getattr__(self, name):
+                return getattr(self._connection, name)
+
+        def save_prices():
+            try:
+                self.db.save_prices("005930", [{
+                    "date": "2026-01-05",
+                    "open": 70000,
+                    "high": 71000,
+                    "low": 69500,
+                    "close": 70500,
+                    "volume": 1000,
+                }])
+            except Exception as exc:
+                thread_errors.append(exc)
+
+        map_file = tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False
+        )
+        try:
+            json.dump({"변경이름": "005930"}, map_file, ensure_ascii=False)
+            map_file.close()
+
+            def load_ticker_map():
+                try:
+                    map_load_started.set()
+                    mapping_db.load_ticker_map_file(map_file.name)
+                except Exception as exc:
+                    thread_errors.append(exc)
+                finally:
+                    map_load_finished.set()
+
+            save_thread = threading.Thread(target=save_prices)
+            load_thread = threading.Thread(target=load_ticker_map)
+            with patch.object(
+                self.db,
+                "_connect",
+                side_effect=lambda: PausingConnection(original_connect()),
+            ):
+                save_thread.start()
+                try:
+                    self.assertTrue(
+                        selected_old_name.wait(5),
+                        "가격 저장이 기존 종목명을 읽지 못했습니다",
+                    )
+                    load_thread.start()
+                    self.assertTrue(
+                        map_load_started.wait(5),
+                        "종목 매핑 적재가 시작되지 않았습니다",
+                    )
+                    shared_lock = getattr(self.db, "_mutation_lock", None)
+                    if shared_lock is not getattr(
+                        mapping_db, "_mutation_lock", None
+                    ):
+                        self.assertTrue(
+                            map_load_finished.wait(5),
+                            "종목 매핑 적재가 완료되지 않았습니다",
+                        )
+                finally:
+                    release_price_save.set()
+                    save_thread.join(5)
+                    if load_thread.ident is not None:
+                        load_thread.join(5)
+
+            self.assertFalse(save_thread.is_alive(), "가격 저장 스레드가 멈췄습니다")
+            self.assertFalse(load_thread.is_alive(), "매핑 적재 스레드가 멈췄습니다")
+            if thread_errors:
+                raise thread_errors[0]
+
+            connection = self.db._connect()
+            try:
+                names = connection.execute("""
+                    SELECT dp.name, tm.name
+                    FROM daily_prices AS dp
+                    JOIN ticker_map AS tm ON dp.ticker = tm.ticker
+                    WHERE dp.ticker = ? AND dp.date = ?
+                """, ["005930", "2026-01-05"]).fetchone()
+            finally:
+                connection.close()
+
+            self.assertEqual(names, ("변경이름", "변경이름"))
+            self.assertIs(self.db._mutation_lock, mapping_db._mutation_lock)
+        finally:
+            if not map_file.closed:
+                map_file.close()
+            os.unlink(map_file.name)
 
     def test_save_prices_does_not_erase_existing_name_without_mapping(self):
         connection = self.db._connect()
