@@ -188,10 +188,12 @@ curl http://localhost:5000/api/status
 
 | 테이블 | 내용 |
 | --- | --- |
-| `daily_prices` | 종목별 일봉 OHLCV |
+| `daily_prices` | 종목코드·종목명별 일봉 OHLCV |
 | `ticker_map` | 종목코드·종목명·시장 매핑 |
 | `index_prices` | KOSPI 지수 종가 |
 | `screening_results` | KST 날짜별 전체 스크리닝 결과와 상세정보 |
+
+`daily_prices.name`은 `ticker_map.name`을 기준으로 자동 동기화됩니다. 기존 DB는 앱 시작 시 종목명이 소급 반영되고, 매핑이 없는 티커만 `NULL`로 유지되며 이후 매핑 적재 시 자동으로 보완됩니다.
 
 `screening_results`는 같은 날 다시 갱신하면 해당 날짜 전체를 트랜잭션으로 교체하고 이전 날짜 이력은 유지합니다. DuckDB 저장에 실패하면 새 메모리 상태와 JSON 캐시는 게시하지 않습니다.
 
