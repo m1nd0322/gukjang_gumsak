@@ -273,6 +273,14 @@ class StockDbCacheTest(unittest.TestCase):
                         selected_old_name.wait(5),
                         "가격 저장이 기존 종목명을 읽지 못했습니다",
                     )
+                    if has_shared_lock:
+                        acquired = price_lock.acquire(False)
+                        if acquired:
+                            price_lock.release()
+                        self.assertFalse(
+                            acquired,
+                            "save_prices가 공용 잠금을 보유하지 않습니다",
+                        )
                     load_thread.start()
                     self.assertTrue(
                         map_load_started.wait(5),
