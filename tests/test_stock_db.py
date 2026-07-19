@@ -5,6 +5,7 @@ import unittest
 from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
+import duckdb
 import pandas as pd
 
 from stock_db import StockDB
@@ -35,6 +36,84 @@ class StockDbCacheTest(unittest.TestCase):
     def tearDown(self):
         if os.path.exists(self.db_path):
             os.unlink(self.db_path)
+
+    def test_new_daily_prices_schema_includes_nullable_name(self):
+        connection = self.db._connect()
+        try:
+            columns = connection.execute(
+                "PRAGMA table_info('daily_prices')"
+            ).fetchall()
+        finally:
+            connection.close()
+
+        column_names = [row[1] for row in columns]
+        self.assertIn("name", column_names)
+        name_column = columns[column_names.index("name")]
+        self.assertEqual(column_names[-1], "name")
+        self.assertEqual(name_column[2], "VARCHAR")
+        self.assertFalse(name_column[3])
+
+    def test_legacy_daily_prices_schema_is_migrated_and_backfilled(self):
+        handle = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)
+        legacy_path = handle.name
+        handle.close()
+        os.unlink(legacy_path)
+
+        try:
+            connection = duckdb.connect(legacy_path)
+            try:
+                connection.execute("""
+                    CREATE TABLE daily_prices (
+                        ticker VARCHAR NOT NULL,
+                        date DATE NOT NULL,
+                        open DOUBLE,
+                        high DOUBLE,
+                        low DOUBLE,
+                        close DOUBLE,
+                        volume BIGINT,
+                        PRIMARY KEY (ticker, date)
+                    )
+                """)
+                connection.execute("""
+                    CREATE TABLE ticker_map (
+                        ticker VARCHAR PRIMARY KEY,
+                        name VARCHAR NOT NULL,
+                        market VARCHAR,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                connection.execute(
+                    "INSERT INTO ticker_map (ticker, name) VALUES (?, ?)",
+                    ["005930", "삼성전자"],
+                )
+                connection.execute("""
+                    INSERT INTO daily_prices
+                        (ticker, date, open, high, low, close, volume)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, ["005930", "2026-01-05", 70000, 71000, 69500, 70500, 1000])
+            finally:
+                connection.close()
+
+            StockDB(legacy_path)
+
+            connection = duckdb.connect(legacy_path)
+            try:
+                columns = connection.execute(
+                    "PRAGMA table_info('daily_prices')"
+                ).fetchall()
+                column_names = [row[1] for row in columns]
+                row = connection.execute(
+                    "SELECT * FROM daily_prices"
+                ).fetchone()
+            finally:
+                connection.close()
+
+            self.assertIn("name", column_names)
+            self.assertEqual(column_names[-1], "name")
+            self.assertEqual(row[column_names.index("name")], "삼성전자")
+        finally:
+            if os.path.exists(legacy_path):
+                os.unlink(legacy_path)
 
     def test_ticker_cache_uses_latest_successful_refresh_time(self):
         old = (datetime.now() - timedelta(days=30)).isoformat()

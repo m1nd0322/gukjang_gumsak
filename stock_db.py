@@ -49,6 +49,17 @@ class StockDB:
         """DuckDB 연결 (매 호출마다 새 연결 - 스레드 안전)"""
         return duckdb.connect(self.db_path)
 
+    @staticmethod
+    def _sync_daily_price_names(con) -> None:
+        """ticker_map을 기준으로 저장된 일봉 종목명을 동기화한다."""
+        con.execute("""
+            UPDATE daily_prices AS dp
+            SET name = tm.name
+            FROM ticker_map AS tm
+            WHERE dp.ticker = tm.ticker
+              AND dp.name IS DISTINCT FROM tm.name
+        """)
+
     def _init_tables(self):
         """테이블 초기화"""
         con = self._connect()
@@ -62,6 +73,7 @@ class StockDB:
                     low DOUBLE,
                     close DOUBLE,
                     volume BIGINT,
+                    name VARCHAR,
                     PRIMARY KEY (ticker, date)
                 )
             """)
@@ -73,6 +85,11 @@ class StockDB:
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            con.execute(
+                "ALTER TABLE daily_prices "
+                "ADD COLUMN IF NOT EXISTS name VARCHAR"
+            )
+            self._sync_daily_price_names(con)
             con.execute("""
                 CREATE TABLE IF NOT EXISTS index_prices (
                     index_code VARCHAR NOT NULL,
