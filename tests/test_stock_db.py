@@ -25,6 +25,19 @@ class NeverCalledKrx:
         raise AssertionError("완전한 캐시 범위에서는 호출되면 안 됩니다")
 
 
+class NamedKrx:
+    def __init__(self, name):
+        self.name = name
+
+    def get_market_ticker_list(self, _date, market):
+        return ["005930"] if market == "KOSPI" else []
+
+    def get_market_ticker_name(self, ticker):
+        if ticker != "005930":
+            raise AssertionError(f"예상하지 못한 티커: {ticker}")
+        return self.name
+
+
 class StockDbCacheTest(unittest.TestCase):
     def setUp(self):
         handle = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)
@@ -242,6 +255,148 @@ class StockDbCacheTest(unittest.TestCase):
             set(prices[0]),
             {"date", "open", "high", "low", "close", "volume"},
         )
+
+    def test_ticker_map_file_backfills_missing_daily_price_name(self):
+        self.db.save_prices("005930", [{
+            "date": "2026-01-05",
+            "open": 70000,
+            "high": 71000,
+            "low": 69500,
+            "close": 70500,
+            "volume": 1000,
+        }])
+        handle = tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False
+        )
+        try:
+            json.dump({"삼성전자": "005930"}, handle, ensure_ascii=False)
+            handle.close()
+            self.db.load_ticker_map_file(handle.name)
+
+            page = self.db.query_table(
+                "daily_prices", filter_col="ticker", filter_val="005930"
+            )
+            self.assertEqual(page["rows"][0]["name"], "삼성전자")
+        finally:
+            if not handle.closed:
+                handle.close()
+            os.unlink(handle.name)
+
+    def test_ticker_map_file_renames_daily_price_names(self):
+        connection = self.db._connect()
+        try:
+            connection.execute(
+                "INSERT INTO ticker_map (ticker, name) VALUES (?, ?)",
+                ["005930", "삼성전자"],
+            )
+        finally:
+            connection.close()
+        self.db.save_prices("005930", [{
+            "date": "2026-01-05",
+            "open": 70000,
+            "high": 71000,
+            "low": 69500,
+            "close": 70500,
+            "volume": 1000,
+        }])
+        handle = tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False
+        )
+        try:
+            json.dump(
+                {"삼성전자우선": "005930"}, handle, ensure_ascii=False
+            )
+            handle.close()
+            self.db.load_ticker_map_file(handle.name)
+
+            page = self.db.query_table(
+                "daily_prices", filter_col="ticker", filter_val="005930"
+            )
+            self.assertEqual(page["rows"][0]["name"], "삼성전자우선")
+        finally:
+            if not handle.closed:
+                handle.close()
+            os.unlink(handle.name)
+
+    def test_refresh_ticker_map_updates_existing_daily_price_name(self):
+        connection = self.db._connect()
+        try:
+            connection.execute(
+                "INSERT INTO ticker_map (ticker, name) VALUES (?, ?)",
+                ["005930", "기존이름"],
+            )
+        finally:
+            connection.close()
+        self.db.save_prices("005930", [{
+            "date": "2026-01-05",
+            "open": 70000,
+            "high": 71000,
+            "low": 69500,
+            "close": 70500,
+            "volume": 1000,
+        }])
+
+        self.db.refresh_ticker_map(NamedKrx("변경이름"))
+
+        connection = self.db._connect()
+        try:
+            row = connection.execute("""
+                SELECT dp.name, tm.name
+                FROM daily_prices dp
+                JOIN ticker_map tm ON dp.ticker = tm.ticker
+                WHERE dp.ticker = ?
+            """, ["005930"]).fetchone()
+        finally:
+            connection.close()
+        self.assertEqual(row, ("변경이름", "변경이름"))
+
+    def test_ticker_map_load_rolls_back_when_name_sync_fails(self):
+        connection = self.db._connect()
+        try:
+            connection.execute(
+                "INSERT INTO ticker_map (ticker, name) VALUES (?, ?)",
+                ["005930", "기존이름"],
+            )
+        finally:
+            connection.close()
+        self.db.save_prices("005930", [{
+            "date": "2026-01-05",
+            "open": 70000,
+            "high": 71000,
+            "low": 69500,
+            "close": 70500,
+            "volume": 1000,
+        }])
+
+        handle = tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False
+        )
+        try:
+            json.dump({"변경이름": "005930"}, handle, ensure_ascii=False)
+            handle.close()
+            with patch.object(
+                self.db,
+                "_sync_daily_price_names",
+                side_effect=RuntimeError("name sync failed"),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "name sync failed"):
+                    self.db.load_ticker_map_file(handle.name)
+
+            connection = self.db._connect()
+            try:
+                row = connection.execute("""
+                    SELECT dp.name, tm.name
+                    FROM daily_prices dp
+                    JOIN ticker_map tm ON dp.ticker = tm.ticker
+                    WHERE dp.ticker = ?
+                """, ["005930"]).fetchone()
+            finally:
+                connection.close()
+            self.assertEqual(row, ("기존이름", "기존이름"))
+        finally:
+            if not handle.closed:
+                handle.close()
+            os.unlink(handle.name)
 
     def test_ticker_cache_uses_latest_successful_refresh_time(self):
         old = (datetime.now() - timedelta(days=30)).isoformat()

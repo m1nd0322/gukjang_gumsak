@@ -60,6 +60,26 @@ class StockDB:
               AND dp.name IS DISTINCT FROM tm.name
         """)
 
+    def _upsert_ticker_map_rows(
+        self, upsert_sql: str, rows: List[tuple]
+    ) -> None:
+        """티커 매핑과 저장된 일봉 종목명을 한 트랜잭션으로 갱신한다."""
+        con = self._connect()
+        transaction_started = False
+        try:
+            con.execute("BEGIN TRANSACTION")
+            transaction_started = True
+            con.executemany(upsert_sql, rows)
+            self._sync_daily_price_names(con)
+            con.execute("COMMIT")
+            transaction_started = False
+        except Exception:
+            if transaction_started:
+                con.execute("ROLLBACK")
+            raise
+        finally:
+            con.close()
+
     def _init_tables(self):
         """테이블 초기화"""
         con = self._connect()
@@ -255,17 +275,13 @@ class StockDB:
             (code, name, None, now_str)
             for name, code in name_to_code.items()
         ]
-        con = self._connect()
-        try:
-            con.executemany("""
-                INSERT INTO ticker_map (ticker, name, market, updated_at)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT (ticker) DO UPDATE SET
-                    name = EXCLUDED.name,
-                    updated_at = EXCLUDED.updated_at
-            """, rows)
-        finally:
-            con.close()
+        self._upsert_ticker_map_rows("""
+            INSERT INTO ticker_map (ticker, name, market, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (ticker) DO UPDATE SET
+                name = EXCLUDED.name,
+                updated_at = EXCLUDED.updated_at
+        """, rows)
 
         logger.info(f"종목 매핑 파일 적재: {len(rows)}개")
         return name_to_code, {
@@ -316,20 +332,15 @@ class StockDB:
                 logger.warning(f"KRX {market} 종목 목록 조회 실패: {e}")
 
         if rows:
-            con = self._connect()
-            try:
-                # UPSERT
-                con.executemany("""
-                    INSERT INTO ticker_map (ticker, name, market, updated_at)
-                    VALUES (?, ?, ?, ?)
-                    ON CONFLICT (ticker) DO UPDATE SET
-                        name = EXCLUDED.name,
-                        market = EXCLUDED.market,
-                        updated_at = EXCLUDED.updated_at
-                """, rows)
-                logger.info(f"종목 매핑 갱신: {len(rows)}개")
-            finally:
-                con.close()
+            self._upsert_ticker_map_rows("""
+                INSERT INTO ticker_map (ticker, name, market, updated_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT (ticker) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    market = EXCLUDED.market,
+                    updated_at = EXCLUDED.updated_at
+            """, rows)
+            logger.info(f"종목 매핑 갱신: {len(rows)}개")
 
         return name_to_code, code_to_name
 
