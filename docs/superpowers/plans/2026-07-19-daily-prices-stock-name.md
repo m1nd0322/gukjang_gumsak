@@ -60,8 +60,10 @@ Add these methods at the start of `StockDbCacheTest`, after `tearDown()`:
         finally:
             connection.close()
 
-        name_column = next(row for row in columns if row[1] == "name")
-        self.assertEqual(columns[-1][1], "name")
+        column_names = [row[1] for row in columns]
+        self.assertIn("name", column_names)
+        name_column = columns[column_names.index("name")]
+        self.assertEqual(column_names[-1], "name")
         self.assertEqual(name_column[2], "VARCHAR")
         self.assertFalse(name_column[3])
 
@@ -113,14 +115,16 @@ Add these methods at the start of `StockDbCacheTest`, after `tearDown()`:
                 columns = connection.execute(
                     "PRAGMA table_info('daily_prices')"
                 ).fetchall()
+                column_names = [row[1] for row in columns]
                 row = connection.execute(
-                    "SELECT ticker, name FROM daily_prices"
+                    "SELECT * FROM daily_prices"
                 ).fetchone()
             finally:
                 connection.close()
 
-            self.assertEqual(columns[-1][1], "name")
-            self.assertEqual(row, ("005930", "삼성전자"))
+            self.assertIn("name", column_names)
+            self.assertEqual(column_names[-1], "name")
+            self.assertEqual(row[column_names.index("name")], "삼성전자")
         finally:
             if os.path.exists(legacy_path):
                 os.unlink(legacy_path)
@@ -134,7 +138,7 @@ Run:
 uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_stock_db.StockDbCacheTest.test_new_daily_prices_schema_includes_nullable_name tests.test_stock_db.StockDbCacheTest.test_legacy_daily_prices_schema_is_migrated_and_backfilled -v
 ```
 
-Expected: both tests fail because `daily_prices` has no `name` column and legacy initialization does not alter or backfill the table.
+Expected: both tests fail with `AssertionError: 'name' not found` because `daily_prices` has no `name` column and legacy initialization does not alter or backfill the table.
 
 - [ ] **Step 3: Implement the shared synchronization SQL and startup migration**
 
@@ -227,7 +231,38 @@ Tested: unittest schema migration and stock_db suite"
 Add these methods to `StockDbCacheTest`:
 
 ```python
-    def test_save_prices_persists_name_and_does_not_erase_it_without_mapping(self):
+    def test_save_prices_persists_mapped_name(self):
+        connection = self.db._connect()
+        try:
+            connection.execute(
+                "INSERT INTO ticker_map (ticker, name) VALUES (?, ?)",
+                ["005930", "삼성전자"],
+            )
+        finally:
+            connection.close()
+
+        self.db.save_prices("005930", [{
+            "date": "2026-01-05",
+            "open": 70000,
+            "high": 71000,
+            "low": 69500,
+            "close": 70500,
+            "volume": 1000,
+        }])
+
+        connection = self.db._connect()
+        try:
+            name = connection.execute(
+                "SELECT name FROM daily_prices "
+                "WHERE ticker = ? AND date = ?",
+                ["005930", "2026-01-05"],
+            ).fetchone()[0]
+        finally:
+            connection.close()
+
+        self.assertEqual(name, "삼성전자")
+
+    def test_save_prices_does_not_erase_existing_name_without_mapping(self):
         connection = self.db._connect()
         try:
             connection.execute(
@@ -330,7 +365,7 @@ Add these methods to `StockDbCacheTest`:
 Run:
 
 ```bash
-uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_stock_db.StockDbCacheTest.test_save_prices_persists_name_and_does_not_erase_it_without_mapping tests.test_stock_db.StockDbCacheTest.test_save_prices_stores_null_name_for_unmapped_ticker tests.test_stock_db.StockDbCacheTest.test_daily_prices_viewer_filters_by_stored_name -v
+uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_stock_db.StockDbCacheTest.test_save_prices_persists_mapped_name tests.test_stock_db.StockDbCacheTest.test_save_prices_does_not_erase_existing_name_without_mapping tests.test_stock_db.StockDbCacheTest.test_save_prices_stores_null_name_for_unmapped_ticker tests.test_stock_db.StockDbCacheTest.test_daily_prices_viewer_filters_by_stored_name -v
 ```
 
 Expected: mapped-name and name-filter tests fail because `save_prices()` does not populate `name`; the explicit unmapped-`NULL` regression may already pass.
@@ -380,10 +415,10 @@ The `COALESCE` expression is required: a temporary missing mapping must not eras
 Run:
 
 ```bash
-uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_stock_db.StockDbCacheTest.test_save_prices_persists_name_and_does_not_erase_it_without_mapping tests.test_stock_db.StockDbCacheTest.test_save_prices_stores_null_name_for_unmapped_ticker tests.test_stock_db.StockDbCacheTest.test_daily_prices_viewer_filters_by_stored_name -v
+uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_stock_db.StockDbCacheTest.test_save_prices_persists_mapped_name tests.test_stock_db.StockDbCacheTest.test_save_prices_does_not_erase_existing_name_without_mapping tests.test_stock_db.StockDbCacheTest.test_save_prices_stores_null_name_for_unmapped_ticker tests.test_stock_db.StockDbCacheTest.test_daily_prices_viewer_filters_by_stored_name -v
 ```
 
-Expected: 3 tests pass, and `get_prices()` still has exactly six keys.
+Expected: 4 tests pass, and `get_prices()` still has exactly six keys.
 
 Run:
 
@@ -414,7 +449,7 @@ Tested: unittest mapped, unmapped, preservation, viewer filtering"
 
 **Interfaces:**
 - Consumes: `StockDB._sync_daily_price_names(con) -> None`, `load_ticker_map_file(path)`, and `refresh_ticker_map(krx_module)`.
-- Produces: atomic ticker-map/name synchronization for JSON imports and KRX refreshes; unchanged mapping return dictionaries.
+- Produces: `StockDB._upsert_ticker_map_rows(upsert_sql: str, rows: List[tuple]) -> None`; atomic ticker-map/name synchronization for JSON imports and KRX refreshes; unchanged mapping return dictionaries.
 
 - [ ] **Step 1: Add a deterministic KRX test double**
 
@@ -439,7 +474,7 @@ class NamedKrx:
 Add these methods to `StockDbCacheTest`:
 
 ```python
-    def test_ticker_map_file_backfills_and_renames_daily_price_names(self):
+    def test_ticker_map_file_backfills_missing_daily_price_name(self):
         self.db.save_prices("005930", [{
             "date": "2026-01-05",
             "open": 70000,
@@ -456,10 +491,40 @@ Add these methods to `StockDbCacheTest`:
             handle.close()
             self.db.load_ticker_map_file(handle.name)
 
-            with open(handle.name, "w", encoding="utf-8") as file:
-                json.dump(
-                    {"삼성전자우선": "005930"}, file, ensure_ascii=False
-                )
+            page = self.db.query_table(
+                "daily_prices", filter_col="ticker", filter_val="005930"
+            )
+            self.assertEqual(page["rows"][0]["name"], "삼성전자")
+        finally:
+            if not handle.closed:
+                handle.close()
+            os.unlink(handle.name)
+
+    def test_ticker_map_file_renames_daily_price_names(self):
+        connection = self.db._connect()
+        try:
+            connection.execute(
+                "INSERT INTO ticker_map (ticker, name) VALUES (?, ?)",
+                ["005930", "삼성전자"],
+            )
+        finally:
+            connection.close()
+        self.db.save_prices("005930", [{
+            "date": "2026-01-05",
+            "open": 70000,
+            "high": 71000,
+            "low": 69500,
+            "close": 70500,
+            "volume": 1000,
+        }])
+        handle = tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False
+        )
+        try:
+            json.dump(
+                {"삼성전자우선": "005930"}, handle, ensure_ascii=False
+            )
+            handle.close()
             self.db.load_ticker_map_file(handle.name)
 
             page = self.db.query_table(
@@ -557,28 +622,26 @@ Add these methods to `StockDbCacheTest`:
 Run:
 
 ```bash
-uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_stock_db.StockDbCacheTest.test_ticker_map_file_backfills_and_renames_daily_price_names tests.test_stock_db.StockDbCacheTest.test_refresh_ticker_map_updates_existing_daily_price_name tests.test_stock_db.StockDbCacheTest.test_ticker_map_load_rolls_back_when_name_sync_fails -v
+uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_stock_db.StockDbCacheTest.test_ticker_map_file_backfills_missing_daily_price_name tests.test_stock_db.StockDbCacheTest.test_ticker_map_file_renames_daily_price_names tests.test_stock_db.StockDbCacheTest.test_refresh_ticker_map_updates_existing_daily_price_name tests.test_stock_db.StockDbCacheTest.test_ticker_map_load_rolls_back_when_name_sync_fails -v
 ```
 
 Expected: file and KRX rename assertions fail because price names are not synchronized, and the rollback test fails because the synchronization hook is not called.
 
-- [ ] **Step 4: Make file-based ticker-map updates transactional**
+- [ ] **Step 4: Add one shared transactional ticker-map upsert helper**
 
-Replace the connection block in `load_ticker_map_file()` with:
+Add this method after `_sync_daily_price_names()` in `stock_db.py`:
 
 ```python
+    def _upsert_ticker_map_rows(
+        self, upsert_sql: str, rows: List[tuple]
+    ) -> None:
+        """티커 매핑과 저장된 일봉 종목명을 한 트랜잭션으로 갱신한다."""
         con = self._connect()
         transaction_started = False
         try:
             con.execute("BEGIN TRANSACTION")
             transaction_started = True
-            con.executemany("""
-                INSERT INTO ticker_map (ticker, name, market, updated_at)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT (ticker) DO UPDATE SET
-                    name = EXCLUDED.name,
-                    updated_at = EXCLUDED.updated_at
-            """, rows)
+            con.executemany(upsert_sql, rows)
             self._sync_daily_price_names(con)
             con.execute("COMMIT")
             transaction_started = False
@@ -590,34 +653,32 @@ Replace the connection block in `load_ticker_map_file()` with:
             con.close()
 ```
 
-- [ ] **Step 5: Make KRX ticker-map refreshes transactional**
+- [ ] **Step 5: Route file and KRX mapping updates through the helper**
+
+Replace the connection block in `load_ticker_map_file()` with:
+
+```python
+        self._upsert_ticker_map_rows("""
+            INSERT INTO ticker_map (ticker, name, market, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (ticker) DO UPDATE SET
+                name = EXCLUDED.name,
+                updated_at = EXCLUDED.updated_at
+        """, rows)
+```
 
 Replace the connection block inside `if rows:` in `refresh_ticker_map()` with:
 
 ```python
-            con = self._connect()
-            transaction_started = False
-            try:
-                con.execute("BEGIN TRANSACTION")
-                transaction_started = True
-                con.executemany("""
-                    INSERT INTO ticker_map (ticker, name, market, updated_at)
-                    VALUES (?, ?, ?, ?)
-                    ON CONFLICT (ticker) DO UPDATE SET
-                        name = EXCLUDED.name,
-                        market = EXCLUDED.market,
-                        updated_at = EXCLUDED.updated_at
-                """, rows)
-                self._sync_daily_price_names(con)
-                con.execute("COMMIT")
-                transaction_started = False
-                logger.info(f"종목 매핑 갱신: {len(rows)}개")
-            except Exception:
-                if transaction_started:
-                    con.execute("ROLLBACK")
-                raise
-            finally:
-                con.close()
+            self._upsert_ticker_map_rows("""
+                INSERT INTO ticker_map (ticker, name, market, updated_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT (ticker) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    market = EXCLUDED.market,
+                    updated_at = EXCLUDED.updated_at
+            """, rows)
+            logger.info(f"종목 매핑 갱신: {len(rows)}개")
 ```
 
 - [ ] **Step 6: Re-run synchronization and complete stock DB tests**
@@ -625,10 +686,10 @@ Replace the connection block inside `if rows:` in `refresh_ticker_map()` with:
 Run:
 
 ```bash
-uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_stock_db.StockDbCacheTest.test_ticker_map_file_backfills_and_renames_daily_price_names tests.test_stock_db.StockDbCacheTest.test_refresh_ticker_map_updates_existing_daily_price_name tests.test_stock_db.StockDbCacheTest.test_ticker_map_load_rolls_back_when_name_sync_fails -v
+uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -m unittest tests.test_stock_db.StockDbCacheTest.test_ticker_map_file_backfills_missing_daily_price_name tests.test_stock_db.StockDbCacheTest.test_ticker_map_file_renames_daily_price_names tests.test_stock_db.StockDbCacheTest.test_refresh_ticker_map_updates_existing_daily_price_name tests.test_stock_db.StockDbCacheTest.test_ticker_map_load_rolls_back_when_name_sync_fails -v
 ```
 
-Expected: 3 tests pass.
+Expected: 4 tests pass.
 
 Run:
 
@@ -660,7 +721,7 @@ Tested: unittest file import, KRX refresh, rollback, stock_db suite"
 
 **Interfaces:**
 - Consumes: completed `StockDB` migration and synchronization behavior from Tasks 1-3.
-- Produces: updated operator documentation, migrated local DuckDB, full validation evidence, and synchronized Git history.
+- Produces: updated operator documentation, migrated local DuckDB, full validation evidence, and a review-ready feature branch.
 
 - [ ] **Step 1: Update the DuckDB table documentation**
 
@@ -719,17 +780,17 @@ Expected: `All checks passed!`.
 Run:
 
 ```bash
-uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -c 'from stock_db import StockDB; StockDB("stock_data.duckdb")'
+uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -c 'from stock_db import StockDB; StockDB("/Users/songhear/gukjang_gumsak/stock_data.duckdb")'
 ```
 
-Expected: exit code 0; `stock_data.duckdb` remains ignored by Git.
+Expected: exit code 0; the original checkout's `stock_data.duckdb` is migrated and remains ignored by Git.
 
 - [ ] **Step 6: Verify real data coverage and consistency read-only**
 
 Run:
 
 ```bash
-uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -c 'import duckdb; c=duckdb.connect("stock_data.duckdb", read_only=True); print("schema", [(r[1], r[2]) for r in c.execute("PRAGMA table_info(\047daily_prices\047)").fetchall()]); print("counts", c.execute("SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE name IS NULL) AS null_names FROM daily_prices").fetchone()); print("mapped_missing", c.execute("SELECT COUNT(*) FROM daily_prices dp JOIN ticker_map tm ON dp.ticker=tm.ticker WHERE dp.name IS NULL").fetchone()[0]); print("mismatched", c.execute("SELECT COUNT(*) FROM daily_prices dp JOIN ticker_map tm ON dp.ticker=tm.ticker WHERE dp.name IS DISTINCT FROM tm.name").fetchone()[0]); print("unmatched_tickers", c.execute("SELECT COUNT(DISTINCT dp.ticker) FROM daily_prices dp LEFT JOIN ticker_map tm ON dp.ticker=tm.ticker WHERE tm.ticker IS NULL").fetchone()[0]); c.close()'
+uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python -c 'import duckdb; c=duckdb.connect("/Users/songhear/gukjang_gumsak/stock_data.duckdb", read_only=True); print("schema", [(r[1], r[2]) for r in c.execute("PRAGMA table_info(\047daily_prices\047)").fetchall()]); print("counts", c.execute("SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE name IS NULL) AS null_names FROM daily_prices").fetchone()); print("mapped_missing", c.execute("SELECT COUNT(*) FROM daily_prices dp JOIN ticker_map tm ON dp.ticker=tm.ticker WHERE dp.name IS NULL").fetchone()[0]); print("mismatched", c.execute("SELECT COUNT(*) FROM daily_prices dp JOIN ticker_map tm ON dp.ticker=tm.ticker WHERE dp.name IS DISTINCT FROM tm.name").fetchone()[0]); print("unmatched_tickers", c.execute("SELECT COUNT(DISTINCT dp.ticker) FROM daily_prices dp LEFT JOIN ticker_map tm ON dp.ticker=tm.ticker WHERE tm.ticker IS NULL").fetchone()[0]); c.close()'
 ```
 
 Expected for the current local database:
@@ -751,7 +812,7 @@ git diff --check
 git status --short
 ```
 
-Expected: no whitespace errors; only intended tracked files plus unrelated untracked `get-pip.py` are shown.
+Expected: no whitespace errors; only intended tracked files are shown in the isolated worktree. The original checkout's unrelated `get-pip.py` remains untouched.
 
 Commit README without staging the ignored DuckDB or `get-pip.py`:
 
@@ -763,13 +824,13 @@ Scope-risk: narrow
 Tested: full unittest suite, py_compile, Ruff, live DuckDB migration and consistency queries"
 ```
 
-- [ ] **Step 8: Push and confirm repository synchronization**
+- [ ] **Step 8: Record the clean feature-branch state for final review**
 
 Run:
 
 ```bash
-git push origin master
 git status --short --branch
+git log -5 --oneline --decorate
 ```
 
-Expected: `master...origin/master` has no ahead/behind count; only `?? get-pip.py` remains.
+Expected: `feature/daily-prices-name` is clean and its latest commits are ready for the required whole-branch review. Merge and push happen only after that review and the finishing-development-branch workflow.
