@@ -395,6 +395,7 @@ const inputs = {json.dumps(inputs)};
 const outputs = vm.runInNewContext(
     source + '\\ninputs.map(fmtTradePct)',
     {{ inputs }},
+    {{ timeout: 250 }},
 );
 process.stdout.write(JSON.stringify(outputs));
 """
@@ -405,11 +406,14 @@ process.stdout.write(JSON.stringify(outputs));
                 capture_output=True,
                 text=True,
                 check=False,
+                timeout=2,
             )
         except FileNotFoundError:
             self.fail(
                 "Node.js runtime is required to execute BACKTEST_TEMPLATE JavaScript"
             )
+        except subprocess.TimeoutExpired:
+            self.fail("Node.js formatter execution exceeded 2 seconds")
 
         self.assertEqual(
             completed.returncode,
