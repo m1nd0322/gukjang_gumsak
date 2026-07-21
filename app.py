@@ -14,6 +14,7 @@
 from flask import Flask, jsonify, render_template_string, request, Response
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
+from decimal import Decimal, ROUND_HALF_UP
 import json
 import math
 import os
@@ -44,6 +45,17 @@ BACKTEST_ITEM_SOURCES = {
     'supply': '순매수전환',
     'nps': '국민연금 신규/추가매수',
 }
+RETURN_PCT_QUANTUM = Decimal("0.01")
+
+
+def _format_return_pct(value):
+    if value is None:
+        return ""
+    rounded = Decimal(str(value)).quantize(
+        RETURN_PCT_QUANTUM,
+        rounding=ROUND_HALF_UP,
+    )
+    return format(rounded, ".2f")
 
 # 글로벌 데이터 저장소
 current_data = {
@@ -612,7 +624,7 @@ def api_backtest_csv():
             t['eval_amount'], t['eval_pnl'],
             t['exit_date'] or '', t['exit_price'] or '', t['exit_cost'],
             t['realized_pnl'] if t['realized_pnl'] is not None else '',
-            t['return_pct'] if t['return_pct'] is not None else '',
+            _format_return_pct(t['return_pct']),
             t['status'],
         ])
 

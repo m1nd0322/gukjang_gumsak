@@ -1,3 +1,5 @@
+import csv
+import io
 import json
 import subprocess
 import tempfile
@@ -426,6 +428,56 @@ process.stdout.write(JSON.stringify(outputs));
         )
         self.assertIn("${fmtTradePct(t.return_pct)}", template)
         self.assertNotIn("((v >= 0 ? '+' : '') + v + '%')", template)
+
+    def test_backtest_csv_formats_trade_return_pct_to_two_decimal_places(self):
+        engine = MagicMock()
+        engine.get_daily_detail.return_value = []
+
+        def trade_row(ticker, return_pct):
+            return {
+                "ticker": ticker,
+                "name": f"종목{ticker}",
+                "entry_date": "2026-01-02",
+                "entry_price": 100,
+                "shares": 1,
+                "buy_amount": 100,
+                "avg_price": 100,
+                "total_buy_amount": 100,
+                "eval_amount": 110,
+                "eval_pnl": 10,
+                "exit_date": "2026-01-03",
+                "exit_price": 110,
+                "exit_cost": 0,
+                "realized_pnl": 10,
+                "return_pct": return_pct,
+                "status": "closed",
+            }
+
+        return_values = (12.345, -7.105, 1.2, 0, None)
+        trades = [
+            trade_row(str(index), value)
+            for index, value in enumerate(return_values, start=1)
+        ]
+        with app_module.bt_lock:
+            app_module.backtest_state.update(
+                engine=engine,
+                results={"trades": trades, "config": {}},
+            )
+
+        response = self.client.get("/api/backtest/csv")
+
+        self.assertEqual(response.status_code, 200)
+        rows = list(csv.reader(io.StringIO(response.data.decode("utf-8-sig"))))
+        section_index = rows.index(["=== 매매 상세 이력 ==="])
+        trade_rows = rows[section_index + 2:]
+        self.assertEqual(
+            [row[14] for row in trade_rows],
+            ["12.35", "-7.11", "1.20", "0.00", ""],
+        )
+        self.assertEqual(
+            [trade["return_pct"] for trade in trades],
+            list(return_values),
+        )
 
     def test_db_routes_return_client_errors_for_invalid_requests(self):
         missing = self.client.get("/api/db/schema/not_a_table")
