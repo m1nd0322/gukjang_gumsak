@@ -55,6 +55,8 @@ def _format_return_pct(value):
         RETURN_PCT_QUANTUM,
         rounding=ROUND_HALF_UP,
     )
+    if rounded.is_zero():
+        rounded = rounded.copy_abs()
     return format(rounded, ".2f")
 
 # 글로벌 데이터 저장소
@@ -1579,8 +1581,9 @@ const tradePctFormatter = new Intl.NumberFormat('en-US', {
 function fmtTradePct(v) {
     if (v == null) return '-';
     const value = Number(v);
-    const sign = value >= 0 ? '+' : '-';
-    return sign + tradePctFormatter.format(Math.abs(value)) + '%';
+    const formattedMagnitude = tradePctFormatter.format(Math.abs(value));
+    const sign = Number(formattedMagnitude) === 0 || value >= 0 ? '+' : '-';
+    return sign + formattedMagnitude + '%';
 }
 
 function renderTradeRows(trades) {

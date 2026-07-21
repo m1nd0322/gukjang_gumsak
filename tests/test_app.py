@@ -1,6 +1,7 @@
 import csv
 import io
 import json
+import math
 import subprocess
 import tempfile
 import threading
@@ -389,17 +390,24 @@ class FlaskApiTest(unittest.TestCase):
             "\n\nfunction renderTradeRows(", formatter_start
         )
         formatter_source = template[formatter_start:formatter_end]
-        inputs = [12.345, -7.105, 1.2, 0, None]
+        inputs = [12.345, -7.105, 1.2, 0, -0.0, -0.004, None]
         node_script = f"""
 const vm = require('node:vm');
 const source = {json.dumps(formatter_source)};
 const inputs = {json.dumps(inputs)};
+const originalInputs = inputs.slice();
 const outputs = vm.runInNewContext(
     source + '\\ninputs.map(fmtTradePct)',
     {{ inputs }},
     {{ timeout: 250 }},
 );
-process.stdout.write(JSON.stringify(outputs));
+process.stdout.write(JSON.stringify({{
+    outputs,
+    inputsUnchanged: inputs.every(
+        (value, index) => Object.is(value, originalInputs[index])
+    ),
+    negativeZeroPreserved: Object.is(inputs[4], -0),
+}}));
 """
 
         try:
@@ -422,10 +430,21 @@ process.stdout.write(JSON.stringify(outputs));
             0,
             msg=f"Node.js formatter execution failed:\n{completed.stderr}",
         )
+        result = json.loads(completed.stdout)
         self.assertEqual(
-            json.loads(completed.stdout),
-            ["+12.35%", "-7.11%", "+1.20%", "+0.00%", "-"],
+            result["outputs"],
+            [
+                "+12.35%",
+                "-7.11%",
+                "+1.20%",
+                "+0.00%",
+                "+0.00%",
+                "+0.00%",
+                "-",
+            ],
         )
+        self.assertTrue(result["inputsUnchanged"])
+        self.assertTrue(result["negativeZeroPreserved"])
         self.assertIn("${fmtTradePct(t.return_pct)}", template)
         self.assertNotIn("((v >= 0 ? '+' : '') + v + '%')", template)
 
@@ -453,7 +472,7 @@ process.stdout.write(JSON.stringify(outputs));
                 "status": "closed",
             }
 
-        return_values = (12.345, -7.105, 1.2, 0, None)
+        return_values = (12.345, -7.105, 1.2, 0, -0.0, -0.004, None)
         trades = [
             trade_row(str(index), value)
             for index, value in enumerate(return_values, start=1)
@@ -472,12 +491,14 @@ process.stdout.write(JSON.stringify(outputs));
         trade_rows = rows[section_index + 2:]
         self.assertEqual(
             [row[14] for row in trade_rows],
-            ["12.35", "-7.11", "1.20", "0.00", ""],
+            ["12.35", "-7.11", "1.20", "0.00", "0.00", "0.00", ""],
         )
         self.assertEqual(
             [trade["return_pct"] for trade in trades],
             list(return_values),
         )
+        self.assertEqual(math.copysign(1.0, trades[3]["return_pct"]), 1.0)
+        self.assertEqual(math.copysign(1.0, trades[4]["return_pct"]), -1.0)
 
     def test_db_routes_return_client_errors_for_invalid_requests(self):
         missing = self.client.get("/api/db/schema/not_a_table")
