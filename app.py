@@ -1568,7 +1568,7 @@ function fmtTradePct(v) {
     if (v == null) return '-';
     const value = Number(v);
     const sign = value >= 0 ? '+' : '-';
-    return sign + tradePctFormatter.format(Math.abs(Number(v))) + '%';
+    return sign + tradePctFormatter.format(Math.abs(value)) + '%';
 }
 
 function renderTradeRows(trades) {

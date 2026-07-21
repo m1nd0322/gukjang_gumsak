@@ -1,4 +1,5 @@
 import json
+import subprocess
 import tempfile
 import threading
 import time
@@ -381,12 +382,44 @@ class FlaskApiTest(unittest.TestCase):
 
     def test_trade_history_formats_return_pct_to_two_decimal_places(self):
         template = app_module.BACKTEST_TEMPLATE
+        formatter_start = template.index("const tradePctFormatter =")
+        formatter_end = template.index(
+            "\n\nfunction renderTradeRows(", formatter_start
+        )
+        formatter_source = template[formatter_start:formatter_end]
+        inputs = [12.345, -7.105, 1.2, 0, None]
+        node_script = f"""
+const vm = require('node:vm');
+const source = {json.dumps(formatter_source)};
+const inputs = {json.dumps(inputs)};
+const outputs = vm.runInNewContext(
+    source + '\\ninputs.map(fmtTradePct)',
+    {{ inputs }},
+);
+process.stdout.write(JSON.stringify(outputs));
+"""
 
-        self.assertIn("const tradePctFormatter = new Intl.NumberFormat", template)
-        self.assertIn("minimumFractionDigits: 2", template)
-        self.assertIn("maximumFractionDigits: 2", template)
-        self.assertIn("roundingMode: 'halfExpand'", template)
-        self.assertIn("tradePctFormatter.format(Math.abs(Number(v)))", template)
+        try:
+            completed = subprocess.run(
+                ["node", "-e", node_script],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except FileNotFoundError:
+            self.fail(
+                "Node.js runtime is required to execute BACKTEST_TEMPLATE JavaScript"
+            )
+
+        self.assertEqual(
+            completed.returncode,
+            0,
+            msg=f"Node.js formatter execution failed:\n{completed.stderr}",
+        )
+        self.assertEqual(
+            json.loads(completed.stdout),
+            ["+12.35%", "-7.11%", "+1.20%", "+0.00%", "-"],
+        )
         self.assertIn("${fmtTradePct(t.return_pct)}", template)
         self.assertNotIn("((v >= 0 ? '+' : '') + v + '%')", template)
 
