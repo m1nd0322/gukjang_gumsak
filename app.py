@@ -1557,6 +1557,20 @@ function resetTradeFilters() {
     renderTradeRows(_allTrades);
 }
 
+const tradePctFormatter = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: false,
+    roundingMode: 'halfExpand',
+});
+
+function fmtTradePct(v) {
+    if (v == null) return '-';
+    const value = Number(v);
+    const sign = value >= 0 ? '+' : '-';
+    return sign + tradePctFormatter.format(Math.abs(Number(v))) + '%';
+}
+
 function renderTradeRows(trades) {
     const body = document.getElementById('tradeBody');
     body.innerHTML = '';
@@ -1575,7 +1589,6 @@ function renderTradeRows(trades) {
             : '<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:10px;font-size:11px">보유중</span>';
 
         const fmtPnl = (v) => v != null ? ((v >= 0 ? '+' : '') + fmt(v)) : '-';
-        const fmtPct = (v) => v != null ? ((v >= 0 ? '+' : '') + v + '%') : '-';
 
         body.innerHTML += `<tr>
             <td class="c" style="font-size:11px;color:#6b7280">${t.ticker}</td>
@@ -1592,7 +1605,7 @@ function renderTradeRows(trades) {
             <td class="r">${t.exit_price ? fmt(t.exit_price) : '-'}</td>
             <td class="r" style="color:#dc2626">${t.exit_cost ? fmt(t.exit_cost) : '-'}</td>
             <td class="r ${realCls}"><b>${fmtPnl(t.realized_pnl)}</b></td>
-            <td class="r ${retCls}">${fmtPct(t.return_pct)}</td>
+            <td class="r ${retCls}">${fmtTradePct(t.return_pct)}</td>
             <td class="c">${statusBadge}</td>
         </tr>`;
     });

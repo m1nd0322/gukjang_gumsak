@@ -379,6 +379,17 @@ class FlaskApiTest(unittest.TestCase):
         self.assertNotIn('<th class="r">시작가</th>', template)
         self.assertNotIn('<th class="r">종료가</th>', template)
 
+    def test_trade_history_formats_return_pct_to_two_decimal_places(self):
+        template = app_module.BACKTEST_TEMPLATE
+
+        self.assertIn("const tradePctFormatter = new Intl.NumberFormat", template)
+        self.assertIn("minimumFractionDigits: 2", template)
+        self.assertIn("maximumFractionDigits: 2", template)
+        self.assertIn("roundingMode: 'halfExpand'", template)
+        self.assertIn("tradePctFormatter.format(Math.abs(Number(v)))", template)
+        self.assertIn("${fmtTradePct(t.return_pct)}", template)
+        self.assertNotIn("((v >= 0 ? '+' : '') + v + '%')", template)
+
     def test_db_routes_return_client_errors_for_invalid_requests(self):
         missing = self.client.get("/api/db/schema/not_a_table")
         bad_page_size = self.client.get("/api/db/query/daily_prices?page_size=0")
