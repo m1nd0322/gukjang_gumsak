@@ -1,40 +1,41 @@
-"""FnGuide 스크리닝 데이터 수집과 종합 점수 계산.
+"""공개 스크리닝 데이터 수집과 종합 점수 계산.
 
 구형 WooriRenewal HTML 화면은 2026-06-29부터 오류 문서를 반환한다.
-화면 DOM 대신 현재 제공되는 JSON 피드와 종목별 Snapshot의 주주현황을
-읽어 웹 앱, 정적 리포트, 일일 리포트가 같은 데이터 계층을 사용하게 한다.
+2026-07-29 종료된 구형 FnGuide JSON 피드 대신 신버전 FnGuide
+턴어라운드 API, Daum 일별 수급, FnGuide Snapshot/ShareAnalysis를 읽어
+웹 앱, 정적 리포트, 일일 리포트가 같은 데이터 계층을 사용하게 한다.
 """
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date
-from html import unescape
 import json
 import logging
 import math
 import os
 import re
 import threading
-from typing import Callable, Iterable, Optional
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import date
+from html import unescape
+from typing import Optional
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 from nps_tracker import (
+    NpsStateLockError,
     kst_today,
     load_nps_state,
-    NpsStateLockError,
     nps_state_lock,
     reconcile_nps_signals,
     save_nps_state,
 )
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-
 
 logger = logging.getLogger(__name__)
 
-TURNAROUND_URL = "https://comp.fnguide.com/SVO2/json/data/NH/TURNAROUND_A.json"
-SUPPLY_TREND_URL = (
-    "https://comp.fnguide.com/SVO2/json/data/NH/SUPPLY_TREND_FIRST_BUY.json"
-)
+TURNAROUND_URL = "https://wcomp.fnguide.com/Consensus/getScrEarTrn"
+SUPPLY_TREND_URL = "https://finance.daum.net/api/trend/investor_purchase"
+SUPPLY_HISTORY_URL = "https://finance.daum.net/api/investor/days"
 SNAPSHOT_URL = "https://wcomp.fnguide.com/CompanyInfo/Snapshot"
 SHARE_ANALYSIS_URL = "https://wcomp.fnguide.com/CompanyInfo/ShareAnalysis"
 DEFAULT_TICKER_MAP = os.path.join(os.path.dirname(__file__), "ticker_map.json")
@@ -48,24 +49,11 @@ REQUEST_HEADERS = {
     ),
     "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.7",
 }
-
-TURNAROUND_COLUMNS = (
-    ("No.", "RN"),
-    ("종목명", "ITEMABBRNM"),
-    ("결산년월", "CUR_GSYM"),
-    ("최근결산 영업이익", "CUR_DATA"),
-    ("직전결산 영업이익", "PREV_DATA"),
-    ("증가율", "GROWTH_NM"),
-    ("PER", "PER"),
-    ("PBR", "PBR"),
-)
-SUPPLY_TREND_COLUMNS = (
-    ("No.", "RN"),
-    ("종목명", "ITEMABBRNM"),
-    ("전일종가(원)", "CLS_PRC"),
-    ("수익률(%)", "YIELD"),
-    ("순매수금액(억원)", "SUM_AMT"),
-)
+DAUM_FINANCE_HEADERS = {
+    **REQUEST_HEADERS,
+    "Accept": "application/json, text/plain, */*",
+    "Referer": "https://finance.daum.net/domestic/influential_investors",
+}
 
 _TITLE_TICKER_RE = re.compile(r"<title[^>]*>.*?\(([^()]+)\)\s*\|", re.I | re.S)
 _NPS_ROW_RE = re.compile(
@@ -100,6 +88,10 @@ def normalize_stock_name(name: object) -> str:
     return re.sub(r"\s+", " ", str(name or "").strip())
 
 
+def _text_or_empty(value: object) -> str:
+    return "" if value is None else str(value)
+
+
 def _retry_session() -> requests.Session:
     session = requests.Session()
     retry = Retry(
@@ -123,56 +115,227 @@ def _worker_session() -> requests.Session:
     return session
 
 
-def _fetch_json_rows(
-    url: str,
-    columns: Iterable[tuple[str, str]],
-    *,
-    session: Optional[requests.Session] = None,
-    timeout: float = 20,
-) -> list[dict]:
-    client = session or _retry_session()
-    try:
-        response = client.get(url, headers=REQUEST_HEADERS, timeout=timeout)
-        response.raise_for_status()
-        payload = json.loads(response.content.decode("utf-8-sig"))
-    except Exception as exc:
-        raise ScreeningDataError(f"FnGuide JSON 응답 해석 실패 ({url}): {exc}") from exc
-
-    raw_rows = payload.get("comp") if isinstance(payload, dict) else None
-    if not isinstance(raw_rows, list):
-        raise ScreeningDataError(f"FnGuide JSON 구조가 올바르지 않습니다 ({url})")
-
-    mapped = []
-    column_pairs = tuple(columns)
-    for index, raw in enumerate(raw_rows, start=1):
-        if not isinstance(raw, dict):
-            continue
-        row = {label: raw.get(key, "") for label, key in column_pairs}
-        row["No."] = str(row.get("No.") or index)
-        row["종목명"] = normalize_stock_name(row.get("종목명"))
-        if row["종목명"]:
-            mapped.append(row)
-    return mapped
-
-
 def fetch_turnaround(
     *, session: Optional[requests.Session] = None, timeout: float = 20
 ) -> list[dict]:
-    """연간실적호전 종목을 FnGuide JSON 피드에서 읽는다."""
-    rows = _fetch_json_rows(
-        TURNAROUND_URL, TURNAROUND_COLUMNS, session=session, timeout=timeout
-    )
+    """연간 영업이익 흑자전환 종목을 FnGuide 신버전 API에서 읽는다."""
+    client = session or _retry_session()
+    params = {"prc": 1, "consol_typ": "C", "fin_typ": "O", "freq_typ": "Y"}
+    try:
+        response = client.get(
+            TURNAROUND_URL,
+            params=params,
+            headers=REQUEST_HEADERS,
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        payload = json.loads(response.content.decode("utf-8-sig"))
+    except Exception as exc:
+        raise ScreeningDataError(
+            f"FnGuide 턴어라운드 응답 해석 실패 ({TURNAROUND_URL}): {exc}"
+        ) from exc
+
+    dataset = payload.get("dataset") if isinstance(payload, dict) else None
+    raw_rows = dataset.get("data") if isinstance(dataset, dict) else None
+    if not isinstance(raw_rows, list):
+        raise ScreeningDataError(
+            f"FnGuide 턴어라운드 응답 구조가 올바르지 않습니다 ({TURNAROUND_URL})"
+        )
+
+    frequency_labels = {"Annual": "연간", "Quarter": "분기"}
+    rows = []
+    for index, raw in enumerate(raw_rows, start=1):
+        if not isinstance(raw, dict):
+            continue
+        stock_name = normalize_stock_name(raw.get("CMP_KOR"))
+        if not stock_name:
+            continue
+        rows.append(
+            {
+                "No.": str(index),
+                "종목명": stock_name,
+                "결산년월": frequency_labels.get(
+                    str(raw.get("FREQ") or ""), str(raw.get("FREQ") or "")
+                ),
+                "최근결산 영업이익": _text_or_empty(raw.get("CUR_VAL")),
+                "직전결산 영업이익": _text_or_empty(raw.get("BEF_VAL")),
+                "증가율": _text_or_empty(raw.get("GROWTH")),
+                "PER": "",
+                "PBR": "",
+            }
+        )
     logger.info("턴어라운드: %d개 종목", len(rows))
     return rows
 
 
 def fetch_supply_trend(
-    *, session: Optional[requests.Session] = None, timeout: float = 20
+    *,
+    session: Optional[requests.Session] = None,
+    timeout: float = 20,
+    ticker_map_path: str = DEFAULT_TICKER_MAP,
 ) -> list[dict]:
-    """외국인/기관 동반 순매수 전환 종목을 JSON 피드에서 읽는다."""
-    rows = _fetch_json_rows(
-        SUPPLY_TREND_URL, SUPPLY_TREND_COLUMNS, session=session, timeout=timeout
-    )
+    """Daum 일별 수급으로 외국인/기관 동반 순매수 전환을 판정한다."""
+    try:
+        with open(ticker_map_path, encoding="utf-8") as file:
+            ticker_map = json.load(file)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ScreeningDataError(f"종목 코드 맵을 읽을 수 없습니다: {exc}") from exc
+    if not isinstance(ticker_map, dict) or not ticker_map:
+        raise ScreeningDataError("종목 코드 맵이 비어 있거나 올바르지 않습니다")
+
+    code_to_name = {
+        str(code).strip().upper().removeprefix("A"): normalize_stock_name(name)
+        for name, code in ticker_map.items()
+        if normalize_stock_name(name) and str(code).strip()
+    }
+    client = session or _retry_session()
+    candidates: dict[str, dict] = {}
+    source_dates = set()
+    common_params = {
+        "limit": 30,
+        "intervalType": "TODAY",
+        "buyFieldName": "straightPurchasePrice",
+        "buyOrder": "desc",
+        "sellFieldName": "straightPurchasePrice",
+        "sellOrder": "asc",
+    }
+
+    for market in ("KOSPI", "KOSDAQ"):
+        for investor_type in ("FOREIGN", "INSTITUTION"):
+            params = {
+                **common_params,
+                "market": market,
+                "investorType": investor_type,
+            }
+            try:
+                response = client.get(
+                    SUPPLY_TREND_URL,
+                    params=params,
+                    headers=DAUM_FINANCE_HEADERS,
+                    timeout=timeout,
+                )
+                response.raise_for_status()
+                payload = json.loads(response.content.decode("utf-8-sig"))
+            except Exception as exc:
+                raise ScreeningDataError(
+                    f"Daum 순매수 상위 응답 해석 실패 ({market}/{investor_type}): {exc}"
+                ) from exc
+
+            data = payload.get("data") if isinstance(payload, dict) else None
+            buy_rows = data.get("BUY") if isinstance(data, dict) else None
+            source_date = str(payload.get("toDate") or "")[:10]
+            if not isinstance(buy_rows, list) or not source_date:
+                raise ScreeningDataError(
+                    f"Daum 순매수 상위 응답 구조가 올바르지 않습니다 "
+                    f"({market}/{investor_type})"
+                )
+            source_dates.add(source_date)
+
+            for raw in buy_rows:
+                if not isinstance(raw, dict):
+                    continue
+                symbol_code = str(raw.get("symbolCode") or "").strip().upper()
+                code = symbol_code.removeprefix("A")
+                if code not in code_to_name:
+                    continue
+                candidates.setdefault(
+                    symbol_code,
+                    {
+                        "code": code,
+                        "name": code_to_name[code],
+                        "change_rate": raw.get("changeRate"),
+                    },
+                )
+
+    if len(source_dates) != 1:
+        raise ScreeningDataError(
+            "Daum 순매수 상위 응답의 기준일이 일치하지 않습니다"
+        )
+    source_date = source_dates.pop()
+
+    def fetch_history(symbol_code: str) -> list[dict]:
+        history_client = client if session is not None else _worker_session()
+        params = {"symbolCode": symbol_code, "page": 1, "perPage": 2}
+        try:
+            response = history_client.get(
+                SUPPLY_HISTORY_URL,
+                params=params,
+                headers=DAUM_FINANCE_HEADERS,
+                timeout=timeout,
+            )
+            response.raise_for_status()
+            payload = json.loads(response.content.decode("utf-8-sig"))
+        except Exception as exc:
+            raise ScreeningDataError(
+                f"Daum 종목별 수급 응답 해석 실패 ({symbol_code}): {exc}"
+            ) from exc
+        history = payload.get("data") if isinstance(payload, dict) else None
+        if not isinstance(history, list):
+            raise ScreeningDataError(
+                f"Daum 종목별 수급 응답 구조가 올바르지 않습니다 ({symbol_code})"
+            )
+        return history
+
+    histories: dict[str, list[dict]] = {}
+    if session is not None:
+        for symbol_code in candidates:
+            histories[symbol_code] = fetch_history(symbol_code)
+    else:
+        with ThreadPoolExecutor(max_workers=min(8, max(1, len(candidates)))) as executor:
+            futures = {
+                executor.submit(fetch_history, symbol_code): symbol_code
+                for symbol_code in candidates
+            }
+            for future in as_completed(futures):
+                symbol_code = futures[future]
+                histories[symbol_code] = future.result()
+
+    selected = []
+    for symbol_code, candidate in candidates.items():
+        history = histories[symbol_code]
+        if len(history) < 2 or not all(isinstance(row, dict) for row in history[:2]):
+            continue
+        current, previous = history[:2]
+        if str(current.get("date") or "")[:10] != source_date:
+            raise ScreeningDataError(
+                f"Daum 순매수 상위/종목별 수급의 기준일이 다릅니다 ({symbol_code})"
+            )
+        try:
+            current_foreign = float(current["foreignStraightPurchaseVolume"])
+            current_institution = float(current["institutionStraightPurchaseVolume"])
+            previous_foreign = float(previous["foreignStraightPurchaseVolume"])
+            previous_institution = float(previous["institutionStraightPurchaseVolume"])
+            trade_price = float(current["tradePrice"])
+            change_rate = float(candidate["change_rate"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ScreeningDataError(
+                f"Daum 종목별 수급 값이 올바르지 않습니다 ({symbol_code}): {exc}"
+            ) from exc
+
+        current_joint_buy = current_foreign > 0 and current_institution > 0
+        previous_joint_buy = previous_foreign > 0 and previous_institution > 0
+        if not current_joint_buy or previous_joint_buy:
+            continue
+
+        estimated_amount = (
+            trade_price * (current_foreign + current_institution) / 100_000_000
+        )
+        selected.append(
+            (
+                estimated_amount,
+                {
+                    "종목명": candidate["name"],
+                    "전일종가(원)": f"{trade_price:,.0f}",
+                    "수익률(%)": f"{change_rate * 100:.1f}",
+                    "순매수금액(억원)": f"{estimated_amount:,.1f}",
+                },
+            )
+        )
+
+    selected.sort(key=lambda item: item[0], reverse=True)
+    rows = []
+    for index, (_, row) in enumerate(selected[:30], start=1):
+        rows.append({"No.": str(index), **row})
     logger.info("순매수전환: %d개 종목", len(rows))
     return rows
 

@@ -1,6 +1,6 @@
 # 국장검색 (`gukjang_gumsak`)
 
-FnGuide 공개 데이터를 이용해 한국 주식 종목을 3개 기준으로 점수화하고, 웹 대시보드·백테스트·DuckDB 이력·텔레그램 일일 리포트로 제공하는 Python 애플리케이션입니다.
+FnGuide와 Daum Finance 공개 데이터를 이용해 한국 주식 종목을 3개 기준으로 점수화하고, 웹 대시보드·백테스트·DuckDB 이력·텔레그램 일일 리포트로 제공하는 Python 애플리케이션입니다.
 
 > 이 프로젝트는 투자 참고 및 소프트웨어 실험용입니다. 데이터의 정확성·완전성을 보장하지 않으며 투자 판단과 결과에 대한 책임은 사용자에게 있습니다.
 
@@ -15,15 +15,16 @@ FnGuide 공개 데이터를 이용해 한국 주식 종목을 3개 기준으로 
 전체 데이터 흐름은 다음과 같습니다.
 
 ```text
-FnGuide JSON + Snapshot/ShareAnalysis
-                ↓
-       응답·종목코드·표 구조 검증
-                ↓
-          3개 기준 점수 계산
-                ↓
- DuckDB 스냅샷 저장 → 메모리/JSON 캐시 게시
-                ↓
-    대시보드 · 백테스트 · 텔레그램
+FnGuide 턴어라운드 + Daum 일별 수급
+          + FnGuide Snapshot/ShareAnalysis
+                         ↓
+                응답·종목코드·표 구조 검증
+                         ↓
+                   3개 기준 점수 계산
+                         ↓
+          DuckDB 스냅샷 저장 → 메모리/JSON 캐시 게시
+                         ↓
+             대시보드 · 백테스트 · 텔레그램
 ```
 
 스크리닝 소스 하나라도 유효하지 않으면 자동·수동 갱신 전체를 실패로 처리하고 이전 대시보드와 캐시를 유지합니다. 새 결과는 DuckDB에 먼저 저장된 뒤 화면과 JSON 캐시에 게시됩니다.
@@ -34,11 +35,13 @@ FnGuide JSON + Snapshot/ShareAnalysis
 
 | 기준 | 판정 내용 | 데이터 소스 |
 | --- | --- | --- |
-| 연간실적호전 | 연간 영업이익이 개선된 종목 | FnGuide `TURNAROUND_A.json` |
-| 외국인/기관 동반 순매수 전환 | 외국인과 기관이 함께 순매수로 전환한 종목 | FnGuide `SUPPLY_TREND_FIRST_BUY.json` |
+| 연간실적호전 | 연간 영업이익이 흑자로 전환된 종목 | FnGuide `Consensus/getScrEarTrn` |
+| 외국인/기관 동반 순매수 전환 | 당일은 외국인·기관 모두 순매수이고 직전 거래일은 동시 순매수가 아닌 종목 | Daum `investor_purchase` + `investor/days` |
 | 국민연금 신규/추가매수 | 공개 주요주주 신규·보유량 증가 이벤트 발생일부터 3개월 | FnGuide Snapshot + ShareAnalysis |
 
-구형 `WooriRenewal` HTML 화면이나 Selenium DOM은 사용하지 않습니다. JSON 응답과 Snapshot·ShareAnalysis의 실제 종목코드, 필수 주주 표·행 구조를 검증해 HTTP 200 오류 문서, 깨진 HTML, 우선주에서 보통주로 잘못 연결된 페이지를 결과에서 제외합니다.
+구형 `WooriRenewal` HTML 화면과 2026-07-29에 종료된 FnGuide `TURNAROUND_A.json`·`SUPPLY_TREND_FIRST_BUY.json`은 사용하지 않습니다. JSON 응답과 Snapshot·ShareAnalysis의 실제 종목코드, 필수 주주 표·행 구조를 검증해 HTTP 200 오류 문서, 깨진 HTML, 우선주에서 보통주로 잘못 연결된 페이지를 결과에서 제외합니다.
+
+Daum 수급은 KOSPI·KOSDAQ의 외국인/기관 순매수 상위 30개 후보를 합친 뒤 종목별 최근 2거래일을 비교합니다. 현재일에 양쪽 순매수량이 양수이고 직전 거래일에는 양쪽이 동시에 양수가 아닌 종목만 선정합니다. `순매수금액(억원)`은 당일 종가×(외국인+기관 순매수량)으로 계산한 추정치입니다.
 
 ### 국민연금 신호 규칙
 
@@ -215,7 +218,7 @@ curl http://localhost:5000/api/status
 
 | 파일 | 용도 | Git 포함 |
 | --- | --- | --- |
-| `ticker_map.json` | FnGuide 및 yfinance 종목 매핑의 저장소 기본값 | 포함 |
+| `ticker_map.json` | 스크리닝·가격 조회용 종목명→종목코드 매핑 | 포함 |
 | `cache_data.json` | 마지막 대시보드 결과와 캐시 버전 | 제외 |
 | `nps_state.json` | 국민연금 보유 기준선과 활성 신호 | 제외 |
 | `stock_data.duckdb` | 가격·지수·티커·스크리닝 이력 | 제외 |
@@ -242,7 +245,7 @@ uv run --isolated --managed-python --python 3.11 --with-requirements requirement
 2. 이전 `nps_state.json`과 `stock_data.duckdb` 캐시 복원
 3. Python 3.11과 의존성 설치
 4. 전체 회귀 테스트 실행
-5. FnGuide 3개 기준 수집 및 스코어링
+5. FnGuide·Daum 3개 기준 수집 및 스코어링
 6. 전체 결과를 DuckDB에 저장
 7. 2점 이상 종목의 6개월 복합전략 백테스트
 8. 텔레그램 요약과 CSV 전송
@@ -320,7 +323,7 @@ uv run --managed-python --python 3.11 python --version
 
 ```text
 app.py                         Flask 웹 UI/API와 로컬 08:00 스케줄러
-screening.py                   FnGuide 수집·검증과 공통 점수 계산
+screening.py                   FnGuide·Daum 수집·검증과 공통 점수 계산
 nps_tracker.py                 국민연금 신호 상태 전이·만료·원자 저장
 backtester.py                  거래비용/FIFO 기반 백테스트 엔진
 stock_db.py                    DuckDB 스키마, 캐시, 스크리닝 이력

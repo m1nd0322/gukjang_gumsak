@@ -512,7 +512,7 @@ def main():
     print()
 
     # 데이터 수집
-    print("[1/3] FnGuide 세 데이터 소스 수집 중...")
+    print("[1/3] FnGuide·Daum 세 데이터 소스 수집 중...")
     turn_rows, supply_rows, nps_rows = fetch_all_data(require_all=True)
     df_turn = _to_dataframe(turn_rows)
     df_supply = _to_dataframe(supply_rows)

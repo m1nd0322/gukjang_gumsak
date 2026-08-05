@@ -862,7 +862,7 @@ tr:hover{background:#f8fafc}.c{text-align:center}
     <div class="loading-box">
         <div class="big-spinner"></div>
         <p>데이터 갱신 중...</p>
-        <div class="sub">FnGuide에서 최신 데이터를 수집하고 있습니다</div>
+        <div class="sub">FnGuide·Daum에서 최신 데이터를 수집하고 있습니다</div>
     </div>
 </div>
 

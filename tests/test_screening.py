@@ -39,28 +39,56 @@ class FakeSession:
         return self.response
 
 
+class RoutingSession:
+    def __init__(self, handler):
+        self.handler = handler
+        self.calls = []
+
+    def get(self, url, **kwargs):
+        self.calls.append((url, kwargs))
+        return self.handler(url, kwargs)
+
+
 def bom_json(payload):
     return b"\xef\xbb\xbf" + json.dumps(payload, ensure_ascii=False).encode("utf-8")
 
 
 class ScreeningFeedTest(unittest.TestCase):
-    def test_turnaround_feed_decodes_bom_and_preserves_legacy_columns(self):
+    def test_turnaround_feed_maps_new_fnguide_response_to_legacy_columns(self):
         payload = {
-            "comp": [
-                {
-                    "RN": "1",
-                    "GICODE": "A005930",
-                    "ITEMABBRNM": " 삼성전자 ",
-                    "CUR_GSYM": "2025/12",
-                    "CUR_DATA": "10.0",
-                    "PREV_DATA": "-1.0",
-                    "GROWTH_NM": "흑자전환",
-                    "PER": "12.3",
-                    "PBR": "1.4",
-                }
-            ]
+            "comp": [],
+            "dataset": {
+                "data": [
+                    {
+                        "CMP_CD": "005930",
+                        "CMP_KOR": " 삼성전자 ",
+                        "P_SEC_KOR": "IT",
+                        "SEC_KOR": "반도체",
+                        "MKT_KOR": "유",
+                        "FREQ": "Annual",
+                        "CUR_VAL": 10.0,
+                        "BEF_VAL": -1.0,
+                        "GROWTH": "흑자전환",
+                        "GROWTH_VAL": 1100.0,
+                        "DATA_GUBUN": "확정",
+                        "FIN_DT": "2026-03-19",
+                    },
+                    {
+                        "CMP_CD": "000000",
+                        "CMP_KOR": "0값테스트",
+                        "FREQ": "Annual",
+                        "CUR_VAL": 0.0,
+                        "BEF_VAL": 0,
+                        "GROWTH": "0.0%",
+                    }
+                ]
+            },
         }
-        rows = fetch_turnaround(session=FakeSession(FakeResponse(bom_json(payload))))
+        session = RoutingSession(
+            lambda _url, _kwargs: FakeResponse(bom_json(payload))
+        )
+
+        rows = fetch_turnaround(session=session)
 
         self.assertEqual(
             rows,
@@ -68,33 +96,150 @@ class ScreeningFeedTest(unittest.TestCase):
                 {
                     "No.": "1",
                     "종목명": "삼성전자",
-                    "결산년월": "2025/12",
+                    "결산년월": "연간",
                     "최근결산 영업이익": "10.0",
                     "직전결산 영업이익": "-1.0",
                     "증가율": "흑자전환",
-                    "PER": "12.3",
-                    "PBR": "1.4",
-                }
+                    "PER": "",
+                    "PBR": "",
+                },
+                {
+                    "No.": "2",
+                    "종목명": "0값테스트",
+                    "결산년월": "연간",
+                    "최근결산 영업이익": "0.0",
+                    "직전결산 영업이익": "0",
+                    "증가율": "0.0%",
+                    "PER": "",
+                    "PBR": "",
+                },
             ],
         )
+        self.assertEqual(
+            session.calls[0][1]["params"],
+            {"prc": 1, "consol_typ": "C", "fin_typ": "O", "freq_typ": "Y"},
+        )
 
-    def test_supply_feed_maps_current_json_shape(self):
-        payload = {
-            "comp": [
-                {
-                    "RN": "1",
-                    "ITEMABBRNM": "SK 하이닉스",
-                    "CLS_PRC": "250,000",
-                    "YIELD": "2.4",
-                    "SUM_AMT": "150.5",
-                }
-            ]
+    def test_supply_feed_keeps_only_new_joint_net_buy_transitions(self):
+        def rank_row(
+            rank, name, code, price, change_rate, change_price, volume, amount
+        ):
+            return {
+                "rank": rank,
+                "name": name,
+                "symbolCode": f"A{code}",
+                "code": f"KR7{code}001",
+                "tradePrice": price,
+                "change": "RISE" if change_price >= 0 else "FALL",
+                "changeRate": change_rate,
+                "changePrice": change_price,
+                "straightPurchaseVolume": volume,
+                "straightPurchasePrice": amount,
+            }
+
+        def ranking_payload(rows):
+            return {
+                "data": {"BUY": rows, "SELL": []},
+                "fromDate": "2026-08-05",
+                "toDate": "2026-08-05",
+            }
+
+        rankings = {
+            ("KOSPI", "FOREIGN"): ranking_payload(
+                [
+                    rank_row(1, "삼성전자", "005930", 100000, 0.012, 1200, 100000, 10000000000),
+                    rank_row(2, "SK하이닉스", "000660", 200000, 0.01, 2000, 100000, 5000000000),
+                    rank_row(3, "TIGER ETF", "133690", 50000, 0.005, 250, 80000, 4000000000),
+                ]
+            ),
+            ("KOSPI", "INSTITUTION"): ranking_payload(
+                [
+                    rank_row(1, "삼성전자", "005930", 100000, 0.012, 1200, 50000, 5000000000),
+                    rank_row(2, "LG전자", "066570", 90000, -0.01, -900, 10000, 900000000),
+                ]
+            ),
+            ("KOSDAQ", "FOREIGN"): ranking_payload(
+                [rank_row(1, "에코프로", "086520", 50000, -0.01, -500, 10000, 500000000)]
+            ),
+            ("KOSDAQ", "INSTITUTION"): ranking_payload([]),
         }
-        rows = fetch_supply_trend(session=FakeSession(FakeResponse(bom_json(payload))))
 
-        self.assertEqual(rows[0]["종목명"], "SK 하이닉스")
-        self.assertEqual(rows[0]["전일종가(원)"], "250,000")
-        self.assertEqual(rows[0]["순매수금액(억원)"], "150.5")
+        def history_row(day, foreign, institution, price, change_price):
+            return {
+                "date": f"{day} 00:00:00",
+                "foreignOwnShares": 1000000,
+                "foreignOwnSharesRate": 0.1,
+                "foreignStraightPurchaseVolume": foreign,
+                "institutionStraightPurchaseVolume": institution,
+                "institutionCumulativeStraightPurchaseVolume": institution,
+                "tradePrice": price,
+                "changePrice": change_price,
+                "change": "RISE" if change_price >= 0 else "FALL",
+                "accTradeVolume": 1000000,
+                "accTradePrice": price * 1000000,
+            }
+
+        histories = {
+            "A005930": [
+                history_row("2026-08-05", 100000, 50000, 100000, 1200),
+                history_row("2026-08-04", 100000, -10, 98800, 100),
+            ],
+            "A000660": [
+                history_row("2026-08-05", 100000, 100000, 200000, 2000),
+                history_row("2026-08-04", 10, 20, 198000, 1000),
+            ],
+            "A066570": [
+                history_row("2026-08-05", -10, 10000, 90000, -900),
+                history_row("2026-08-04", -20, -30, 90900, -100),
+            ],
+            "A086520": [
+                history_row("2026-08-05", 10000, 10000, 50000, -500),
+                history_row("2026-08-04", -100, 200, 50500, 500),
+            ],
+        }
+
+        def route(url, kwargs):
+            if "SUPPLY_TREND_FIRST_BUY" in url:
+                return FakeResponse(bom_json({"comp": []}))
+            if url.endswith("/api/trend/investor_purchase"):
+                params = kwargs["params"]
+                payload = rankings[(params["market"], params["investorType"])]
+                return FakeResponse(bom_json(payload))
+            if url.endswith("/api/investor/days"):
+                symbol_code = kwargs["params"]["symbolCode"]
+                payload = {
+                    "code": 200,
+                    "message": "OK",
+                    "data": histories[symbol_code],
+                    "totalPages": 1,
+                    "totalCount": 2,
+                    "currentPage": 1,
+                    "pageSize": 2,
+                }
+                return FakeResponse(bom_json(payload))
+            raise AssertionError(f"unexpected URL: {url}")
+
+        rows = fetch_supply_trend(session=RoutingSession(route))
+
+        self.assertEqual(
+            rows,
+            [
+                {
+                    "No.": "1",
+                    "종목명": "삼성전자",
+                    "전일종가(원)": "100,000",
+                    "수익률(%)": "1.2",
+                    "순매수금액(억원)": "150.0",
+                },
+                {
+                    "No.": "2",
+                    "종목명": "에코프로",
+                    "전일종가(원)": "50,000",
+                    "수익률(%)": "-1.0",
+                    "순매수금액(억원)": "10.0",
+                },
+            ],
+        )
 
     def test_feed_rejects_http_200_error_document(self):
         session = FakeSession(FakeResponse(b"<html>404 - page not found</html>"))

@@ -2,7 +2,7 @@
 """
 일일 자동 리포트 스크립트 (GitHub Actions 전용)
 ================================================
-1. FnGuide 3개 지표 수집 → 종목 스코어링
+1. FnGuide·Daum 3개 지표 수집 → 종목 스코어링
 2. 2점 이상 종목 대상 백테스트 (슬리피지/수수료/세금 반영)
 3. KOSPI 벤치마크 대비 성과 비교
 4. 상위 10종목 텔레그램 전송 + CSV 저장
@@ -293,8 +293,8 @@ def main():
     logger.info("  일일 자동 리포트 시작")
     logger.info("=" * 60)
 
-    # ── 1단계: FnGuide 데이터 수집 ──
-    logger.info("[1/5] FnGuide 3개 지표 수집 시작...")
+    # ── 1단계: FnGuide·Daum 데이터 수집 ──
+    logger.info("[1/5] FnGuide·Daum 3개 지표 수집 시작...")
     try:
         turn_data, supply_data, nps_data = fetch_all_data(require_all=True)
     except Exception as exc:
