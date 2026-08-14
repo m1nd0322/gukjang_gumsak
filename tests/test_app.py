@@ -656,6 +656,20 @@ process.stdout.write(JSON.stringify({{
         self.assertFalse(started)
         fetch.assert_not_called()
 
+    def test_daily_refresh_is_scheduled_for_seven_kst(self):
+        scheduler = app_module.create_scheduler()
+        job = scheduler.get_job("daily_refresh")
+
+        next_run = job.trigger.get_next_fire_time(
+            None,
+            datetime(2026, 8, 6, 6, 30, tzinfo=app_module.KST),
+        )
+
+        self.assertEqual(
+            next_run,
+            datetime(2026, 8, 6, 7, 0, tzinfo=app_module.KST),
+        )
+
     def test_daily_refresh_runs_after_scheduler_wakes_up_late(self):
         refreshed = threading.Event()
         scheduler = app_module.scheduler
@@ -674,7 +688,7 @@ process.stdout.write(JSON.stringify({{
 
             self.assertTrue(
                 refreshed.wait(timeout=2),
-                "08:00을 놓친 뒤 깨어나도 당일 자동 갱신이 실행되어야 합니다",
+                "07:00을 놓친 뒤 깨어나도 당일 자동 갱신이 실행되어야 합니다",
             )
             deadline = time.monotonic() + 2
             while scheduler.get_job("daily_refresh") is not None:

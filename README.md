@@ -8,7 +8,7 @@ FnGuide와 Daum Finance 공개 데이터를 이용해 한국 주식 종목을 3�
 
 | 실행 경로 | 진입점 | 주요 기능 | 자동 실행 |
 | --- | --- | --- | --- |
-| 로컬 웹 | `app.py` | 스크리닝 대시보드, 수동 갱신, 6개 백테스트 전략, CSV 다운로드, DuckDB 뷰어 | 매일 08:00 KST |
+| 로컬 웹 | `app.py` | 스크리닝 대시보드, 수동 갱신, 6개 백테스트 전략, CSV 다운로드, DuckDB 뷰어 | 매일 07:00 KST |
 | 정적 리포트 | `stock_screener.py` | 현재 스크리닝 결과를 단일 HTML 파일로 생성 | 없음 |
 | GitHub Actions | `daily_report.py` | 스크리닝, 6개월 복합전략 백테스트, 텔레그램 요약·CSV 전송 | 평일 08:00 KST |
 
@@ -108,11 +108,22 @@ export KRX_PW='your-password'
 
 ### 로컬 웹 스케줄러
 
-- `app.py`가 실행 중이면 주말을 포함해 매일 08:00 KST에 갱신합니다.
-- Mac이 잠든 상태로 08:00을 지나더라도 앱 프로세스가 살아 있으면, 시스템이 깨어났을 때 놓친 갱신을 한 번 실행합니다.
+- `app.py`가 실행 중이면 주말을 포함해 매일 07:00 KST에 갱신합니다.
+- Mac이 잠든 상태로 07:00을 지나더라도 앱 프로세스가 살아 있으면, 시스템이 깨어났을 때 놓친 갱신을 한 번 실행합니다.
 - 여러 실행 시각이 밀려도 `coalesce=True`로 한 번만 실행하고 `max_instances=1`로 중복 갱신을 막습니다.
 - 수동 갱신과 예약 갱신도 같은 잠금을 사용하므로 동시에 실행되지 않습니다.
-- 앱 프로세스 자체가 종료되어 있던 시간의 작업은 실행할 수 없습니다. 항상 켜진 자동화가 필요하면 GitHub Actions 경로를 사용하세요.
+- `app.py`가 꺼져 있어도 갱신하려면 아래 macOS 예약 작업을 한 번 등록합니다.
+
+```bash
+uv run --managed-python --python 3.11 python scripts/install_daily_refresh_launch_agent.py
+```
+
+등록된 `LaunchAgent`는 로그인할 때 누락 여부를 점검하고 매일 07:00에 `daily_refresh.py`를 실행합니다. 대시보드가 실행 중이면 `/api/refresh`를 호출하고, 실행 중이 아니면 독립 프로세스에서 갱신합니다. Mac이 잠들어 있던 경우에는 깨어난 직후 한 번 실행됩니다.
+
+```bash
+launchctl print "gui/$(id -u)/com.songhear.gukjang-gumsak.daily-refresh"
+tail -f .omx/logs/daily-refresh.log
+```
 
 수동 갱신은 대시보드의 `재조회` 버튼 또는 다음 API로 시작할 수 있습니다.
 
@@ -311,9 +322,9 @@ uv run --managed-python --python 3.11 python --version
 
 출력이 `Python 3.11.x`인지 확인합니다.
 
-### 08:00 자동 갱신 확인
+### 07:00 자동 갱신 확인
 
-앱 시작 로그의 `다음 자동 갱신` 시각을 확인하세요. 앱 프로세스가 살아 있는 상태의 절전 누락은 깨어난 뒤 한 번 보정되지만, 터미널 종료·재부팅 등으로 앱 프로세스가 종료되어 있었다면 갱신되지 않습니다.
+앱 실행 중에는 시작 로그의 `다음 자동 갱신` 시각을 확인하세요. macOS 예약 작업을 등록했다면 위의 `launchctl print`에서 `Hour = 7`, `Minute = 0`과 최근 `last exit code`를 확인하고 `.omx/logs/daily-refresh.log`에서 실행 결과를 확인합니다.
 
 ### 백테스트 수익률이 긴 소수점으로 표시됨
 
@@ -322,7 +333,9 @@ uv run --managed-python --python 3.11 python --version
 ## 프로젝트 구조
 
 ```text
-app.py                         Flask 웹 UI/API와 로컬 08:00 스케줄러
+app.py                         Flask 웹 UI/API와 로컬 07:00 스케줄러
+daily_refresh.py               서버 유무와 당일 07:00 갱신 여부를 확인하는 예약 진입점
+scripts/install_daily_refresh_launch_agent.py  macOS 07:00 LaunchAgent 설치
 screening.py                   FnGuide·Daum 수집·검증과 공통 점수 계산
 nps_tracker.py                 국민연금 신호 상태 전이·만료·원자 저장
 backtester.py                  거래비용/FIFO 기반 백테스트 엔진

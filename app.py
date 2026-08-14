@@ -3,7 +3,7 @@
 한국 증시 종합 스크리닝 시스템 - 웹 서버 버전
 - Flask 기반 웹 대시보드
 - 재조회 버튼으로 실시간 데이터 갱신
-- 매일 아침 8시 자동 갱신 (APScheduler)
+- 매일 아침 7시 자동 갱신 (APScheduler)
 - Selenium (headless Chrome) 기반 크롤링
 - 백테스트 기능 (커스텀 엔진)
 
@@ -793,7 +793,7 @@ tr:hover{background:#f8fafc}.c{text-align:center}
             <a href="/db" style="padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;background:rgba(255,255,255,.15);color:#fff;text-decoration:none;transition:all .3s">💾 DB 뷰어</a>
             <div class="schedule-badge">
                 <span class="dot"></span>
-                매일 08:00 자동 갱신
+                매일 07:00 자동 갱신
             </div>
             <button class="refresh-btn" id="refreshBtn" onclick="doRefresh()">
                 <span class="btn-icon">&#x21bb;</span>
@@ -2159,7 +2159,7 @@ def create_scheduler():
     daily_scheduler.add_job(
         refresh_data,
         'cron',
-        hour=8,
+        hour=7,
         minute=0,
         timezone=KST,
         id='daily_refresh',
@@ -2186,9 +2186,9 @@ if __name__ == '__main__':
         logger.info("캐시 없음. 초기 데이터 수집 시작...")
         refresh_data()
 
-    # 스케줄러 시작 (매일 아침 8시)
+    # 스케줄러 시작 (매일 아침 7시)
     scheduler.start()
-    logger.info("스케줄러 등록: 매일 08:00 자동 갱신")
+    logger.info("스케줄러 등록: 매일 07:00 자동 갱신")
 
     # 다음 실행 시간 표시
     job = scheduler.get_job('daily_refresh')
