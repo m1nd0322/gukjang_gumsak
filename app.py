@@ -8,7 +8,7 @@
 - 백테스트 기능 (커스텀 엔진)
 
 실행: python app.py
-브라우저: http://localhost:5000
+브라우저: http://localhost:5050
 """
 
 from flask import Flask, jsonify, render_template_string, request, Response
@@ -24,6 +24,7 @@ import traceback
 from zoneinfo import ZoneInfo
 
 from backtester import BacktestEngine
+from runtime_config import web_port
 from screening import calculate_scores, fetch_all_data
 from stock_db import StockDB
 
@@ -38,6 +39,7 @@ DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(DATA_DIR, 'cache_data.json')
 CACHE_VERSION = 2
 KST = ZoneInfo('Asia/Seoul')
+WEB_PORT = web_port()
 BACKTEST_SCORE_OPTIONS = (3, 2, 1)
 DEFAULT_BACKTEST_SCORES = (3, 2)
 BACKTEST_ITEM_SOURCES = {

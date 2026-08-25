@@ -3,7 +3,6 @@
 
 import json
 import logging
-import os
 from datetime import datetime, time
 from urllib.error import URLError
 from urllib.request import Request, urlopen
@@ -11,7 +10,9 @@ from zoneinfo import ZoneInfo
 
 KST = ZoneInfo("Asia/Seoul")
 REFRESH_TIME = time(7, 0)
-DASHBOARD_URL = os.getenv("GUKJANG_DASHBOARD_URL", "http://127.0.0.1:5000")
+from runtime_config import dashboard_url
+
+DASHBOARD_URL = dashboard_url()
 logger = logging.getLogger(__name__)
 
 

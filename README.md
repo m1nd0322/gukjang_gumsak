@@ -81,10 +81,11 @@ uv run --isolated --managed-python --python 3.11 --with-requirements requirement
 
 | 화면 | 주소 |
 | --- | --- |
-| 스크리닝 대시보드 | <http://localhost:5000> |
-| 백테스트 | <http://localhost:5000/backtest> |
-| DuckDB 뷰어 | <http://localhost:5000/db> |
+| 스크리닝 대시보드 | <http://localhost:5050> |
+| 백테스트 | <http://localhost:5050/backtest> |
+| DuckDB 뷰어 | <http://localhost:5050/db> |
 
+macOS의 AirPlay 수신기가 5000 포트를 점유해 `403 Forbidden`을 반환할 수 있으므로 대시보드는 기본적으로 5050 포트를 사용합니다. 다른 포트가 필요하면 실행 전에 `GUKJANG_PORT`를 설정하세요.
 서버는 실행한 터미널에서 `Ctrl+C`로 종료합니다.
 
 ### 코드 변경 반영과 서버 재시작
@@ -118,18 +119,20 @@ export KRX_PW='your-password'
 uv run --managed-python --python 3.11 python scripts/install_daily_refresh_launch_agent.py
 ```
 
-등록된 `LaunchAgent`는 로그인할 때 누락 여부를 점검하고 매일 07:00에 `daily_refresh.py`를 실행합니다. 대시보드가 실행 중이면 `/api/refresh`를 호출하고, 실행 중이 아니면 독립 프로세스에서 갱신합니다. Mac이 잠들어 있던 경우에는 깨어난 직후 한 번 실행됩니다.
+설치 스크립트는 웹 서버를 계속 실행하는 LaunchAgent와 일일 갱신 LaunchAgent를 함께 등록합니다. 일일 작업은 로그인할 때 누락 여부를 점검하고 매일 07:00에 `daily_refresh.py`를 실행합니다. 대시보드가 실행 중이면 `/api/refresh`를 호출하고, 실행 중이 아니면 독립 프로세스에서 갱신합니다. Mac이 잠들어 있던 경우에는 깨어난 직후 한 번 실행됩니다.
 
 ```bash
 launchctl print "gui/$(id -u)/com.songhear.gukjang-gumsak.daily-refresh"
+launchctl print "gui/$(id -u)/com.songhear.gukjang-gumsak.web"
 tail -f .omx/logs/daily-refresh.log
+tail -f .omx/logs/web.log
 ```
 
 수동 갱신은 대시보드의 `재조회` 버튼 또는 다음 API로 시작할 수 있습니다.
 
 ```bash
-curl -X POST http://localhost:5000/api/refresh
-curl http://localhost:5000/api/status
+curl -X POST http://localhost:5050/api/refresh
+curl http://localhost:5050/api/status
 ```
 
 ### GitHub Actions 스케줄러

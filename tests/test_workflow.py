@@ -51,9 +51,9 @@ class ReadmeRunbookTest(unittest.TestCase):
 
         self.assertIn(command, readme)
         self.assertIn("macOS, Linux, Windows PowerShell/CMD에서 동일", readme)
-        self.assertIn("http://localhost:5000", readme)
-        self.assertIn("http://localhost:5000/backtest", readme)
-        self.assertIn("http://localhost:5000/db", readme)
+        self.assertIn("http://localhost:5050", readme)
+        self.assertIn("http://localhost:5050/backtest", readme)
+        self.assertIn("http://localhost:5050/db", readme)
 
 
 if __name__ == "__main__":
