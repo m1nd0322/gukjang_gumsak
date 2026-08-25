@@ -26,10 +26,13 @@ Custom Backtest Engine (커스텀 백테스트 엔진)
     results = engine.get_results()
 """
 
+import logging
 import math
 import statistics
 from dataclasses import dataclass, replace
 from typing import Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================
@@ -380,6 +383,41 @@ class BacktestEngine:
                 result[ticker] = last
         return result
 
+    def _inverse_volatility_weights(self, buyable: List[str], date: str,
+                                    lookback: int) -> Dict[str, float]:
+        """최근 수익률 표준편차의 역수로 비중을 매긴다.
+
+        조회 이력이 짧아 변동성을 못 구하는 종목은 다른 후보의 중간값을
+        빌려온다. 고정 최소값을 주면 신규 상장 종목이 사실상 매수되지
+        않는 문제가 생긴다.
+        """
+        inv_vols: Dict[str, float] = {}
+        unweighted = []
+        for t in buyable:
+            closes = [
+                row['close']
+                for row in self.price_data[t]
+                if row['date'] <= date
+            ]
+            closes = closes[-(lookback + 1):]
+            if len(closes) >= 2 and all(c > 0 for c in closes):
+                rets = [
+                    closes[j] / closes[j - 1] - 1
+                    for j in range(1, len(closes))
+                ]
+                if len(rets) > 1:
+                    inv_vols[t] = 1.0 / max(statistics.stdev(rets), 1e-8)
+                    continue
+            unweighted.append(t)
+
+        if unweighted:
+            fallback = (
+                statistics.median(inv_vols.values()) if inv_vols else 1.0
+            )
+            for t in unweighted:
+                inv_vols[t] = fallback
+        return inv_vols
+
     # ----------------------------------------------------------
     # 전략 1: 동일 비중 매수 후 보유
     # ----------------------------------------------------------
@@ -614,19 +652,9 @@ class BacktestEngine:
 
             if buyable:
                 # 변동성 계산 (최근 lookback일 수익률의 표준편차)
-                inv_vols = {}
-                for t in buyable:
-                    closes = []
-                    for row in self.price_data[t]:
-                        if row['date'] <= date:
-                            closes.append(row['close'])
-                    closes = closes[-(lookback + 1):]
-                    if len(closes) >= 2:
-                        rets = [closes[j] / closes[j - 1] - 1 for j in range(1, len(closes))]
-                        vol = statistics.stdev(rets) if len(rets) > 1 else 1.0
-                        inv_vols[t] = 1.0 / max(vol, 1e-8)
-                    else:
-                        inv_vols[t] = 1.0
+                inv_vols = self._inverse_volatility_weights(
+                    buyable, date, lookback
+                )
 
                 # 역변동성 비중 (변동성 낮을수록 큰 비중)
                 total_inv = sum(inv_vols.values())
@@ -853,20 +881,9 @@ class BacktestEngine:
                         buyable.append(t)
 
                 if buyable:
-                    inv_vols = {}
-                    for t in buyable:
-                        closes = []
-                        for row in self.price_data[t]:
-                            if row['date'] <= date:
-                                closes.append(row['close'])
-                        closes = closes[-(lookback + 1):]
-                        if len(closes) >= 2:
-                            rets = [closes[j] / closes[j - 1] - 1
-                                    for j in range(1, len(closes))]
-                            vol = statistics.stdev(rets) if len(rets) > 1 else 1.0
-                            inv_vols[t] = 1.0 / max(vol, 1e-8)
-                        else:
-                            inv_vols[t] = 1.0
+                    inv_vols = self._inverse_volatility_weights(
+                        buyable, date, lookback
+                    )
 
                     total_inv = sum(inv_vols.values())
                     available = self.portfolio.cash
@@ -1261,16 +1278,25 @@ class BacktestEngine:
         if not bd:
             return None
 
-        base = bd[0]['close']
-        if base <= 0:
+        # 기준값은 포트폴리오 시작일 이전(또는 당일) 마지막 종가로 삼는다.
+        # 당일 종가부터 재면 벤치마크 수익률이 포트폴리오보다 짧은 기간을
+        # 측정해 초과수익(α)이 과대계상된다.
+        prior = [b for b in self.benchmark_data if b['date'] < dates[0]]
+        base_close = prior[-1]['close'] if prior else bd[0]['close']
+        if not prior:
+            logger.warning(
+                "벤치마크 데이터가 포트폴리오 시작일(%s) 이후부터 있어 "
+                "벤치마크 수익률의 측정 기간이 짧습니다", dates[0]
+            )
+        if base_close <= 0:
             return None
 
-        bench_ret = (bd[-1]['close'] / base - 1) * 100
+        bench_ret = (bd[-1]['close'] / base_close - 1) * 100
 
         curve = [
             {
                 'date': b['date'],
-                'equity': round(self.initial_capital * b['close'] / base),
+                'equity': round(self.initial_capital * b['close'] / base_close),
             }
             for b in bd
         ]

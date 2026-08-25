@@ -293,5 +293,103 @@ class BacktestDataSanitizationTest(unittest.TestCase):
         self.assertGreater(results["metrics"]["total_return"], 19.0)
 
 
+class BacktestBenchmarkWindowTest(unittest.TestCase):
+    def test_benchmark_return_is_measured_from_before_the_portfolio_start(self):
+        engine = BacktestEngine(initial_capital=1_000)
+        engine.add_price_data(
+            "AAA",
+            [
+                price("2026-01-02", 100),
+                price("2026-01-20", 100),
+                price("2026-01-30", 120),
+            ],
+        )
+        # KOSPI 데이터에 시작일(01-02) 봉이 없고 01-01과 01-20만 있다.
+        engine.set_benchmark(
+            [
+                {"date": "2026-01-01", "close": 1_000},
+                {"date": "2026-01-20", "close": 1_000},
+                {"date": "2026-01-30", "close": 1_200},
+            ]
+        )
+
+        engine.run_equal_weight(["AAA"])
+        benchmark = engine.get_results()["benchmark"]
+
+        # 시작일 이전 종가(1000)를 기준으로 전 기간 수익률을 측정한다.
+        self.assertEqual(benchmark["return_pct"], 20.0)
+
+    def test_benchmark_curve_stays_aligned_to_the_portfolio_dates(self):
+        engine = BacktestEngine(initial_capital=1_000)
+        engine.add_price_data(
+            "AAA",
+            [price("2026-01-05", 100), price("2026-01-06", 110)],
+        )
+        engine.set_benchmark(
+            [
+                {"date": "2026-01-02", "close": 2_000},
+                {"date": "2026-01-05", "close": 2_000},
+                {"date": "2026-01-06", "close": 2_200},
+            ]
+        )
+
+        engine.run_equal_weight(["AAA"])
+        benchmark = engine.get_results()["benchmark"]
+
+        self.assertEqual(
+            [point["date"] for point in benchmark["curve"]],
+            ["2026-01-05", "2026-01-06"],
+        )
+        self.assertEqual(benchmark["curve"][0]["equity"], 1_000)
+
+
+class VolatilityWeightFallbackTest(unittest.TestCase):
+    def test_short_history_ticker_receives_a_meaningful_weight(self):
+        engine = BacktestEngine(initial_capital=10_000_000)
+        # AAA: 긴 이력(한 번의 하락 포함)을 가진 종목. 트레일링 스탑으로
+        # 매도된 뒤 쿨다운이 지나면 재진입 후보가 된다.
+        engine.add_price_data(
+            "AAA",
+            [
+                price("2026-01-02", 100_000),
+                price("2026-01-05", 100_000),
+                price("2026-01-06", 80_000),
+                price("2026-01-07", 80_000),
+                price("2026-01-08", 80_000),
+                price("2026-01-09", 80_000),
+                price("2026-01-12", 80_000),
+                price("2026-01-13", 80_000),
+            ],
+            name="기존종목",
+        )
+        # BBB: 01-08에 상장해 이력이 짧은 신규 종목
+        engine.add_price_data(
+            "BBB",
+            [
+                price("2026-01-08", 50_000),
+                price("2026-01-09", 50_000),
+                price("2026-01-12", 50_000),
+                price("2026-01-13", 50_000),
+            ],
+            name="신규상장",
+        )
+
+        engine.run_volatility_trailing_stop(
+            ["AAA", "BBB"], lookback=20, stop_pct=-10.0,
+            cooldown=3, reentry=True,
+        )
+
+        bought = {
+            trade.ticker: trade.shares
+            for trade in engine.portfolio.trades
+        }
+        self.assertIn("BBB", bought, "재진입 시점에 신규 상장 종목도 매수되어야 합니다")
+        self.assertGreaterEqual(
+            bought["BBB"] * 50_000,
+            0.1 * 10_000_000,
+            "신규 상장 종목이 의미 있는 비중으로 배정되어야 합니다",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
