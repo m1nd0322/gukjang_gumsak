@@ -137,6 +137,13 @@ curl -X POST http://localhost:5050/api/refresh
 curl http://localhost:5050/api/status
 ```
 
+### 가격 자동 동기화
+
+갱신이 성공하면 그날 종합결과에 포함된 종목의 일봉을 백그라운드에서 증분 수집해 `stock_data.duckdb`에 채워 넣습니다. 서버를 다시 띄울 때도 캐시가 있으면 같은 작업이 한 번 실행됩니다. 덕분에 백테스트를 실행할 때 가격 수집이 거의 필요 없어 바로 시작됩니다.
+
+- 소급 범위는 약 13개월(400일)이며, 이미 채워진 날짜는 API 호출 없이 건너뜁니다.
+- 기본값은 켜짐입니다. 끄려면 서버 실행 전에 `GUKJANG_DAILY_PRICE_SYNC=0`으로 설정하세요.
+
 ### GitHub Actions 스케줄러
 
 `.github/workflows/daily_report.yml`은 월~금 08:00 KST에 실행됩니다. 한국 공휴일은 별도로 제외하지 않으며 GitHub의 `workflow_dispatch`로 수동 실행할 수 있습니다.
@@ -183,7 +190,7 @@ curl http://localhost:5050/api/status
 
 | 전략 키 | 화면 표시 | 동작 |
 | --- | --- | --- |
-| `equal_weight` | 동일 비중 Buy & Hold | 첫 거래일에 동일 금액으로 매수 후 보유 |
+| `equal_weight` | 동일 비중 Buy & Hold | 첫 거래일에 가격이 있는 종목에 한해 동일 금액으로 매수 후 보유 |
 | `rebalance` | 월간 리밸런싱 | 20거래일마다 동일 비중으로 재배분 |
 | `vol_trailing_stop` | 변동성 가중 + 트레일링 스탑 | 저변동성 비중 확대와 고점 대비 하락 시 매도 |
 | `vol_trailing_stop_loss` | 변동성 가중 + 트레일링 스탑 + 스탑로스 | 저변동성 비중 확대, 최고가 대비 10% 하락 또는 평균 체결가 대비 설정 손실률 도달 시 매도 |
@@ -201,7 +208,7 @@ curl http://localhost:5050/api/status
 - 매도 시 증권거래세
 - FIFO 로트 기반 부분·전량 청산
 - 매수 비용부터 반영한 총수익률과 MDD
-- KOSPI 벤치마크 비교
+- KOSPI 벤치마크 비교 (시작일 이전 마지막 종가를 기준으로 포트폴리오와 같은 기간을 측정)
 
 ### 결과 표와 CSV
 
