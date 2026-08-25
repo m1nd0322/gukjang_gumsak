@@ -896,5 +896,119 @@ class StockDbCacheTest(unittest.TestCase):
         self.assertEqual(str(page["rows"][0]["snapshot_date"]), "2026-07-13")
 
 
+class BatchPriceAccessTest(unittest.TestCase):
+    def setUp(self):
+        handle = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)
+        self.db_path = handle.name
+        handle.close()
+        os.unlink(self.db_path)
+        self.db = StockDB(self.db_path)
+
+    def tearDown(self):
+        if os.path.exists(self.db_path):
+            os.unlink(self.db_path)
+
+    @staticmethod
+    def price_row(day, close):
+        return {
+            "date": day,
+            "open": close,
+            "high": close,
+            "low": close,
+            "close": close,
+            "volume": 1_000,
+        }
+
+    def test_get_prices_many_groups_rows_by_ticker_in_one_query(self):
+        self.db.save_prices(
+            "005930",
+            [
+                self.price_row("2026-01-02", 100),
+                self.price_row("2026-01-05", 110),
+            ],
+        )
+        self.db.save_prices("000660", [self.price_row("2026-01-05", 200)])
+
+        result = self.db.get_prices_many(
+            ["005930", "000660", "999999"], "2026-01-01", "2026-01-31"
+        )
+
+        self.assertEqual(set(result), {"005930", "000660"})
+        self.assertEqual(
+            [row["date"] for row in result["005930"]],
+            ["2026-01-02", "2026-01-05"],
+        )
+        self.assertEqual(result["000660"][0]["close"], 200)
+
+    @patch("stock_db.yf.download")
+    def test_ensure_price_data_collects_every_ticker(self, download):
+        frames = {
+            "005930": pd.DataFrame(
+                {
+                    "Open": [70_000.0],
+                    "High": [71_000.0],
+                    "Low": [69_500.0],
+                    "Close": [70_500.0],
+                    "Volume": [1_000_000],
+                },
+                index=pd.to_datetime(["2026-01-05"]),
+            ),
+            "000660": pd.DataFrame(
+                {
+                    "Open": [200_000.0],
+                    "High": [201_000.0],
+                    "Low": [199_000.0],
+                    "Close": [200_500.0],
+                    "Volume": [500_000],
+                },
+                index=pd.to_datetime(["2026-01-05"]),
+            ),
+            "066570": pd.DataFrame(
+                {
+                    "Open": [90_000.0],
+                    "High": [91_000.0],
+                    "Low": [89_500.0],
+                    "Close": [90_500.0],
+                    "Volume": [300_000],
+                },
+                index=pd.to_datetime(["2026-01-05"]),
+            ),
+        }
+        empty = pd.DataFrame(
+            columns=["Open", "High", "Low", "Close", "Volume"]
+        )
+        download.side_effect = (
+            lambda symbol, **kwargs: frames.get(symbol.split(".")[0], empty)
+        )
+
+        stats = self.db.ensure_price_data(
+            ["005930", "000660", "066570"],
+            "20260105",
+            "20260105",
+            delay=0,
+        )
+
+        self.assertEqual(stats, {"total": 3, "fetched": 3, "new_days": 3})
+        loaded = self.db.get_prices_many(list(frames), "2026-01-05", "2026-01-05")
+        self.assertEqual({code for code, rows in loaded.items() if rows}, set(frames))
+
+    @patch("stock_db.yf.download")
+    def test_ensure_price_data_skips_api_when_range_is_covered(self, download):
+        self.db.save_prices(
+            "005930",
+            [
+                self.price_row("2026-01-02", 100),
+                self.price_row("2026-01-05", 110),
+            ],
+        )
+
+        stats = self.db.ensure_price_data(
+            ["005930"], "20260102", "20260105", delay=0
+        )
+
+        self.assertEqual(stats, {"total": 1, "fetched": 0, "new_days": 0})
+        download.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

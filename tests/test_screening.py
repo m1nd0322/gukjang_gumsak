@@ -933,5 +933,97 @@ class SourceOrchestrationTest(unittest.TestCase):
                 fetch_all_data(require_all=True)
 
 
+class SupplyTrendResilienceTest(unittest.TestCase):
+    """일부 종목의 수급 조회가 실패해도 전체 소스가 죽지 않는지 검증한다."""
+
+    @classmethod
+    def setUpClass(cls):
+        ticker_map_path = Path(__file__).resolve().parents[1] / "ticker_map.json"
+        with open(ticker_map_path, encoding="utf-8") as file:
+            cls.ticker_map = json.load(file)
+        cls.stocks = [
+            (name, code)
+            for name, code in cls.ticker_map.items()
+            if len(code) == 6 and code.isdigit()
+        ][:10]
+        self_check = len(cls.stocks)
+        assert self_check == 10, f"티커 맵에서 10개 종목이 필요합니다: {self_check}"
+
+    def fetch_with_failures(self, failing_positions):
+        source_date = "2026-08-05"
+        symbols = [f"A{code}" for _, code in self.stocks]
+        failing_symbols = {symbols[position] for position in failing_positions}
+
+        def rank_row(name, code):
+            return {
+                "rank": 1,
+                "name": name,
+                "symbolCode": f"A{code}",
+                "code": f"KR7{code}001",
+                "tradePrice": 100_000,
+                "change": "RISE",
+                "changeRate": 0.01,
+                "changePrice": 1_000,
+                "straightPurchaseVolume": 100,
+                "straightPurchasePrice": 10_000_000,
+            }
+
+        def history_payload():
+            return {
+                "data": [
+                    {
+                        "date": f"{source_date} 00:00:00",
+                        "foreignStraightPurchaseVolume": 100_000,
+                        "institutionStraightPurchaseVolume": 50_000,
+                        "tradePrice": 100_000,
+                    },
+                    {
+                        "date": "2026-08-04 00:00:00",
+                        "foreignStraightPurchaseVolume": -10,
+                        "institutionStraightPurchaseVolume": -20,
+                        "tradePrice": 99_000,
+                    },
+                ]
+            }
+
+        def route(url, kwargs):
+            if url.endswith("/api/trend/investor_purchase"):
+                params = kwargs["params"]
+                rows = []
+                if (params["market"], params["investorType"]) == (
+                    "KOSPI",
+                    "FOREIGN",
+                ):
+                    rows = [rank_row(name, code) for name, code in self.stocks]
+                payload = {
+                    "data": {"BUY": rows, "SELL": []},
+                    "fromDate": source_date,
+                    "toDate": source_date,
+                }
+                return FakeResponse(bom_json(payload))
+            if url.endswith("/api/investor/days"):
+                symbol_code = kwargs["params"]["symbolCode"]
+                if symbol_code not in symbols:
+                    raise AssertionError(f"예상하지 못한 심볼: {symbol_code}")
+                if symbol_code in failing_symbols:
+                    raise RuntimeError("일시적 네트워크 오류")
+                return FakeResponse(bom_json(history_payload()))
+            raise AssertionError(f"unexpected URL: {url}")
+
+        return fetch_supply_trend(session=RoutingSession(route))
+
+    def test_minor_history_failures_keep_the_remaining_candidates(self):
+        # 10개 중 2개 실패 → 유효 8개 = 최소 기준(ceil(8)) 충족
+        rows = self.fetch_with_failures({2, 7})
+
+        self.assertEqual(len(rows), 8)
+        self.assertEqual(rows[0]["No."], "1")
+
+    def test_major_history_failures_fail_the_whole_source(self):
+        # 10개 중 3개 실패 → 유효 7개 < 최소 기준(8)
+        with self.assertRaises(ScreeningDataError):
+            self.fetch_with_failures({1, 4, 9})
+
+
 if __name__ == "__main__":
     unittest.main()

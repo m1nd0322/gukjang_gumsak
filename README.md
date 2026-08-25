@@ -85,8 +85,9 @@ uv run --isolated --managed-python --python 3.11 --with-requirements requirement
 | 백테스트 | <http://localhost:5050/backtest> |
 | DuckDB 뷰어 | <http://localhost:5050/db> |
 
-macOS의 AirPlay 수신기가 5000 포트를 점유해 `403 Forbidden`을 반환할 수 있으므로 대시보드는 기본적으로 5050 포트를 사용합니다. 다른 포트가 필요하면 실행 전에 `GUKJANG_PORT`를 설정하세요.
 서버는 실행한 터미널에서 `Ctrl+C`로 종료합니다.
+
+macOS의 AirPlay 수신기가 5000 포트를 점유해 `403 Forbidden`을 반환할 수 있으므로 대시보드는 기본적으로 5050 포트를 사용합니다. 다른 포트가 필요하면 실행 전에 `GUKJANG_PORT`를 설정하세요.
 
 ### 코드 변경 반영과 서버 재시작
 
@@ -112,6 +113,7 @@ export KRX_PW='your-password'
 - `app.py`가 실행 중이면 주말을 포함해 매일 07:00 KST에 갱신합니다.
 - Mac이 잠든 상태로 07:00을 지나더라도 앱 프로세스가 살아 있으면, 시스템이 깨어났을 때 놓친 갱신을 한 번 실행합니다.
 - 여러 실행 시각이 밀려도 `coalesce=True`로 한 번만 실행하고 `max_instances=1`로 중복 갱신을 막습니다.
+- 예약 갱신이 실패하면 15분 뒤, 다시 실패하면 30분 뒤에 같은 날 안에서 재시도합니다. 재시도 전에 수동 갱신 등으로 데이터가 새로워졌다면 건너뜁니다.
 - 수동 갱신과 예약 갱신도 같은 잠금을 사용하므로 동시에 실행되지 않습니다.
 - `app.py`가 꺼져 있어도 갱신하려면 아래 macOS 예약 작업을 한 번 등록합니다.
 
@@ -119,7 +121,7 @@ export KRX_PW='your-password'
 uv run --managed-python --python 3.11 python scripts/install_daily_refresh_launch_agent.py
 ```
 
-설치 스크립트는 웹 서버를 계속 실행하는 LaunchAgent와 일일 갱신 LaunchAgent를 함께 등록합니다. 일일 작업은 로그인할 때 누락 여부를 점검하고 매일 07:00에 `daily_refresh.py`를 실행합니다. 대시보드가 실행 중이면 `/api/refresh`를 호출하고, 실행 중이 아니면 독립 프로세스에서 갱신합니다. Mac이 잠들어 있던 경우에는 깨어난 직후 한 번 실행됩니다.
+설치 스크립트는 웹 서버를 계속 실행하는 LaunchAgent와 일일 갱신 LaunchAgent를 함께 등록합니다. 일일 작업은 로그인할 때 누락 여부를 점검하고 매일 07:00에 `daily_refresh.py`를 실행합니다. 대시보드가 실행 중이면 `/api/refresh`를 호출하고 갱신이 끝날 때까지 상태를 확인한 뒤, 오늘 데이터가 준비될 때까지 최대 3회까지 재요청합니다. 실행 중이 아니면 독립 프로세스에서 같은 횟수만큼 갱신합니다. Mac이 잠들어 있던 경우에는 깨어난 직후 한 번 실행됩니다.
 
 ```bash
 launchctl print "gui/$(id -u)/com.songhear.gukjang-gumsak.daily-refresh"

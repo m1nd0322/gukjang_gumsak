@@ -309,6 +309,15 @@ class BacktestEngine:
         self.benchmark_data: List[dict] = []
         self._price_idx: Dict[str, Dict[str, dict]] = {}
 
+    @staticmethod
+    def _has_valid_close(value) -> bool:
+        """종가로 쓸 수 있는 유한한 양수인지 검사한다."""
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return False
+        return math.isfinite(number) and number > 0
+
     def add_price_data(self, ticker: str, data: List[dict], name: str = ''):
         """
         가격 데이터 추가
@@ -317,13 +326,22 @@ class BacktestEngine:
             ticker: 종목코드 (예: '005930')
             data: [{'date': 'YYYY-MM-DD', 'open': float, 'high': float,
                      'low': float, 'close': float, 'volume': int}, ...]
+
             name: 종목명 (예: '삼성전자')
         """
-        sorted_data = sorted(data, key=lambda x: x['date'])
-        self.price_data[ticker] = sorted_data
+        # 종가가 없거나 비정상(NaN, 0 이하)인 행은 시가평가와 수익률 계산을
+        # 망가뜨리므로 입력 단계에서 제외한다.
+        clean_data = sorted(
+            (
+                row for row in data
+                if row.get('date') and self._has_valid_close(row.get('close'))
+            ),
+            key=lambda x: x['date'],
+        )
+        self.price_data[ticker] = clean_data
         if name:
             self.ticker_names[ticker] = name
-        self._price_idx[ticker] = {row['date']: row for row in sorted_data}
+        self._price_idx[ticker] = {row['date']: row for row in clean_data}
 
     def set_benchmark(self, data: List[dict]):
         """벤치마크 데이터 설정 [{'date': 'YYYY-MM-DD', 'close': float}, ...]"""
@@ -384,21 +402,30 @@ class BacktestEngine:
         if not dates:
             return
 
-        valid = [t for t in tickers if t in self.price_data and self.price_data[t]]
+        valid = [
+            t for t in tickers
+            if t in self.price_data
+            and self.price_data[t]
+        ]
+        if not valid:
+            return
+
+        buy_date = dates[0]
+        # 첫 거래일 가격이 없는 종목(기간 중 상장 등)은 끝까지 매수되지
+        # 않으므로 배분 대상에서 제외해 자금이 놀지 않게 한다.
+        valid = [t for t in valid if self._price(t, buy_date)]
         if not valid:
             return
 
         alloc = self.initial_capital / len(valid)
-        buy_date = dates[0]
 
         for ticker in valid:
             price = self._price(ticker, buy_date)
-            if price and price > 0:
-                # 수수료/슬리피지 고려해서 매수 가능 수량 계산
-                exec_p = price * (1 + self.cost_config.slippage_pct / 100)
-                shares = int(alloc / (exec_p * (1 + self.cost_config.commission_pct / 100)))
-                name = self.ticker_names.get(ticker, ticker)
-                self.portfolio.buy(ticker, price, shares, buy_date, name)
+            # 수수료/슬리피지 고려해서 매수 가능 수량 계산
+            exec_p = price * (1 + self.cost_config.slippage_pct / 100)
+            shares = int(alloc / (exec_p * (1 + self.cost_config.commission_pct / 100)))
+            name = self.ticker_names.get(ticker, ticker)
+            self.portfolio.buy(ticker, price, shares, buy_date, name)
 
         for date in dates:
             prices = self._last_known_prices(date)
@@ -995,7 +1022,9 @@ class BacktestEngine:
         previous = self.initial_capital
         for equity in equities:
             if previous > 0:
-                daily_rets.append(equity / previous - 1)
+                ret = equity / previous - 1
+                if math.isfinite(ret):
+                    daily_rets.append(ret)
             previous = equity
 
         ann_ret = (

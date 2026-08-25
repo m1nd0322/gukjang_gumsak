@@ -276,30 +276,65 @@ def fetch_supply_trend(
             )
         return history
 
+    def fetch_history_safe(symbol_code: str):
+        try:
+            return symbol_code, fetch_history(symbol_code)
+        except Exception as exc:
+            return symbol_code, exc
+
     histories: dict[str, list[dict]] = {}
+    history_failures = 0
     if session is not None:
         for symbol_code in candidates:
-            histories[symbol_code] = fetch_history(symbol_code)
+            code, result = fetch_history_safe(symbol_code)
+            if isinstance(result, Exception):
+                history_failures += 1
+                logger.warning(
+                    "Daum 종목별 수급 조회 실패 (%s): %s", code, result
+                )
+            else:
+                histories[code] = result
     else:
         with ThreadPoolExecutor(max_workers=min(8, max(1, len(candidates)))) as executor:
             futures = {
-                executor.submit(fetch_history, symbol_code): symbol_code
+                executor.submit(fetch_history_safe, symbol_code): symbol_code
                 for symbol_code in candidates
             }
             for future in as_completed(futures):
-                symbol_code = futures[future]
-                histories[symbol_code] = future.result()
+                symbol_code, result = future.result()
+                if isinstance(result, Exception):
+                    history_failures += 1
+                    logger.warning(
+                        "Daum 종목별 수급 조회 실패 (%s): %s", symbol_code, result
+                    )
+                else:
+                    histories[symbol_code] = result
+
+    minimum_valid_histories = math.ceil(len(candidates) * 0.8)
+    if len(histories) < minimum_valid_histories:
+        raise ScreeningDataError(
+            "Daum 종목별 수급 유효 응답 비율이 낮습니다 "
+            f"({len(histories)}/{len(candidates)}, 최소 {minimum_valid_histories}, "
+            f"실패 {history_failures})"
+        )
 
     selected = []
+    date_mismatches = 0
     for symbol_code, candidate in candidates.items():
-        history = histories[symbol_code]
-        if len(history) < 2 or not all(isinstance(row, dict) for row in history[:2]):
+        history = histories.get(symbol_code)
+        if (
+            not history
+            or len(history) < 2
+            or not all(isinstance(row, dict) for row in history[:2])
+        ):
             continue
         current, previous = history[:2]
         if str(current.get("date") or "")[:10] != source_date:
-            raise ScreeningDataError(
-                f"Daum 순매수 상위/종목별 수급의 기준일이 다릅니다 ({symbol_code})"
+            date_mismatches += 1
+            logger.debug(
+                "Daum 순매수 상위/종목별 수급의 기준일이 다릅니다 (%s)", symbol_code
             )
+            continue
         try:
             current_foreign = float(current["foreignStraightPurchaseVolume"])
             current_institution = float(current["institutionStraightPurchaseVolume"])
@@ -336,7 +371,12 @@ def fetch_supply_trend(
     rows = []
     for index, (_, row) in enumerate(selected[:30], start=1):
         rows.append({"No.": str(index), **row})
-    logger.info("순매수전환: %d개 종목", len(rows))
+    logger.info(
+        "순매수전환: %d개 종목 (조회 실패 %d, 기준일 불일치 제외 %d)",
+        len(rows),
+        history_failures,
+        date_mismatches,
+    )
     return rows
 
 

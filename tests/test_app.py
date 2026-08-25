@@ -712,5 +712,76 @@ process.stdout.write(JSON.stringify({{
         self.assertIn("escapeHtml(r[c]", template)
 
 
+class DailyRefreshRetryTest(unittest.TestCase):
+    def setUp(self):
+        self.scheduler = MagicMock()
+
+    def test_failed_scheduled_refresh_schedules_a_one_shot_retry(self):
+        with (
+            patch.object(app_module, "scheduler", self.scheduler),
+            patch.object(app_module, "refresh_data", return_value=False),
+        ):
+            app_module.run_daily_refresh_job()
+
+        self.scheduler.add_job.assert_called_once()
+        kwargs = self.scheduler.add_job.call_args.kwargs
+        self.assertEqual(kwargs["id"], "daily_refresh_retry_0")
+        self.assertEqual(kwargs["trigger"], "date")
+
+    def test_successful_scheduled_refresh_does_not_schedule_a_retry(self):
+        with (
+            patch.object(app_module, "scheduler", self.scheduler),
+            patch.object(app_module, "refresh_data", return_value=True) as refresh_data,
+        ):
+            app_module.run_daily_refresh_job()
+
+        refresh_data.assert_called_once()
+        self.scheduler.add_job.assert_not_called()
+
+    def test_retry_skips_when_todays_data_is_already_fresh(self):
+        with (
+            patch.object(app_module, "scheduler", self.scheduler),
+            patch.object(app_module, "_refresh_still_due", return_value=False),
+            patch.object(app_module, "refresh_data") as refresh_data,
+        ):
+            app_module._run_refresh_retry(0)
+
+        refresh_data.assert_not_called()
+        self.scheduler.add_job.assert_not_called()
+
+    def test_retry_reschedules_itself_when_refresh_fails_again(self):
+        with (
+            patch.object(app_module, "scheduler", self.scheduler),
+            patch.object(app_module, "_refresh_still_due", return_value=True),
+            patch.object(app_module, "refresh_data", return_value=False),
+        ):
+            app_module._run_refresh_retry(0)
+
+        kwargs = self.scheduler.add_job.call_args.kwargs
+        self.assertEqual(kwargs["id"], "daily_refresh_retry_1")
+
+    def test_retry_chain_gives_up_after_the_final_delay(self):
+        exhausted = len(app_module.DAILY_REFRESH_RETRY_DELAYS)
+
+        with (
+            patch.object(app_module, "scheduler", self.scheduler),
+            patch.object(app_module.logger, "error") as log_error,
+        ):
+            app_module._schedule_refresh_retry(exhausted)
+
+        self.scheduler.add_job.assert_not_called()
+        log_error.assert_called_once()
+
+    def test_refresh_still_due_follows_last_updated_time(self):
+        with app_module.data_lock:
+            previous = app_module.current_data.get("last_updated")
+            app_module.current_data["last_updated"] = None
+        try:
+            self.assertTrue(app_module._refresh_still_due())
+        finally:
+            with app_module.data_lock:
+                app_module.current_data["last_updated"] = previous
+
+
 if __name__ == "__main__":
     unittest.main()

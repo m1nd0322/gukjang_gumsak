@@ -25,10 +25,14 @@ class NpsStateLockError(NpsStateError):
 def nps_state_lock(
     path: str | os.PathLike,
     *,
-    timeout: float = 30,
+    timeout: float = 300,
     stale_after: float = 900,
 ):
-    """원자적 디렉터리 생성으로 OS에 독립적인 프로세스 잠금을 건다."""
+    """원자적 디렉터리 생성으로 OS에 독립적인 프로세스 잠금을 건다.
+
+    기본 대기 시간은 전 종목 Snapshot 수집(수십 초~수분)이 끝나기를
+    기다릴 수 있도록 넉넉하게 잡는다.
+    """
     lock_path = f"{os.path.abspath(os.fspath(path))}.lock"
     deadline = time.monotonic() + max(0.0, float(timeout))
     while True:

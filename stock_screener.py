@@ -524,7 +524,7 @@ def main():
 
     if df_turn.empty and df_supply.empty and df_nps.empty:
         print("\n❌ 데이터를 수집하지 못했습니다.")
-        return
+        raise SystemExit(1)
 
     # 점수 계산
     result_df, stats = calculate_scores(df_turn, df_supply, df_nps)

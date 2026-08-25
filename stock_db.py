@@ -21,6 +21,7 @@ import math
 import os
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 from zoneinfo import ZoneInfo
@@ -40,6 +41,7 @@ class StockDB:
     _mutation_locks = {}
     _mutation_locks_by_identity = {}
     _mutation_locks_guard = threading.Lock()
+    _connect_lock = threading.Lock()
 
     def __init__(self, db_path: str = None):
         if db_path is None:
@@ -94,8 +96,13 @@ class StockDB:
             cls._mutation_locks_by_identity[identity] = lock
 
     def _connect(self):
-        """DuckDB 연결 (매 호출마다 새 연결 - 스레드 안전)"""
-        return duckdb.connect(self.db_path)
+        """DuckDB 연결 (매 호출마다 새 연결 - 스레드 안전)
+
+        여러 스레드가 동시에 connect하면 같은 파일에 대해 별도 인스턴스가
+        만들어져 충돌하므로 인스턴스 생성만 직렬화한다.
+        """
+        with StockDB._connect_lock:
+            return duckdb.connect(self.db_path)
 
     @staticmethod
     def _sync_daily_price_names(con) -> None:
@@ -641,19 +648,19 @@ class StockDB:
         Returns:
             새로 수집한 일수
         """
-        stored_dates = self.get_stored_dates(ticker)
         start_s = start_yyyymmdd.replace('-', '')
         end_s = end_yyyymmdd.replace('-', '')
 
-        if stored_dates:
-            db_max = max(stored_dates)
-            db_max_yyyymmdd = db_max.replace('-', '')
-            if end_s <= db_max_yyyymmdd:
-                db_min = min(stored_dates)
-                db_min_yyyymmdd = db_min.replace('-', '')
-                if start_s >= db_min_yyyymmdd:
-                    logger.debug(f"  {ticker}: DB에 충분한 데이터 존재")
-                    return 0
+        # 전체 날짜 집합을 읽기 전에 범위만으로 스킵 여부를 판단한다.
+        stored_min, stored_max = self.get_stored_date_range(ticker)
+        if stored_max:
+            db_max_yyyymmdd = str(stored_max).replace('-', '')
+            db_min_yyyymmdd = str(stored_min).replace('-', '')
+            if end_s <= db_max_yyyymmdd and start_s >= db_min_yyyymmdd:
+                logger.debug(f"  {ticker}: DB에 충분한 데이터 존재")
+                return 0
+
+        stored_dates = self.get_stored_dates(ticker)
 
         new_data = []
         if krx_module:
@@ -703,35 +710,90 @@ class StockDB:
         return len(new_data)
 
     def ensure_price_data(self, tickers: List[str], start_yyyymmdd: str, end_yyyymmdd: str,
-                          krx_module=None, progress_callback=None, delay: float = 0.3) -> dict:
+                          krx_module=None, progress_callback=None,
+                          delay: float = 0.3, max_workers: int = 6) -> dict:
         """
-        여러 종목의 데이터를 한번에 증분 수집
+        여러 종목의 데이터를 한번에 증분 수집 (네트워크 I/O 병렬 처리)
 
         Args:
             tickers: 종목코드 리스트
             start_yyyymmdd, end_yyyymmdd: 'YYYYMMDD' 형식
             krx_module: pykrx.stock 모듈
             progress_callback: fn(loaded, total, ticker_name) 콜백
-            delay: API 호출 간 대기 시간(초)
+            delay: API 호출 후 대기 시간(초)
+            max_workers: 동시에 조회할 최대 종목 수
 
         Returns:
             {'total': 전체 종목수, 'fetched': API 호출 종목수, 'new_days': 신규 일수}
         """
         stats = {'total': len(tickers), 'fetched': 0, 'new_days': 0}
+        if not tickers:
+            return stats
 
-        for i, ticker in enumerate(tickers):
+        workers = max(1, min(int(max_workers), len(tickers)))
+        stats_lock = threading.Lock()
+        completed = [0]
+
+        def fetch_one(ticker: str):
+            new = self.fetch_and_store(ticker, start_yyyymmdd, end_yyyymmdd,
+                                       krx_module)
+            with stats_lock:
+                if new > 0:
+                    stats['fetched'] += 1
+                    stats['new_days'] += new
+                completed[0] += 1
+                loaded = completed[0]
+            # DuckDB 쓰기는 클래스 단위 잠금으로 직렬화되므로 여기서는
+            # 네트워크 대기만 조절한다.
+            time.sleep(delay if new > 0 else 0.05)
             if progress_callback:
-                progress_callback(i + 1, len(tickers), ticker)
+                try:
+                    progress_callback(loaded, len(tickers), ticker)
+                except Exception:
+                    logger.debug("진행 콜백 실패", exc_info=True)
 
-            new = self.fetch_and_store(ticker, start_yyyymmdd, end_yyyymmdd, krx_module)
-            if new > 0:
-                stats['fetched'] += 1
-                stats['new_days'] += new
-                time.sleep(delay)  # API 속도 제한
-            else:
-                time.sleep(0.05)  # DB만 읽은 경우 짧게
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            list(executor.map(fetch_one, tickers))
 
         return stats
+
+    def get_prices_many(self, tickers: List[str], start_date: str,
+                        end_date: str) -> Dict[str, List[dict]]:
+        """
+        여러 종목의 일봉 데이터를 한 번의 쿼리로 조회
+
+        Args:
+            tickers: 종목코드 리스트
+            start_date, end_date: 'YYYY-MM-DD' 형식
+        Returns:
+            {ticker: [{'date': .., 'open': .., ..., 'volume': ..}, ...]}
+        """
+        if not tickers:
+            return {}
+
+        placeholders = ", ".join(["?"] * len(tickers))
+        con = self._connect()
+        try:
+            rows = con.execute(
+                f"""
+                SELECT ticker, CAST(date AS VARCHAR), open, high, low, close, volume
+                FROM daily_prices
+                WHERE ticker IN ({placeholders})
+                  AND date >= ? AND date <= ?
+                ORDER BY ticker, date
+                """,
+                list(tickers) + [start_date, end_date],
+            ).fetchall()
+
+            result: Dict[str, List[dict]] = {}
+            for r in rows:
+                result.setdefault(r[0], []).append({
+                    'date': r[1], 'open': r[2], 'high': r[3],
+                    'low': r[4], 'close': r[5], 'volume': int(r[6] or 0),
+                })
+            return result
+        finally:
+            con.close()
 
     # ----------------------------------------------------------
     # KOSPI 지수

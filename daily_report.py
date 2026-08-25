@@ -17,10 +17,13 @@ from html import escape
 import io
 import json
 import logging
+import math
 import os
 import sys
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
+import pandas as pd
 import requests
 import yfinance as yf
 
@@ -49,6 +52,7 @@ COMMISSION_PCT = 0.015         # 수수료 0.015% (매수/매도 각각)
 TAX_PCT = 0.20                 # 증권거래세 0.20% (매도시)
 
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
+KST = ZoneInfo("Asia/Seoul")
 
 
 # ============================================================
@@ -158,7 +162,7 @@ def generate_csv(engine: BacktestEngine, results: dict) -> str:
     csv_data = output.getvalue()
     output.close()
 
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    timestamp = datetime.now(KST).strftime('%Y%m%d_%H%M%S')
     filename = f'backtest_{STRATEGY}_{timestamp}.csv'
     filepath = os.path.join(OUTPUT_DIR, filename)
 
@@ -175,7 +179,7 @@ def generate_csv(engine: BacktestEngine, results: dict) -> str:
 def format_telegram_message(scored_results: list, stats: dict,
                             bt_results: dict, cost_summary: dict) -> str:
     """텔레그램 메시지 HTML 포맷"""
-    now = datetime.now().strftime('%Y-%m-%d %H:%M')
+    now = datetime.now(KST).strftime('%Y-%m-%d %H:%M')
     metrics = bt_results.get('metrics', {})
     benchmark = bt_results.get('benchmark')
     config = bt_results.get('cost_config', {})
@@ -218,6 +222,7 @@ def format_telegram_message(scored_results: list, stats: dict,
         'equal_weight': '동일 비중 Buy & Hold',
         'rebalance': '월간 리밸런싱',
         'vol_trailing_stop': '변동성 + 트레일링 스탑',
+        'vol_trailing_stop_loss': '변동성 + 트레일링 스탑 + 스탑로스',
         'ma_filter': 'MA 필터',
         'composite': '복합 전략 (MA+변동성+스탑)',
     }
@@ -300,7 +305,7 @@ def main():
     except Exception as exc:
         msg = f"스크리닝 데이터 수집 실패: {exc}"
         logger.error(msg)
-        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{msg}")
+        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
         sys.exit(1)
 
     source_counts = {
@@ -325,7 +330,7 @@ def main():
     except Exception as exc:
         msg = f"종합결과 DuckDB 저장 실패: {exc}"
         logger.error(msg)
-        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{msg}")
+        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
         sys.exit(1)
     logger.info("  DuckDB 종합결과: %d개 저장", saved_count)
 
@@ -347,7 +352,7 @@ def main():
     if not os.path.exists(ticker_map_path):
         msg = "ticker_map.json 파일이 없습니다. 로컬에서 생성 후 커밋하세요."
         logger.error(msg)
-        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{msg}")
+        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
         sys.exit(1)
 
     with open(ticker_map_path, 'r', encoding='utf-8') as f:
@@ -366,7 +371,7 @@ def main():
     if not matched:
         msg = f"종목코드 매핑 실패: {', '.join(stock_names[:5])}"
         logger.error(msg)
-        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{msg}")
+        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
         sys.exit(1)
 
     if unmatched:
@@ -375,7 +380,7 @@ def main():
     logger.info(f"  매핑 성공: {len(matched)}개 | 실패: {len(unmatched)}개")
 
     # 기간 설정
-    end_dt = datetime.now()
+    end_dt = datetime.now(KST)
     start_dt = end_dt - timedelta(days=BACKTEST_PERIOD_MONTHS * 30)
     start_iso = start_dt.strftime('%Y-%m-%d')
     end_iso = end_dt.strftime('%Y-%m-%d')
@@ -383,11 +388,6 @@ def main():
     # yfinance로 가격 데이터 수집 (KRX API 해외 차단 우회)
     # KOSPI: 종목코드 + ".KS", KOSDAQ: 종목코드 + ".KQ"
     logger.info(f"  yfinance로 가격 데이터 수집 중... ({len(matched)}종목)")
-
-    def get_yf_ticker(code: str) -> str:
-        """종목코드를 yfinance 심볼로 변환 (KOSPI=.KS, KOSDAQ=.KQ)"""
-        # 6자리 숫자 코드 → .KS 시도 후 실패시 .KQ
-        return f"{code}.KS"
 
     # ── 4단계: 백테스트 실행 ──
     logger.info("[4/5] 백테스트 실행...")
@@ -400,39 +400,63 @@ def main():
 
     failed_tickers = []
     for i, (code, name) in enumerate(matched.items()):
-        yf_symbol = get_yf_ticker(code)
-        try:
-            df = yf.download(yf_symbol, start=start_iso, end=end_iso,
-                             progress=False, auto_adjust=True)
-            if df.empty:
-                # KOSPI 실패 → KOSDAQ 시도
-                yf_symbol = f"{code}.KQ"
+        # KOSPI(.KS)와 KOSDAQ(.KQ)를 순서대로 시도한다. 첫 요청이 예외를
+        # 던져도(일시적 429/네트워크 오류) 다른 접미사 기회를 잃지 않게 한다.
+        prices = None
+        used_symbol = ''
+        last_error = None
+        for suffix in ('.KS', '.KQ'):
+            yf_symbol = f"{code}{suffix}"
+            try:
                 df = yf.download(yf_symbol, start=start_iso, end=end_iso,
                                  progress=False, auto_adjust=True)
+            except Exception as e:
+                last_error = e
+                logger.warning(f"  [{i+1}/{len(matched)}] {name}({yf_symbol}): 오류 - {e}")
+                continue
+            if df.empty:
+                continue
 
-            if not df.empty:
-                # yfinance DataFrame → BacktestEngine 형식 변환
-                # MultiIndex columns 처리 (yfinance 0.2.31+)
-                if isinstance(df.columns, __import__('pandas').MultiIndex):
-                    df.columns = df.columns.get_level_values(0)
-                prices = []
-                for date_idx, row in df.iterrows():
-                    prices.append({
-                        'date': date_idx.strftime('%Y-%m-%d'),
-                        'open': float(row['Open']),
-                        'high': float(row['High']),
-                        'low': float(row['Low']),
-                        'close': float(row['Close']),
-                        'volume': int(row['Volume']),
-                    })
-                engine.add_price_data(code, prices, name=name)
-                logger.info(f"  [{i+1}/{len(matched)}] {name}({yf_symbol}): {len(prices)}일")
-            else:
-                failed_tickers.append(name)
-                logger.warning(f"  [{i+1}/{len(matched)}] {name}({yf_symbol}): 데이터 없음")
-        except Exception as e:
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
+            rows = []
+            for date_idx, row in df.iterrows():
+                close = float(row['Close'])
+                # 종결 처리·데이터 공백으로 생긴 NaN 행은 제외하고,
+                # 거래량 NaN은 0으로 간주한다.
+                if not math.isfinite(close) or close <= 0:
+                    continue
+                open_price = float(row['Open'])
+                high = float(row['High'])
+                low = float(row['Low'])
+                try:
+                    volume = max(0, int(float(row['Volume']) or 0))
+                except (TypeError, ValueError):
+                    volume = 0
+                rows.append({
+                    'date': date_idx.strftime('%Y-%m-%d'),
+                    'open': open_price if math.isfinite(open_price) else close,
+                    'high': high if math.isfinite(high) else close,
+                    'low': low if math.isfinite(low) else close,
+                    'close': close,
+                    'volume': volume,
+                })
+            if rows:
+                prices = rows
+                used_symbol = yf_symbol
+                break
+
+        if prices:
+            engine.add_price_data(code, prices, name=name)
+            logger.info(f"  [{i+1}/{len(matched)}] {name}({used_symbol}): {len(prices)}일")
+        else:
             failed_tickers.append(name)
-            logger.warning(f"  [{i+1}/{len(matched)}] {name}({code}): 오류 - {e}")
+            if last_error is not None:
+                logger.warning(
+                    f"  [{i+1}/{len(matched)}] {name}({code}): 수집 실패 - {last_error}"
+                )
+            else:
+                logger.warning(f"  [{i+1}/{len(matched)}] {name}({code}): 데이터 없음")
 
     if failed_tickers:
         logger.warning(f"  가격 수집 실패: {', '.join(failed_tickers)}")
@@ -440,18 +464,22 @@ def main():
     if not engine.price_data:
         msg = "가격 데이터를 수집한 종목이 없습니다"
         logger.error(msg)
-        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{msg}")
+        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
         sys.exit(1)
 
     # KOSPI 벤치마크 (yfinance: ^KS11)
     try:
         kospi_df = yf.download("^KS11", start=start_iso, end=end_iso,
                                progress=False, auto_adjust=True)
-        if isinstance(kospi_df.columns, __import__('pandas').MultiIndex):
+        if isinstance(kospi_df.columns, pd.MultiIndex):
             kospi_df.columns = kospi_df.columns.get_level_values(0)
         if not kospi_df.empty:
-            kospi = [{'date': d.strftime('%Y-%m-%d'), 'close': float(r['Close'])}
-                     for d, r in kospi_df.iterrows()]
+            kospi = []
+            for d, r in kospi_df.iterrows():
+                close = float(r['Close'])
+                if not math.isfinite(close) or close <= 0:
+                    continue
+                kospi.append({'date': d.strftime('%Y-%m-%d'), 'close': close})
             engine.set_benchmark(kospi)
             logger.info(f"  KOSPI 벤치마크: {len(kospi)}일")
     except Exception as e:
@@ -492,7 +520,7 @@ def main():
     send_telegram(message)
 
     # 텔레그램 CSV 전송
-    caption = f"백테스트 CSV ({datetime.now().strftime('%Y-%m-%d')})"
+    caption = f"백테스트 CSV ({datetime.now(KST).strftime('%Y-%m-%d')})"
     send_telegram_document(csv_path, caption=caption)
 
     logger.info("=" * 60)

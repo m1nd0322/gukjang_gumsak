@@ -236,5 +236,62 @@ class VolatilityTrailingStopLossTest(unittest.TestCase):
         self.assertEqual(engine.portfolio.trades[1].status, "open")
 
 
+class BacktestDataSanitizationTest(unittest.TestCase):
+    def test_non_finite_and_non_positive_closes_are_dropped_on_ingest(self):
+        engine = BacktestEngine()
+        engine.add_price_data(
+            "AAA",
+            [
+                price("2026-01-02", 100),
+                {"date": "2026-01-05", "close": float("nan")},
+                price("2026-01-06", 110),
+                price("2026-01-07", 0),
+            ],
+        )
+
+        self.assertEqual(
+            [row["date"] for row in engine.price_data["AAA"]],
+            ["2026-01-02", "2026-01-06"],
+        )
+
+    def test_nan_close_does_not_crash_metric_calculation(self):
+        engine = BacktestEngine(initial_capital=1_000)
+        engine.add_price_data(
+            "AAA",
+            [
+                price("2026-01-02", 100),
+                price("2026-01-05", 110),
+                {"date": "2026-01-06", "close": float("nan")},
+            ],
+        )
+
+        engine.run_equal_weight(["AAA"])
+        results = engine.get_results()
+
+        self.assertEqual(results["metrics"]["trading_days"], 2)
+
+    def test_late_listing_does_not_idle_allocated_capital_in_equal_weight(self):
+        engine = BacktestEngine(initial_capital=200_000)
+        engine.add_price_data(
+            "AAA",
+            [price("2026-01-02", 100), price("2026-01-30", 120)],
+            name="상장종목",
+        )
+        engine.add_price_data(
+            "BBB",
+            [price("2026-01-30", 200)],
+            name="지연상장",
+        )
+
+        engine.run_equal_weight(["AAA", "BBB"])
+        results = engine.get_results()
+
+        bought_tickers = {trade.ticker for trade in engine.portfolio.trades}
+        self.assertEqual(bought_tickers, {"AAA"})
+        # BBB가 첫 거래일에 없으므로 전 자금이 AAA에 배분되어야 한다.
+        self.assertEqual(engine.portfolio.trades[0].shares, 2_000)
+        self.assertGreater(results["metrics"]["total_return"], 19.0)
+
+
 if __name__ == "__main__":
     unittest.main()

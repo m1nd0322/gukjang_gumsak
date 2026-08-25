@@ -19,11 +19,13 @@ import json
 import math
 import os
 import logging
+import tempfile
 import threading
 import traceback
 from zoneinfo import ZoneInfo
 
 from backtester import BacktestEngine
+from daily_refresh import refresh_is_due
 from runtime_config import web_port
 from screening import calculate_scores, fetch_all_data
 from stock_db import StockDB
@@ -156,8 +158,7 @@ def _refresh_data_locked():
             'turn': turn, 'supply': supply, 'nps': nps,
             'result': result, 'stats': stats, 'last_updated': now,
         }
-        with open(CACHE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(cache, f, ensure_ascii=False, indent=2)
+        _write_cache_atomic(cache)
 
         logger.info(f"데이터 갱신 완료: 3점={stats['score_3']}, 2점={stats['score_2']}, 1점={stats['score_1']}")
         return True
@@ -174,6 +175,26 @@ def _refresh_data_locked():
                 current_data['status'] = 'error'
                 current_data['error_msg'] = str(e)
         return False
+
+
+def _write_cache_atomic(cache):
+    """임시 파일에 기록한 뒤 원자적으로 교체해 부분 기록을 막는다."""
+    directory = os.path.dirname(CACHE_FILE)
+    descriptor, temporary = tempfile.mkstemp(
+        prefix='.cache-', suffix='.json', dir=directory
+    )
+    try:
+        with os.fdopen(descriptor, 'w', encoding='utf-8') as f:
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temporary, CACHE_FILE)
+    except Exception:
+        try:
+            os.unlink(temporary)
+        except FileNotFoundError:
+            pass
+        raise
 
 
 def load_cache():
@@ -375,7 +396,7 @@ def run_backtest_task(period_months, initial_capital, strategy,
         logger.info(f"데이터 수집: API 호출 {fetch_stats['fetched']}종목, "
                      f"신규 {fetch_stats['new_days']}일 (DB 캐시 활용)")
 
-        # 5. DuckDB에서 데이터 로드 → 백테스트 엔진
+        # 5. DuckDB에서 데이터 일괄 로드 → 백테스트 엔진
         engine = BacktestEngine(
             initial_capital=initial_capital,
             slippage_pct=slippage_pct,
@@ -383,8 +404,11 @@ def run_backtest_task(period_months, initial_capital, strategy,
             tax_pct=tax_pct,
         )
 
+        prices_by_ticker = stock_db.get_prices_many(
+            list(matched.keys()), start_iso, end_iso
+        )
         for code, name in matched.items():
-            prices = stock_db.get_prices(code, start_iso, end_iso)
+            prices = prices_by_ticker.get(code, [])
             if prices:
                 engine.add_price_data(code, prices, name=name)
             else:
@@ -2155,11 +2179,64 @@ function renderTickerSummary(summary) {
 # ============================================================
 # 스케줄러 설정
 # ============================================================
+DAILY_REFRESH_RETRY_DELAYS = (timedelta(minutes=15), timedelta(minutes=30))
+
+
+def _refresh_still_due(now=None):
+    """오늘 07:00 갱신이 아직 완료되지 않았는지 확인한다."""
+    with data_lock:
+        last_updated = current_data.get('last_updated')
+    return refresh_is_due(last_updated, now or datetime.now(KST))
+
+
+def _schedule_refresh_retry(attempt):
+    """실패한 일일 자동 갱신을 같은 날 안에서 다시 예약한다."""
+    if attempt >= len(DAILY_REFRESH_RETRY_DELAYS):
+        logger.error("일일 자동 갱신 재시도를 포기합니다 (재시도 %d회 실패)", attempt)
+        return
+    run_date = datetime.now(KST) + DAILY_REFRESH_RETRY_DELAYS[attempt]
+    try:
+        scheduler.add_job(
+            _run_refresh_retry,
+            trigger='date',
+            run_date=run_date,
+            args=(attempt,),
+            id=f'daily_refresh_retry_{attempt}',
+            name='daily_refresh 재시도',
+            misfire_grace_time=None,
+        )
+    except Exception as exc:
+        logger.error("자동 갱신 재시도 예약 실패: %s", exc)
+        return
+    logger.info(
+        "자동 갱신 실패 - %s에 재시도를 예약했습니다",
+        run_date.strftime('%Y-%m-%d %H:%M:%S'),
+    )
+
+
+def _run_refresh_retry(attempt):
+    if not _refresh_still_due():
+        logger.info("오늘 데이터가 이미 갱신되어 재시도를 건너뜁니다")
+        return
+    logger.info("일일 자동 갱신 재시도 (%d/%d)",
+                attempt + 1, len(DAILY_REFRESH_RETRY_DELAYS))
+    if refresh_data():
+        return
+    _schedule_refresh_retry(attempt + 1)
+
+
+def run_daily_refresh_job():
+    """매일 07:00에 실행되는 예약 갱신. 실패 시 단계적 재시도를 예약한다."""
+    if refresh_data():
+        return
+    _schedule_refresh_retry(0)
+
+
 def create_scheduler():
     """절전에서 늦게 깨어나도 놓친 일일 갱신을 한 번 실행한다."""
     daily_scheduler = BackgroundScheduler(timezone=KST)
     daily_scheduler.add_job(
-        refresh_data,
+        run_daily_refresh_job,
         'cron',
         hour=7,
         minute=0,
@@ -2197,10 +2274,10 @@ if __name__ == '__main__':
     if job and job.next_run_time:
         logger.info(f"다음 자동 갱신: {job.next_run_time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-    logger.info("서버 시작: http://localhost:5000")
+    logger.info(f"서버 시작: http://localhost:{WEB_PORT}")
     logger.info("=" * 50)
 
     try:
-        app.run(host='127.0.0.1', port=5000, debug=False)
+        app.run(host='127.0.0.1', port=WEB_PORT, debug=False)
     finally:
         scheduler.shutdown()

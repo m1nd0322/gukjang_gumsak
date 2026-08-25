@@ -6,7 +6,10 @@ from zoneinfo import ZoneInfo
 
 import daily_refresh
 from daily_refresh import refresh_is_due
-from scripts.install_daily_refresh_launch_agent import build_launch_agent
+from scripts.install_daily_refresh_launch_agent import (
+    build_launch_agent,
+    build_web_launch_agent,
+)
 
 KST = ZoneInfo("Asia/Seoul")
 
@@ -86,6 +89,75 @@ class LaunchAgentConfigTest(unittest.TestCase):
                 "/tmp/gukjang_gumsak/daily_refresh.py",
             ],
         )
+
+    def test_web_agent_keeps_the_dashboard_running(self):
+        config = build_web_launch_agent(
+            Path("/tmp/gukjang_gumsak"),
+            Path("/opt/homebrew/bin/uv"),
+        )
+
+        self.assertTrue(config["RunAtLoad"])
+        self.assertTrue(config["KeepAlive"])
+        self.assertEqual(
+            config["ProgramArguments"][-2:],
+            ["python", "/tmp/gukjang_gumsak/app.py"],
+        )
+
+
+class DashboardSupervisorTest(unittest.TestCase):
+    def test_already_loading_waits_for_completion_before_reporting_success(self):
+        now = datetime(2026, 8, 15, 7, 0, tzinfo=KST)
+        responses = [
+            {"status": "loading", "last_updated": "2026-08-14 07:00:00"},
+            {"status": "done", "last_updated": "2026-08-15 07:00:20"},
+        ]
+
+        with (
+            patch.object(
+                daily_refresh,
+                "_dashboard_status",
+                side_effect=responses,
+            ),
+            patch.object(
+                daily_refresh,
+                "_request_dashboard_refresh",
+                return_value={"status": "already_loading"},
+            ) as request_refresh,
+            patch.object(daily_refresh.time, "sleep"),
+        ):
+            result = daily_refresh.run(now=now)
+
+        self.assertEqual(result, 0)
+        request_refresh.assert_called_once()
+
+    def test_failed_refresh_is_requested_again_until_data_is_fresh(self):
+        now = datetime(2026, 8, 15, 7, 0, tzinfo=KST)
+        stale = {"status": "done", "last_updated": "2026-08-14 07:00:00"}
+        fresh = {
+            "status": "done",
+            "last_updated": "2026-08-15 07:21:00",
+        }
+        # 요청 전 상태, 1차 갱신 실패 후 상태, 재시도 요청 전 상태,
+        # 2차 갱신 완료 후 상태
+        status_sequence = [stale, stale, stale, fresh]
+
+        with (
+            patch.object(
+                daily_refresh,
+                "_dashboard_status",
+                side_effect=status_sequence,
+            ),
+            patch.object(
+                daily_refresh,
+                "_request_dashboard_refresh",
+                return_value={"status": "started"},
+            ) as request_refresh,
+            patch.object(daily_refresh.time, "sleep"),
+        ):
+            result = daily_refresh.run(now=now)
+
+        self.assertEqual(result, 0)
+        self.assertEqual(request_refresh.call_count, 2)
 
 
 if __name__ == "__main__":
