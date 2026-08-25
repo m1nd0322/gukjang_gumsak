@@ -783,5 +783,99 @@ class DailyRefreshRetryTest(unittest.TestCase):
                 app_module.current_data["last_updated"] = previous
 
 
+class PriceSyncTest(unittest.TestCase):
+    def setUp(self):
+        self.thread = MagicMock()
+        with app_module.data_lock:
+            previous = dict(app_module.current_data)
+        self.previous = previous
+
+    def tearDown(self):
+        with app_module.data_lock:
+            app_module.current_data.update(self.previous)
+
+    def test_successful_refresh_kicks_off_price_sync(self):
+        stats = {"score_3": 0, "score_2": 0, "score_1": 0}
+        with tempfile.TemporaryDirectory() as directory:
+            with (
+                patch.object(app_module, "CACHE_FILE", str(Path(directory) / "cache_data.json")),
+                patch.object(app_module, "fetch_all_data", return_value=([], [], [])),
+                patch.object(
+                    app_module,
+                    "calculate_scores",
+                    return_value=(
+                        [{"종목명": "삼성전자", "종합점수": 1, "출처": "연간실적호전"}],
+                        stats,
+                    ),
+                ),
+                patch.object(app_module.stock_db, "replace_screening_results", return_value=1),
+                patch.object(
+                    app_module, "_start_price_sync"
+                ) as start_sync,
+            ):
+                refreshed = app_module.refresh_data()
+
+        self.assertTrue(refreshed)
+        start_sync.assert_called_once()
+
+    def test_disabled_option_does_not_start_the_sync_thread(self):
+        with (
+            patch.object(app_module, "daily_price_sync_enabled", return_value=False),
+            patch.object(app_module.threading, "Thread") as thread_cls,
+        ):
+            app_module._start_price_sync()
+
+        thread_cls.assert_not_called()
+
+    def test_enabled_option_starts_a_daemon_sync_thread(self):
+        with (
+            patch.object(app_module, "daily_price_sync_enabled", return_value=True),
+            patch.object(
+                app_module.threading, "Thread", return_value=self.thread
+            ) as thread_cls,
+        ):
+            app_module._start_price_sync()
+
+        thread_cls.assert_called_once()
+        self.assertTrue(thread_cls.call_args.kwargs.get("daemon"))
+        self.thread.start.assert_called_once()
+
+    def test_sync_maps_result_names_to_codes_before_fetching(self):
+        with app_module.data_lock:
+            app_module.current_data["result"] = [
+                {"종목명": "삼성전자", "종합점수": 2},
+                {"종목명": "없는종목", "종합점수": 1},
+                {"종목명": "삼성전자", "종합점수": 1},
+            ]
+        with (
+            patch.object(
+                app_module.stock_db,
+                "get_or_refresh_ticker_map",
+                return_value=({"삼성전자": "005930"}, {"005930": "삼성전자"}),
+            ),
+            patch.object(
+                app_module.stock_db, "ensure_price_data", return_value={"total": 1, "fetched": 0, "new_days": 0}
+            ) as ensure,
+        ):
+            app_module._run_price_sync()
+
+        tickers = ensure.call_args.args[0]
+        self.assertEqual(tickers, ["005930"])
+        self.assertEqual(len(ensure.call_args.args[1]), 8)
+        self.assertEqual(len(ensure.call_args.args[2]), 8)
+
+    def test_sync_skips_when_another_sync_is_running(self):
+        acquired = app_module.price_sync_lock.acquire(blocking=False)
+        self.assertTrue(acquired)
+        try:
+            with patch.object(
+                app_module.stock_db, "get_or_refresh_ticker_map"
+            ) as get_map:
+                app_module._run_price_sync()
+            get_map.assert_not_called()
+        finally:
+            app_module.price_sync_lock.release()
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -26,7 +26,7 @@ from zoneinfo import ZoneInfo
 
 from backtester import BacktestEngine
 from daily_refresh import refresh_is_due
-from runtime_config import web_port
+from runtime_config import daily_price_sync_enabled, web_port
 from screening import calculate_scores, fetch_all_data
 from stock_db import StockDB
 
@@ -50,6 +50,8 @@ BACKTEST_ITEM_SOURCES = {
     'nps': '국민연금 신규/추가매수',
 }
 RETURN_PCT_QUANTUM = Decimal("0.01")
+# 자동 가격 동기화가 소급해서 채우는 기간(일). 백테스트 기본 12개월을 커버한다.
+PRICE_SYNC_LOOKBACK_DAYS = 400
 
 
 def _format_return_pct(value):
@@ -76,6 +78,7 @@ current_data = {
 }
 data_lock = threading.Lock()
 refresh_lock = threading.Lock()
+price_sync_lock = threading.Lock()
 
 # 백테스트 상태
 backtest_state = {
@@ -161,6 +164,9 @@ def _refresh_data_locked():
         _write_cache_atomic(cache)
 
         logger.info(f"데이터 갱신 완료: 3점={stats['score_3']}, 2점={stats['score_2']}, 1점={stats['score_1']}")
+
+        # 백테스트용 가격 데이터를 화면과 무관하게 뒤에서 동기화한다.
+        _start_price_sync()
         return True
 
     except Exception as e:
@@ -175,6 +181,70 @@ def _refresh_data_locked():
                 current_data['status'] = 'error'
                 current_data['error_msg'] = str(e)
         return False
+
+
+# ============================================================
+# 가격 자동 동기화
+# ============================================================
+def _collect_sync_tickers():
+    """최신 종합결과의 종목명을 종목코드로 매핑해 중복 없이 반환한다."""
+    with data_lock:
+        results = list(current_data.get('result') or [])
+
+    name_to_code, _ = stock_db.get_or_refresh_ticker_map(
+        krx if HAS_PYKRX else None
+    )
+    tickers = []
+    seen = set()
+    for result in results:
+        code = name_to_code.get(str(result.get('종목명') or ''))
+        if code and code not in seen:
+            seen.add(code)
+            tickers.append(code)
+    return tickers
+
+
+def _run_price_sync():
+    """스크리닝 종목의 일봉을 증분 수집해 백테스트 데이터를 최신으로 유지한다."""
+    if not price_sync_lock.acquire(blocking=False):
+        logger.info("이전 가격 동기화가 진행 중이므로 건너뜁니다")
+        return
+    try:
+        tickers = _collect_sync_tickers()
+        if not tickers:
+            logger.info("가격 동기화 대상 종목이 없습니다")
+            return
+
+        end_dt = datetime.now()
+        start_dt = end_dt - timedelta(days=PRICE_SYNC_LOOKBACK_DAYS)
+        stats = stock_db.ensure_price_data(
+            tickers,
+            start_dt.strftime('%Y%m%d'),
+            end_dt.strftime('%Y%m%d'),
+            krx_module=krx if HAS_PYKRX else None,
+        )
+        logger.info(
+            "가격 자동 동기화 완료: %d종목 (API 호출 %d종목, 신규 %d일)",
+            stats['total'], stats['fetched'], stats['new_days'],
+        )
+    except Exception as exc:
+        logger.error(f"가격 자동 동기화 실패: {exc}\n{traceback.format_exc()}")
+    finally:
+        price_sync_lock.release()
+
+
+def _start_price_sync():
+    """옵션이 켜져 있으면 가격 동기화를 백그라운드 스레드로 시작한다."""
+    if not daily_price_sync_enabled():
+        logger.debug("GUKJANG_DAILY_PRICE_SYNC 끔 - 가격 자동 동기화를 건너뜁니다")
+        return
+    thread = threading.Thread(
+        target=_run_price_sync, daemon=True, name='price-sync'
+    )
+    try:
+        thread.start()
+    except Exception as exc:
+        logger.error(f"가격 동기화 스레드 시작 실패: {exc}")
 
 
 def _write_cache_atomic(cache):
@@ -2264,6 +2334,9 @@ if __name__ == '__main__':
     if not load_cache():
         logger.info("캐시 없음. 초기 데이터 수집 시작...")
         refresh_data()
+    else:
+        # 재시작 사이에 밀린 일봉을 백그라운드에서 메운다.
+        _start_price_sync()
 
     # 스케줄러 시작 (매일 아침 7시)
     scheduler.start()
