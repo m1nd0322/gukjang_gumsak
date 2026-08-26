@@ -79,6 +79,8 @@ uv run --isolated --managed-python --python 3.11 --with-requirements requirement
 
 첫 실행은 Python과 패키지를 내려받기 때문에 시간이 걸릴 수 있습니다. 이후에는 `uv` 다운로드 캐시를 재사용합니다.
 
+서버는 Flask 개발 서버가 아니라 운영용 WSGI 서버인 `waitress`로 띄웁니다. `waitress`가 없는 환경에서는 자동으로 Flask 개발 서버로 대체됩니다.
+
 | 화면 | 주소 |
 | --- | --- |
 | 스크리닝 대시보드 | <http://localhost:5050> |

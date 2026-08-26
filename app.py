@@ -2362,6 +2362,13 @@ if __name__ == '__main__':
     logger.info("=" * 50)
 
     try:
-        app.run(host='127.0.0.1', port=WEB_PORT, debug=False)
+        try:
+            # 개발 서버 대신 운영용 WSGI로 띄운다.
+            from waitress import serve
+
+            serve(app, host='127.0.0.1', port=WEB_PORT, threads=8)
+        except ImportError:
+            logger.warning("waitress 미설치 - Flask 개발 서버를 사용합니다")
+            app.run(host='127.0.0.1', port=WEB_PORT, debug=False)
     finally:
         scheduler.shutdown()
