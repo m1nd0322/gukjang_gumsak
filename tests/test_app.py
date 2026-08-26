@@ -711,6 +711,13 @@ process.stdout.write(JSON.stringify({{
         self.assertIn("escapeHtml(v)", template)
         self.assertIn("escapeHtml(r[c]", template)
 
+    def test_status_summary_route_returns_only_lightweight_fields(self):
+        response = self.client.get("/api/status/summary")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(set(payload), {"status", "last_updated", "error_msg"})
+
 
 class DailyRefreshRetryTest(unittest.TestCase):
     def setUp(self):

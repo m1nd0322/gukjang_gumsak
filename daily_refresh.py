@@ -44,7 +44,8 @@ def refresh_is_due(last_updated, now=None):
 
 
 def _dashboard_status():
-    with urlopen(f"{DASHBOARD_URL}/api/status", timeout=5) as response:
+    """감독에 필요한 최소 필드만 내려주는 경량 상태를 조회한다."""
+    with urlopen(f"{DASHBOARD_URL}/api/status/summary", timeout=5) as response:
         return json.load(response)
 
 

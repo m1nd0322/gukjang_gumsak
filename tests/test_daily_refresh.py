@@ -62,6 +62,33 @@ class DailyRefreshDueTest(unittest.TestCase):
 
         self.assertEqual(result, 0)
 
+    def test_dashboard_status_uses_the_lightweight_summary_endpoint(self):
+        captured = {}
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                import json as json_module
+
+                return json_module.dumps(
+                    {"status": "done", "last_updated": "2026-08-15 07:00:20"}
+                ).encode("utf-8")
+
+        def fake_urlopen(url, timeout=None):
+            captured["url"] = url
+            return FakeResponse()
+
+        with patch.object(daily_refresh, "urlopen", fake_urlopen):
+            status = daily_refresh._dashboard_status()
+
+        self.assertEqual(captured["url"], daily_refresh.DASHBOARD_URL + "/api/status/summary")
+        self.assertEqual(status["status"], "done")
+
 
 class LaunchAgentConfigTest(unittest.TestCase):
     def test_agent_runs_at_login_and_every_day_at_seven(self):

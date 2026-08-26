@@ -342,6 +342,17 @@ def api_status():
         })
 
 
+@app.route('/api/status/summary')
+def api_status_summary():
+    """예약 갱신 감독용 경량 상태 - 대용량 스크리닝 데이터는 제외한다."""
+    with data_lock:
+        return jsonify({
+            'status': current_data['status'],
+            'last_updated': current_data['last_updated'],
+            'error_msg': current_data['error_msg'],
+        })
+
+
 # ============================================================
 # 백테스트 - DuckDB 기반 데이터 수집 및 실행
 # ============================================================
