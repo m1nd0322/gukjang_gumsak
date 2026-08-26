@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(DATA_DIR, 'cache_data.json')
+LOG_DIR = os.path.join(DATA_DIR, '.omx', 'logs')
 CACHE_VERSION = 2
 KST = ZoneInfo('Asia/Seoul')
 WEB_PORT = web_port()
@@ -2257,6 +2258,17 @@ function renderTickerSummary(summary) {
 </html>'''
 
 
+def _rotate_web_log():
+    """이전 프로세스가 끝난 뒤이므로 커진 웹 로그를 안전하게 회전한다."""
+    try:
+        from scripts.rotate_logs import rotate_if_large
+
+        if rotate_if_large(os.path.join(LOG_DIR, 'web.log')):
+            logger.info("커진 web.log를 회전했습니다")
+    except Exception as exc:
+        logger.debug(f"로그 회전 건너뜀: {exc}")
+
+
 # ============================================================
 # 스케줄러 설정
 # ============================================================
@@ -2340,6 +2352,8 @@ if __name__ == '__main__':
     logger.info("=" * 50)
     logger.info("  한국 증시 종합 스크리닝 시스템 시작")
     logger.info("=" * 50)
+
+    _rotate_web_log()
 
     # 캐시 로드 시도
     if not load_cache():

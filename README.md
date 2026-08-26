@@ -134,6 +134,12 @@ tail -f .omx/logs/web.log
 tail -f .omx/logs/db-backup.log
 ```
 
+launchd가 계속 덧붙이는 구조라 로그는 무한히 커질 수 있습니다. 서버를 시작할 때 `web.log`가 5MB를 넘으면 `web.log.1`, `web.log.2` 식으로 최대 3세대까지 밀어냅니다. 전체 로그(`daily-refresh.log`, `db-backup.log` 포함)를 즉시 회전하려면 다음을 실행합니다.
+
+```bash
+uv run --managed-python --python 3.11 python scripts/rotate_logs.py
+```
+
 수동 갱신은 대시보드의 `재조회` 버튼 또는 다음 API로 시작할 수 있습니다.
 
 ```bash
