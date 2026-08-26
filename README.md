@@ -8,8 +8,9 @@ FnGuide와 Daum Finance 공개 데이터를 이용해 한국 주식 종목을 3�
 
 | 실행 경로 | 진입점 | 주요 기능 | 자동 실행 |
 | --- | --- | --- | --- |
-| 로컬 웹 | `app.py` | 스크리닝 대시보드, 수동 갱신, 6개 백테스트 전략, CSV 다운로드, DuckDB 뷰어 | 매일 07:00 KST |
+| 로컬 웹 | `app.py` | 스크리닝 대시보드, 수동 갱신, 6개 백테스트 전략, CSV 다운로드, DuckDB 뷰어, 스크리닝 종목 가격 자동 동기화 | 매일 07:00 KST |
 | 정적 리포트 | `stock_screener.py` | 현재 스크리닝 결과를 단일 HTML 파일로 생성 | 없음 |
+| macOS 예약 작업 | `scripts/backup_stock_db.py` | 데이터베이스 검증 사본 롤링 보관 | 매주 일요일 06:00 KST |
 | GitHub Actions | `daily_report.py` | 스크리닝, 6개월 복합전략 백테스트, 텔레그램 요약·CSV 전송 | 평일 08:00 KST |
 
 전체 데이터 흐름은 다음과 같습니다.
@@ -174,6 +175,7 @@ curl http://localhost:5050/api/status
 | `GET` | `/` | 현재 스크리닝 결과와 점수별 통계 |
 | `POST` | `/api/refresh` | 비동기 수동 갱신 시작 |
 | `GET` | `/api/status` | 갱신 상태, 마지막 갱신 시각, 현재 결과 |
+| `GET` | `/api/status/summary` | 갱신 감독용 경량 상태 (결과 데이터 제외) |
 | `GET` | `/backtest` | 백테스트 설정·결과 화면 |
 | `POST` | `/api/backtest/run` | 백테스트 시작 |
 | `GET` | `/api/backtest/status` | 백테스트 진행 상태·결과 |
@@ -264,10 +266,11 @@ curl http://localhost:5050/api/status
 | `cache_data.json` | 마지막 대시보드 결과와 캐시 버전 | 제외 |
 | `nps_state.json` | 국민연금 보유 기준선과 활성 신호 | 제외 |
 | `stock_data.duckdb` | 가격·지수·티커·스크리닝 이력 | 제외 |
+| `backups/` | `stock_data_YYYYMMDD.duckdb` 검증 사본 (최근 12개 유지) | 제외 |
 | `backtest_*.csv` | 백테스트 상세 결과 | 제외 |
 | `stock_screening_result.html` | 정적 스크리닝 리포트 | 제외 |
 
-로컬 DuckDB와 GitHub Actions가 캐시하는 DuckDB는 서로 독립된 파일입니다. Actions 캐시는 영구 저장소가 아니므로 장기 이력이 필요하면 별도 백업이 필요합니다.
+로컬 DuckDB와 GitHub Actions가 캐시하는 DuckDB는 서로 독립된 파일입니다. Actions 캐시는 영구 저장소가 아니므로 장기 이력이 필요하면 별도 백업이 필요합니다. 로컬은 위의 [데이터베이스 백업](#데이터베이스-백업) 절차가 대신합니다.
 
 ## 정적 HTML 리포트
 
@@ -372,6 +375,7 @@ app.py                         Flask 웹 UI/API와 로컬 07:00 스케줄러
 daily_refresh.py               서버 유무와 당일 07:00 갱신 여부를 확인하는 예약 진입점
 scripts/install_daily_refresh_launch_agent.py  macOS 갱신·웹·백업 LaunchAgent 설치
 scripts/backup_stock_db.py     DuckDB 사본 생성·검증·롤링 정리
+scripts/rotate_logs.py         5MB를 넘은 로그를 세대 교체로 회전
 screening.py                   FnGuide·Daum 수집·검증과 공통 점수 계산
 nps_tracker.py                 국민연금 신호 상태 전이·만료·원자 저장
 backtester.py                  거래비용/FIFO 기반 백테스트 엔진
