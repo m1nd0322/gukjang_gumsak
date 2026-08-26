@@ -1,5 +1,8 @@
+import time
 import unittest
 from unittest.mock import patch
+
+import pandas as pd
 
 import daily_report
 from screening import ScreeningDataError
@@ -152,6 +155,95 @@ class DailyReportSourceValidationTest(unittest.TestCase):
 
         self.assertEqual(raised.exception.code, 1)
         self.assertIn("DuckDB", send_telegram.call_args.args[0])
+
+
+def yfinance_frame(closes, volumes=None):
+    index = pd.to_datetime([f"2026-08-{day:02d}" for day in range(3, 3 + len(closes))])
+    if volumes is None:
+        volumes = [1_000] * len(closes)
+    return pd.DataFrame(
+        {
+            "Open": closes,
+            "High": closes,
+            "Low": closes,
+            "Close": closes,
+            "Volume": volumes,
+        },
+        index=index,
+    )
+
+
+class CollectPriceDataTest(unittest.TestCase):
+    def test_falls_back_to_kq_when_ks_returns_empty_rows(self):
+        def fake_download(symbol, **kwargs):
+            if symbol.endswith(".KS"):
+                return pd.DataFrame(
+                    columns=["Open", "High", "Low", "Close", "Volume"]
+                )
+            return yfinance_frame([50_000, 51_000])
+
+        with patch.object(daily_report.yf, "download", side_effect=fake_download):
+            prices, used_symbol, last_error = daily_report._download_price_rows(
+                "000250", "삼천당", "2026-08-01", "2026-08-31"
+            )
+
+        self.assertIsNone(last_error)
+        self.assertEqual(used_symbol, "000250.KQ")
+        self.assertEqual(len(prices), 2)
+
+    def test_drops_nan_close_rows_and_zeroes_nan_volume(self):
+        frame = yfinance_frame([100.0, float("nan"), 110.0], [500, 700, None])
+
+        with patch.object(daily_report.yf, "download", return_value=frame):
+            prices, _, last_error = daily_report._download_price_rows(
+                "005930", "삼성전자", "2026-08-01", "2026-08-31"
+            )
+
+        self.assertIsNone(last_error)
+        self.assertEqual(
+            [row["date"] for row in prices],
+            ["2026-08-03", "2026-08-05"],
+        )
+        self.assertEqual(prices[0]["volume"], 500)
+        self.assertEqual(prices[1]["volume"], 0)
+
+    def test_collect_keeps_matched_order_even_when_completion_reverses(self):
+        def fake_download(symbol, **kwargs):
+            # 첫 종목만 느리게 끝나도 결과 순서는 matched 순서를 유지한다.
+            if symbol.startswith("111111"):
+                time.sleep(0.2)
+                return yfinance_frame([10.0, 11.0])
+            return yfinance_frame([20.0, 21.0])
+
+        matched = {"111111": "느린종목", "222222": "빠른종목"}
+        with patch.object(daily_report.yf, "download", side_effect=fake_download):
+            outcomes = daily_report.collect_price_data(
+                matched, "2026-08-01", "2026-08-31", max_workers=2
+            )
+
+        self.assertEqual(list(outcomes), ["111111", "222222"])
+        self.assertIsNotNone(outcomes["111111"][0])
+        self.assertIsNotNone(outcomes["222222"][0])
+
+    def test_collect_records_failures_without_losing_other_tickers(self):
+        calls = []
+
+        def fake_download(symbol, **kwargs):
+            calls.append(symbol)
+            if symbol.startswith("333333"):
+                raise RuntimeError("일시적 429")
+            return yfinance_frame([30.0, 31.0])
+
+        matched = {"333333": "고장종목", "444444": "정상종목"}
+        with patch.object(daily_report.yf, "download", side_effect=fake_download):
+            outcomes = daily_report.collect_price_data(matched, "2026-08-01", "2026-08-31")
+
+        # 고장 종목은 .KS/.KQ 두 번 모두 시도된다.
+        self.assertIn("333333.KS", calls)
+        self.assertIn("333333.KQ", calls)
+        self.assertIsNone(outcomes["333333"][0])
+        self.assertIsInstance(outcomes["333333"][2], RuntimeError)
+        self.assertIsNotNone(outcomes["444444"][0])
 
 
 if __name__ == "__main__":

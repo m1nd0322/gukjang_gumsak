@@ -13,6 +13,7 @@
 """
 
 import csv
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from html import escape
 import io
 import json
@@ -53,6 +54,7 @@ TAX_PCT = 0.20                 # 증권거래세 0.20% (매도시)
 
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 KST = ZoneInfo("Asia/Seoul")
+PRICE_FETCH_WORKERS = 6
 
 
 # ============================================================
@@ -291,6 +293,107 @@ def format_telegram_message(scored_results: list, stats: dict,
 
 
 # ============================================================
+# 가격 데이터 수집
+# ============================================================
+def _download_price_rows(code: str, name: str, start_iso: str, end_iso: str):
+    """한 종목의 일봉을 .KS/.KQ 순서로 내려받아 엔진 형식으로 정제한다.
+
+    반환: (rows 또는 None, 사용한 심볼, 마지막 오류)
+    """
+    last_error = None
+    # KOSPI(.KS)와 KOSDAQ(.KQ)를 순서대로 시도한다. 첫 요청이 예외를
+    # 던져도(일시적 429/네트워크 오류) 다른 접미사 기회를 잃지 않게 한다.
+    for suffix in ('.KS', '.KQ'):
+        yf_symbol = f"{code}{suffix}"
+        try:
+            df = yf.download(yf_symbol, start=start_iso, end=end_iso,
+                             progress=False, auto_adjust=True)
+        except Exception as e:
+            last_error = e
+            logger.warning(f"  {name}({yf_symbol}): 오류 - {e}")
+            continue
+        if df.empty:
+            continue
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+        rows = []
+        for date_idx, row in df.iterrows():
+            close = float(row['Close'])
+            # 종결 처리·데이터 공백으로 생긴 NaN 행은 제외하고,
+            # 거래량 NaN은 0으로 간주한다.
+            if not math.isfinite(close) or close <= 0:
+                continue
+            open_price = float(row['Open'])
+            high = float(row['High'])
+            low = float(row['Low'])
+            try:
+                volume = max(0, int(float(row['Volume']) or 0))
+            except (TypeError, ValueError):
+                volume = 0
+            rows.append({
+                'date': date_idx.strftime('%Y-%m-%d'),
+                'open': open_price if math.isfinite(open_price) else close,
+                'high': high if math.isfinite(high) else close,
+                'low': low if math.isfinite(low) else close,
+                'close': close,
+                'volume': volume,
+            })
+        if rows:
+            return rows, yf_symbol, None
+
+    return None, '', last_error
+
+
+def collect_price_data(matched: dict, start_iso: str, end_iso: str,
+                       *, max_workers: int = PRICE_FETCH_WORKERS) -> dict:
+    """여러 종목의 일봉을 병렬로 수집해 원래 종목 순서를 유지해 반환한다.
+
+    반환: {종목코드: (rows 또는 None, 사용한 심볼, 마지막 오류)}
+    """
+    outcomes = {
+        code: (None, '', None)
+        for code in matched
+    }
+    total = len(matched)
+    if total == 0:
+        return outcomes
+
+    def download(code_name):
+        code, name = code_name
+        try:
+            return _download_price_rows(code, name, start_iso, end_iso)
+        except Exception as exc:  # 스레드 풀 밖으로 예외가 새는 것을 막는다
+            logger.warning(f"  {name}({code}): 수집 중 예외 - {exc}")
+            return None, f"{code}.KS", exc
+
+    workers = max(1, min(int(max_workers), total))
+    completed = 0
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(download, item): item
+            for item in matched.items()
+        }
+        for future in as_completed(futures):
+            code, name = futures[future]
+            prices, used_symbol, last_error = future.result()
+            outcomes[code] = (prices, used_symbol, last_error)
+            completed += 1
+            if prices:
+                logger.info(
+                    f"  [{completed}/{total}] {name}({used_symbol}): {len(prices)}일"
+                )
+            elif last_error is not None:
+                logger.warning(
+                    f"  [{completed}/{total}] {name}({code}): 수집 실패 - {last_error}"
+                )
+            else:
+                logger.warning(f"  [{completed}/{total}] {name}({code}): 데이터 없음")
+
+    return outcomes
+
+
+# ============================================================
 # 메인 파이프라인
 # ============================================================
 def main():
@@ -399,64 +502,19 @@ def main():
     )
 
     failed_tickers = []
-    for i, (code, name) in enumerate(matched.items()):
-        # KOSPI(.KS)와 KOSDAQ(.KQ)를 순서대로 시도한다. 첫 요청이 예외를
-        # 던져도(일시적 429/네트워크 오류) 다른 접미사 기회를 잃지 않게 한다.
-        prices = None
-        used_symbol = ''
-        last_error = None
-        for suffix in ('.KS', '.KQ'):
-            yf_symbol = f"{code}{suffix}"
-            try:
-                df = yf.download(yf_symbol, start=start_iso, end=end_iso,
-                                 progress=False, auto_adjust=True)
-            except Exception as e:
-                last_error = e
-                logger.warning(f"  [{i+1}/{len(matched)}] {name}({yf_symbol}): 오류 - {e}")
-                continue
-            if df.empty:
-                continue
-
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = df.columns.get_level_values(0)
-            rows = []
-            for date_idx, row in df.iterrows():
-                close = float(row['Close'])
-                # 종결 처리·데이터 공백으로 생긴 NaN 행은 제외하고,
-                # 거래량 NaN은 0으로 간주한다.
-                if not math.isfinite(close) or close <= 0:
-                    continue
-                open_price = float(row['Open'])
-                high = float(row['High'])
-                low = float(row['Low'])
-                try:
-                    volume = max(0, int(float(row['Volume']) or 0))
-                except (TypeError, ValueError):
-                    volume = 0
-                rows.append({
-                    'date': date_idx.strftime('%Y-%m-%d'),
-                    'open': open_price if math.isfinite(open_price) else close,
-                    'high': high if math.isfinite(high) else close,
-                    'low': low if math.isfinite(low) else close,
-                    'close': close,
-                    'volume': volume,
-                })
-            if rows:
-                prices = rows
-                used_symbol = yf_symbol
-                break
-
+    outcomes = collect_price_data(matched, start_iso, end_iso)
+    for code, name in matched.items():
+        prices, used_symbol, last_error = outcomes[code]
         if prices:
             engine.add_price_data(code, prices, name=name)
-            logger.info(f"  [{i+1}/{len(matched)}] {name}({used_symbol}): {len(prices)}일")
         else:
             failed_tickers.append(name)
             if last_error is not None:
                 logger.warning(
-                    f"  [{i+1}/{len(matched)}] {name}({code}): 수집 실패 - {last_error}"
+                    f"  {name}({code}): 최종 실패 - {last_error}"
                 )
             else:
-                logger.warning(f"  [{i+1}/{len(matched)}] {name}({code}): 데이터 없음")
+                logger.warning(f"  {name}({code}): 데이터 없음")
 
     if failed_tickers:
         logger.warning(f"  가격 수집 실패: {', '.join(failed_tickers)}")
