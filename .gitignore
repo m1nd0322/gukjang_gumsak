@@ -8,6 +8,7 @@ __pycache__/
 !.env.example
 stock_data.duckdb
 stock_data.duckdb.wal
+backups/
 cache_data.json
 nps_state.json
 nps_state.json.lock/

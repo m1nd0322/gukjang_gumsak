@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 import daily_refresh
 from daily_refresh import refresh_is_due
 from scripts.install_daily_refresh_launch_agent import (
+    build_db_backup_agent,
     build_launch_agent,
     build_web_launch_agent,
 )
@@ -101,6 +102,32 @@ class LaunchAgentConfigTest(unittest.TestCase):
         self.assertEqual(
             config["ProgramArguments"][-2:],
             ["python", "/tmp/gukjang_gumsak/app.py"],
+        )
+
+
+class DbBackupAgentConfigTest(unittest.TestCase):
+    def test_backup_agent_runs_at_login_and_every_sunday_morning(self):
+        config = build_db_backup_agent(
+            Path("/tmp/gukjang_gumsak"),
+            Path("/opt/homebrew/bin/uv"),
+        )
+
+        self.assertTrue(config["RunAtLoad"])
+        self.assertEqual(config["Label"], "com.songhear.gukjang-gumsak.db-backup")
+        self.assertEqual(
+            config["StartCalendarInterval"],
+            {"Weekday": 0, "Hour": 6, "Minute": 0},
+        )
+        self.assertNotIn("KeepAlive", config)
+        self.assertEqual(
+            config["ProgramArguments"][-2:],
+            [
+                "python",
+                "/tmp/gukjang_gumsak/scripts/backup_stock_db.py",
+            ],
+        )
+        self.assertTrue(
+            config["StandardOutPath"].endswith("db-backup.log"),
         )
 
 

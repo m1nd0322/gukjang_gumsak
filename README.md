@@ -121,13 +121,15 @@ export KRX_PW='your-password'
 uv run --managed-python --python 3.11 python scripts/install_daily_refresh_launch_agent.py
 ```
 
-설치 스크립트는 웹 서버를 계속 실행하는 LaunchAgent와 일일 갱신 LaunchAgent를 함께 등록합니다. 일일 작업은 로그인할 때 누락 여부를 점검하고 매일 07:00에 `daily_refresh.py`를 실행합니다. 대시보드가 실행 중이면 `/api/refresh`를 호출하고 갱신이 끝날 때까지 상태를 확인한 뒤, 오늘 데이터가 준비될 때까지 최대 3회까지 재요청합니다. 실행 중이 아니면 독립 프로세스에서 같은 횟수만큼 갱신합니다. Mac이 잠들어 있던 경우에는 깨어난 직후 한 번 실행됩니다.
+설치 스크립트는 웹 서버 상시 실행, 일일 갱신, 데이터베이스 백업 세 가지 LaunchAgent를 함께 등록합니다. 일일 작업은 로그인할 때 누락 여부를 점검하고 매일 07:00에 `daily_refresh.py`를 실행합니다. 대시보드가 실행 중이면 `/api/refresh`를 호출하고 갱신이 끝날 때까지 상태를 확인한 뒤, 오늘 데이터가 준비될 때까지 최대 3회까지 재요청합니다. 실행 중이 아니면 독립 프로세스에서 같은 횟수만큼 갱신합니다. Mac이 잠들어 있던 경우에는 깨어난 직후 한 번 실행됩니다.
 
 ```bash
 launchctl print "gui/$(id -u)/com.songhear.gukjang-gumsak.daily-refresh"
 launchctl print "gui/$(id -u)/com.songhear.gukjang-gumsak.web"
+launchctl print "gui/$(id -u)/com.songhear.gukjang-gumsak.db-backup"
 tail -f .omx/logs/daily-refresh.log
 tail -f .omx/logs/web.log
+tail -f .omx/logs/db-backup.log
 ```
 
 수동 갱신은 대시보드의 `재조회` 버튼 또는 다음 API로 시작할 수 있습니다.
@@ -143,6 +145,15 @@ curl http://localhost:5050/api/status
 
 - 소급 범위는 약 13개월(400일)이며, 이미 채워진 날짜는 API 호출 없이 건너뜁니다.
 - 기본값은 켜짐입니다. 끄려면 서버 실행 전에 `GUKJANG_DAILY_PRICE_SYNC=0`으로 설정하세요.
+
+### 데이터베이스 백업
+
+`stock_data.duckdb`는 단일 파일이라 손상되면 전체 가격 이력을 잃습니다. 설치 스크립트가 함께 등록하는 백업 LaunchAgent는 매주 일요일 06:00에 사본을 만듭니다. 로그인할 때도 그날 사본이 없으면 하나를 보충하므로 주말 내내 꺼 둔 Mac이라도 다음 로그인 직후 백업됩니다.
+
+- 사본은 `backups/stock_data_YYYYMMDD.duckdb` 이름으로 저장하고 최근 12개만 유지합니다(기본값, `--keep`으로 조정).
+- 복사 후 사본을 직접 열어 WAL을 반영하고 핵심 테이블 조회로 무결성을 검증합니다. 검증에 실패하면 사본을 버리고 재시도합니다.
+- 같은 날짜의 백업이 이미 있으면 건너뛰고, 원본이 없으면 실패로 종료합니다.
+- 즉시 만들려면: `uv run --managed-python --python 3.11 python scripts/backup_stock_db.py`
 
 ### GitHub Actions 스케줄러
 
@@ -338,6 +349,10 @@ uv run --managed-python --python 3.11 python --version
 
 앱 실행 중에는 시작 로그의 `다음 자동 갱신` 시각을 확인하세요. macOS 예약 작업을 등록했다면 위의 `launchctl print`에서 `Hour = 7`, `Minute = 0`과 최근 `last exit code`를 확인하고 `.omx/logs/daily-refresh.log`에서 실행 결과를 확인합니다.
 
+### 데이터베이스 백업 확인
+
+`launchctl print "gui/$(id -u)/com.songhear.gukjang-gumsak.db-backup"`에서 `Weekday = 0`, `Hour = 6`, `Minute = 0`과 최근 `last exit code`를 확인하고 `.omx/logs/db-backup.log`와 `backups/` 디렉터리에서 결과를 확인합니다. 백업이 실패하면 같은 날짜라도 사본이 남지 않으므로 로그의 오류 메시지를 먼저 봅니다.
+
 ### 백테스트 수익률이 긴 소수점으로 표시됨
 
 실행 중인 서버가 코드 업데이트 전 프로세스이거나 브라우저가 이전 페이지 JavaScript를 유지한 상태입니다. 서버를 `Ctrl+C`로 완전히 종료한 후 빠른 시작 명령으로 다시 실행하고 `/backtest`를 새 탭에서 여세요. 재시작한 서버의 상세 이력은 수익률을 셋째 자리에서 반올림해 항상 소수점 둘째 자리까지 표시합니다.
@@ -347,7 +362,8 @@ uv run --managed-python --python 3.11 python --version
 ```text
 app.py                         Flask 웹 UI/API와 로컬 07:00 스케줄러
 daily_refresh.py               서버 유무와 당일 07:00 갱신 여부를 확인하는 예약 진입점
-scripts/install_daily_refresh_launch_agent.py  macOS 07:00 LaunchAgent 설치
+scripts/install_daily_refresh_launch_agent.py  macOS 갱신·웹·백업 LaunchAgent 설치
+scripts/backup_stock_db.py     DuckDB 사본 생성·검증·롤링 정리
 screening.py                   FnGuide·Daum 수집·검증과 공통 점수 계산
 nps_tracker.py                 국민연금 신호 상태 전이·만료·원자 저장
 backtester.py                  거래비용/FIFO 기반 백테스트 엔진

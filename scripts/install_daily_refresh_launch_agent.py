@@ -11,6 +11,7 @@ from pathlib import Path
 
 DAILY_LABEL = "com.songhear.gukjang-gumsak.daily-refresh"
 WEB_LABEL = "com.songhear.gukjang-gumsak.web"
+BACKUP_LABEL = "com.songhear.gukjang-gumsak.db-backup"
 
 
 def _uv_python_arguments(repo_dir, uv_path, entrypoint):
@@ -63,6 +64,25 @@ def build_web_launch_agent(repo_dir, uv_path):
     }
 
 
+def build_db_backup_agent(repo_dir, uv_path):
+    """매주 일요일 06:00에 데이터베이스 사본을 만드는 에이전트 설정."""
+    repo_dir = Path(repo_dir)
+    uv_path = Path(uv_path)
+    log_dir = repo_dir / ".omx" / "logs"
+    return {
+        "Label": BACKUP_LABEL,
+        "ProgramArguments": _uv_python_arguments(
+            repo_dir, uv_path, "scripts/backup_stock_db.py"
+        ),
+        "WorkingDirectory": str(repo_dir),
+        "RunAtLoad": True,
+        "StartCalendarInterval": {"Weekday": 0, "Hour": 6, "Minute": 0},
+        "ProcessType": "Background",
+        "StandardOutPath": str(log_dir / "db-backup.log"),
+        "StandardErrorPath": str(log_dir / "db-backup.log"),
+    }
+
+
 def _install_launch_agent(config):
     Path(config["StandardOutPath"]).parent.mkdir(parents=True, exist_ok=True)
     launch_agents = Path.home() / "Library" / "LaunchAgents"
@@ -106,9 +126,14 @@ def install():
 
     daily_path = _install_launch_agent(build_launch_agent(repo_dir, uv_path))
     web_path = _install_launch_agent(build_web_launch_agent(repo_dir, uv_path))
+    backup_path = _install_launch_agent(build_db_backup_agent(repo_dir, uv_path))
     print(f"예약 갱신 등록 완료: {daily_path}")
     print(f"웹 서버 등록 완료: {web_path}")
-    print("실행 시각: 매일 07:00 (로그: .omx/logs/daily-refresh.log, web.log)")
+    print(f"데이터베이스 백업 등록 완료: {backup_path}")
+    print(
+        "실행 시각: 갱신 매일 07:00, 백업 매주 일요일 06:00 "
+        "(로그: .omx/logs/daily-refresh.log, web.log, db-backup.log)"
+    )
 
 
 if __name__ == "__main__":
