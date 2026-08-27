@@ -10,6 +10,9 @@ Custom Backtest Engine (커스텀 백테스트 엔진)
   - run_equal_weight(): 동일 비중 매수 후 보유 (Buy & Hold)
   - run_rebalance(): 주기적 리밸런싱
   - run_custom(): 사용자 정의 시그널 기반
+  - run_volatility_trailing_stop(): 변동성 가중 및 트레일링 스탑
+  - run_ma_filter(): 이동평균 필터
+  - run_composite(): 이동평균·변동성·트레일링 스탑 복합 전략
 
 사용 예시:
     from backtester import BacktestEngine

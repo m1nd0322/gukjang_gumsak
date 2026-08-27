@@ -4,10 +4,10 @@
 - Flask 기반 웹 대시보드
 - 재조회 버튼으로 실시간 데이터 갱신
 - 매일 아침 7시 자동 갱신 (APScheduler)
-- Selenium (headless Chrome) 기반 크롤링
+- screening.py 기반 공개 데이터 수집·응답 검증
 - 백테스트 기능 (커스텀 엔진)
 
-실행: python app.py
+실행: uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python app.py
 브라우저: http://localhost:5050
 """
 
