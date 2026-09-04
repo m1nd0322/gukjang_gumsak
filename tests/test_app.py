@@ -784,7 +784,13 @@ class DailyRefreshRetryTest(unittest.TestCase):
             previous = app_module.current_data.get("last_updated")
             app_module.current_data["last_updated"] = None
         try:
-            self.assertTrue(app_module._refresh_still_due())
+            after_schedule = datetime.now(app_module.KST).replace(
+                hour=7,
+                minute=1,
+                second=0,
+                microsecond=0,
+            )
+            self.assertTrue(app_module._refresh_still_due(after_schedule))
         finally:
             with app_module.data_lock:
                 app_module.current_data["last_updated"] = previous

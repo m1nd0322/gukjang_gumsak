@@ -164,6 +164,14 @@ curl http://localhost:5050/api/status
 - 같은 날짜의 백업이 이미 있으면 건너뛰고, 원본이 없으면 실패로 종료합니다.
 - 즉시 만들려면: `uv run --managed-python --python 3.11 python scripts/backup_stock_db.py`
 
+### DuckBoard 뷰어
+
+내장 DuckDB 뷰어는 `/db`에서 사용할 수 있습니다. 별도 Rust 뷰어인 [DuckBoard](https://github.com/m1nd0322/db-viewer)를 사용할 때는 snapshot을 지원하는 최신 버전을 사용하세요.
+
+- DuckBoard는 DuckDB를 import할 때 원본을 읽기 전용으로 `EXPORT DATABASE`한 뒤 프로세스 전용 임시 snapshot으로 `IMPORT DATABASE`합니다. 따라서 웹 앱이 `stock_data.duckdb`를 갱신하는 동안 원본 파일 잠금을 차지하지 않습니다.
+- snapshot은 import한 시점의 데이터입니다. 웹 갱신 후 최신 결과를 보려면 DuckBoard를 재시작하거나 해당 DB를 다시 import하세요.
+- snapshot을 지원하지 않는 구버전 DuckBoard는 live `stock_data.duckdb`를 직접 열어 웹 갱신을 막을 수 있으므로, 재조회 전에 종료하거나 검증된 `backups/` 사본을 열어야 합니다.
+
 ### GitHub Actions 스케줄러
 
 `.github/workflows/daily_report.yml`은 월~금 08:00 KST에 실행됩니다. 한국 공휴일은 별도로 제외하지 않으며 GitHub의 `workflow_dispatch`로 수동 실행할 수 있습니다.
