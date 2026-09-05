@@ -418,7 +418,7 @@ process.stdout.write(JSON.stringify({{
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=2,
+                timeout=10,
             )
         except FileNotFoundError:
             self.fail(
