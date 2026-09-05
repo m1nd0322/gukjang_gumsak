@@ -41,7 +41,7 @@ class NamedKrx:
 
 class StockDbCacheTest(unittest.TestCase):
     def setUp(self):
-        handle = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)
+        handle = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)  # noqa: SIM115
         self.db_path = handle.name
         handle.close()
         os.unlink(self.db_path)
@@ -91,7 +91,7 @@ class StockDbCacheTest(unittest.TestCase):
                 os.chdir(original_directory)
 
     def test_legacy_daily_prices_schema_is_migrated_and_backfilled(self):
-        handle = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)
+        handle = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)  # noqa: SIM115
         legacy_path = handle.name
         handle.close()
         os.unlink(legacy_path)
@@ -250,10 +250,10 @@ class StockDbCacheTest(unittest.TestCase):
                     "close": 70500,
                     "volume": 1000,
                 }])
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 thread_errors.append(exc)
 
-        map_file = tempfile.NamedTemporaryFile(
+        map_file = tempfile.NamedTemporaryFile(  # noqa: SIM115
             mode="w", encoding="utf-8", delete=False
         )
         try:
@@ -266,7 +266,7 @@ class StockDbCacheTest(unittest.TestCase):
                     if not allow_map_load.wait(5):
                         raise AssertionError("종목 매핑 적재 허용 신호가 없습니다")
                     mapping_db.load_ticker_map_file(map_file.name)
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     thread_errors.append(exc)
                 finally:
                     map_load_finished.set()
@@ -390,7 +390,7 @@ class StockDbCacheTest(unittest.TestCase):
                     if not start_construction.wait(5):
                         raise AssertionError("DB 생성 시작 신호가 없습니다")
                     instances.append(StockDB(path))
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     thread_errors.append(exc)
 
             threads = [
@@ -565,7 +565,7 @@ class StockDbCacheTest(unittest.TestCase):
             "close": 70500,
             "volume": 1000,
         }])
-        handle = tempfile.NamedTemporaryFile(
+        handle = tempfile.NamedTemporaryFile(  # noqa: SIM115
             mode="w", encoding="utf-8", delete=False
         )
         try:
@@ -599,7 +599,7 @@ class StockDbCacheTest(unittest.TestCase):
             "close": 70500,
             "volume": 1000,
         }])
-        handle = tempfile.NamedTemporaryFile(
+        handle = tempfile.NamedTemporaryFile(  # noqa: SIM115
             mode="w", encoding="utf-8", delete=False
         )
         try:
@@ -668,7 +668,7 @@ class StockDbCacheTest(unittest.TestCase):
             "volume": 1000,
         }])
 
-        handle = tempfile.NamedTemporaryFile(
+        handle = tempfile.NamedTemporaryFile(  # noqa: SIM115
             mode="w", encoding="utf-8", delete=False
         )
         try:
@@ -678,9 +678,8 @@ class StockDbCacheTest(unittest.TestCase):
                 self.db,
                 "_sync_daily_price_names",
                 side_effect=RuntimeError("name sync failed"),
-            ):
-                with self.assertRaisesRegex(RuntimeError, "name sync failed"):
-                    self.db.load_ticker_map_file(handle.name)
+            ), self.assertRaisesRegex(RuntimeError, "name sync failed"):
+                self.db.load_ticker_map_file(handle.name)
 
             connection = self.db._connect()
             try:
@@ -699,8 +698,8 @@ class StockDbCacheTest(unittest.TestCase):
             os.unlink(handle.name)
 
     def test_ticker_cache_uses_latest_successful_refresh_time(self):
-        old = (datetime.now() - timedelta(days=30)).isoformat()
-        recent = datetime.now().isoformat()
+        old = (datetime.now() - timedelta(days=30)).isoformat()  # noqa: DTZ005
+        recent = datetime.now().isoformat()  # noqa: DTZ005
         connection = self.db._connect()
         try:
             connection.executemany(
@@ -720,7 +719,7 @@ class StockDbCacheTest(unittest.TestCase):
         self.assertEqual(name_to_code["최신종목"], "000002")
 
     def test_failed_ticker_refresh_keeps_stale_cache(self):
-        old = (datetime.now() - timedelta(days=30)).isoformat()
+        old = (datetime.now() - timedelta(days=30)).isoformat()  # noqa: DTZ005
         connection = self.db._connect()
         try:
             connection.execute(
@@ -736,7 +735,7 @@ class StockDbCacheTest(unittest.TestCase):
         self.assertEqual(name_to_code, {"기존종목": "000001"})
 
     def test_empty_ticker_cache_bootstraps_from_repository_json(self):
-        handle = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False)
+        handle = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False)  # noqa: SIM115
         try:
             json.dump({"삼성전자": "005930"}, handle, ensure_ascii=False)
             handle.close()
@@ -941,7 +940,7 @@ class StockDbCacheTest(unittest.TestCase):
 
     @patch("stock_db.datetime")
     def test_default_screening_snapshot_date_uses_korea_timezone(self, clock):
-        clock.now.return_value = datetime(2026, 7, 13, 8, 0)
+        clock.now.return_value = datetime(2026, 7, 13, 8, 0)  # noqa: DTZ001
 
         self.db.replace_screening_results(
             [{"종목명": "A", "종합점수": 1, "출처": "연간실적호전"}]
@@ -955,7 +954,7 @@ class StockDbCacheTest(unittest.TestCase):
 
 class BatchPriceAccessTest(unittest.TestCase):
     def setUp(self):
-        handle = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)
+        handle = tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False)  # noqa: SIM115
         self.db_path = handle.name
         handle.close()
         os.unlink(self.db_path)

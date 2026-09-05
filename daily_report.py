@@ -83,7 +83,7 @@ def send_telegram(text: str) -> bool:
         else:
             logger.error(f"텔레그램 전송 실패: {resp.status_code} {resp.text}")
             return False
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"텔레그램 전송 오류: {e}")
         return False
 
@@ -108,7 +108,7 @@ def send_telegram_document(file_path: str, caption: str = '') -> bool:
         else:
             logger.error(f"텔레그램 CSV 전송 실패: {resp.status_code} {resp.text}")
             return False
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"텔레그램 CSV 전송 오류: {e}")
         return False
 
@@ -305,7 +305,7 @@ def _download_price_rows(code: str, name: str, start_iso: str, end_iso: str):
         try:
             df = yf.download(yf_symbol, start=start_iso, end=end_iso,
                              progress=False, auto_adjust=True)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             last_error = e
             logger.warning(f"  {name}({yf_symbol}): 오류 - {e}")
             continue
@@ -360,7 +360,7 @@ def collect_price_data(matched: dict, start_iso: str, end_iso: str,
         code, name = code_name
         try:
             return _download_price_rows(code, name, start_iso, end_iso)
-        except Exception as exc:  # 스레드 풀 밖으로 예외가 새는 것을 막는다
+        except Exception as exc:  # 스레드 풀 밖으로 예외가 새는 것을 막는다  # noqa: BLE001
             logger.warning(f"  {name}({code}): 수집 중 예외 - {exc}")
             return None, f"{code}.KS", exc
 
@@ -406,7 +406,7 @@ def main():
         logger.info("[1/5] FnGuide·Daum 3개 지표 수집 시작...")
         try:
             turn_data, supply_data, nps_data = fetch_all_data(require_all=True)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             msg = f"스크리닝 데이터 수집 실패: {exc}"
             logger.error(msg)
             send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
@@ -431,7 +431,7 @@ def main():
 
         try:
             saved_count = StockDB().replace_screening_results(scored_results)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             msg = f"종합결과 DuckDB 저장 실패: {exc}"
             logger.error(msg)
             send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
@@ -516,7 +516,7 @@ def main():
     else:
         outcomes = collect_price_data(matched, start_iso, end_iso)
     for code, name in matched.items():
-        prices, used_symbol, last_error = outcomes[code]
+        prices, _used_symbol, last_error = outcomes[code]
         if prices:
             engine.add_price_data(code, prices, name=name)
         else:
@@ -552,7 +552,7 @@ def main():
                 kospi.append({'date': d.strftime('%Y-%m-%d'), 'close': close})
             engine.set_benchmark(kospi)
             logger.info(f"  KOSPI 벤치마크: {len(kospi)}일")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(f"  KOSPI 벤치마크 수집 실패: {e}")
 
     # 전략 실행
@@ -560,8 +560,8 @@ def main():
     run_strategy(engine, STRATEGY, tickers, start_date=start_iso, end_date=end_iso)
 
     bt_results = engine.get_results()
-    bt_results['config'] = dict(strategy=STRATEGY, strategy_version='1.0',
-                                tax_model='etf_pre_tax' if etf_strategy else 'stock')
+    bt_results['config'] = {'strategy': STRATEGY, 'strategy_version': '1.0',
+                                'tax_model': 'etf_pre_tax' if etf_strategy else 'stock'}
     cost_summary = bt_results.get('cost_summary', {})
     metrics = bt_results.get('metrics', {})
 

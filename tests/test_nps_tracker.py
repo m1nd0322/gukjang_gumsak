@@ -641,9 +641,10 @@ class NpsTrackerTest(unittest.TestCase):
 
             with nps_state_lock(state_path):
                 self.assertTrue(lock_path.is_dir())
-                with self.assertRaises(NpsStateLockError):
-                    with nps_state_lock(state_path, timeout=0):
-                        pass
+                with self.assertRaises(NpsStateLockError), nps_state_lock(
+                    state_path, timeout=0
+                ):
+                    pass
 
             self.assertFalse(lock_path.exists())
 
@@ -656,9 +657,10 @@ class NpsTrackerTest(unittest.TestCase):
             lock_path.mkdir()
             (lock_path / "unexpected").write_text("busy", encoding="utf-8")
 
-            with self.assertRaises(NpsStateLockError):
-                with nps_state_lock(state_path, timeout=0, stale_after=0):
-                    pass
+            with self.assertRaises(NpsStateLockError), nps_state_lock(
+                state_path, timeout=0, stale_after=0
+            ):
+                pass
 
     def test_today_uses_fixed_korea_timezone(self):
         from nps_tracker import kst_today

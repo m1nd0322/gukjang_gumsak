@@ -41,9 +41,9 @@ class DrawdownGuard:
         else:
             self.state, self.budget = 'normal', 1.0
         if previous != self.state or old_budget != self.budget:
-            self.events.append(dict(date=date, previous_state=previous,
-                                    state=self.state, drawdown=drawdown,
-                                    action=self.state, risk_budget=self.budget))
+            self.events.append({'date': date, 'previous_state': previous,
+                                    'state': self.state, 'drawdown': drawdown,
+                                    'action': self.state, 'risk_budget': self.budget})
         risk = {a.ticker for a in ETF_ASSETS.values() if a.role in {'risk', 'real_asset'}}
         if self.state == 'cash':
             return {}

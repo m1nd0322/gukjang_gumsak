@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
+from typing import ClassVar
 from unittest.mock import patch
 
 from screening import (
@@ -504,7 +505,7 @@ class NpsParserTest(unittest.TestCase):
         self.assertEqual(rows, [])
 
     def test_full_scan_rejects_invalid_page_coverage(self):
-        handle = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False)
+        handle = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False)  # noqa: SIM115
         try:
             json.dump({"A": "000001", "B": "000002"}, handle)
             handle.close()
@@ -514,16 +515,15 @@ class NpsParserTest(unittest.TestCase):
                     code == "000001",
                     None,
                 ),
-            ):
-                with self.assertRaises(ScreeningDataError):
-                    fetch_nps_holdings(handle.name, max_workers=1)
+            ), self.assertRaises(ScreeningDataError):
+                fetch_nps_holdings(handle.name, max_workers=1)
         finally:
             if not handle.closed:
                 handle.close()
             os.unlink(handle.name)
 
     def test_full_scan_rejects_failed_snapshot_for_previous_holding(self):
-        handle = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False)
+        handle = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False)  # noqa: SIM115
         try:
             json.dump(
                 {f"종목{index}": f"00000{index}" for index in range(1, 6)},
@@ -542,13 +542,14 @@ class NpsParserTest(unittest.TestCase):
                     "최종변동일": "2026/07/01",
                 }
 
-            with patch("screening._fetch_nps_one", side_effect=fetch_one):
-                with self.assertRaisesRegex(ScreeningDataError, "기존 보유 종목"):
-                    fetch_nps_holdings(
-                        handle.name,
-                        max_workers=1,
-                        required_codes={"000005"},
-                    )
+            with patch("screening._fetch_nps_one", side_effect=fetch_one), self.assertRaisesRegex(
+                ScreeningDataError, "기존 보유 종목"
+            ):
+                fetch_nps_holdings(
+                    handle.name,
+                    max_workers=1,
+                    required_codes={"000005"},
+                )
         finally:
             if not handle.closed:
                 handle.close()
@@ -556,7 +557,7 @@ class NpsParserTest(unittest.TestCase):
 
 
 class NpsShareCollectorTest(unittest.TestCase):
-    holdings = [
+    holdings: ClassVar[list[dict]] = [
         {"종목코드": f"00000{index}", "종목명": chr(64 + index)}
         for index in range(1, 6)
     ]
@@ -615,11 +616,12 @@ class NpsShareCollectorTest(unittest.TestCase):
                 self._event(code, "2026-07-01")
             ]
 
-        with patch("screening._fetch_nps_share_one", side_effect=fetch_one):
-            with self.assertRaisesRegex(ScreeningDataError, "유효 페이지 비율"):
-                fetch_nps_share_events(
-                    self.holdings, require_coverage=True, max_workers=1
-                )
+        with patch("screening._fetch_nps_share_one", side_effect=fetch_one), self.assertRaisesRegex(
+            ScreeningDataError, "유효 페이지 비율"
+        ):
+            fetch_nps_share_events(
+                self.holdings, require_coverage=True, max_workers=1
+            )
 
     def test_share_event_scan_keeps_partial_rows_when_state_exists(self):
         from screening import fetch_nps_share_events
@@ -629,11 +631,12 @@ class NpsShareCollectorTest(unittest.TestCase):
             events = [self._event(code, "2026-07-01")] if page_matches else []
             return page_matches, events
 
-        with patch("screening._fetch_nps_share_one", side_effect=fetch_one):
-            with self.assertLogs("screening", level="WARNING") as logs:
-                rows = fetch_nps_share_events(
-                    self.holdings, require_coverage=False, max_workers=1
-                )
+        with patch("screening._fetch_nps_share_one", side_effect=fetch_one), self.assertLogs(
+            "screening", level="WARNING"
+        ) as logs:
+            rows = fetch_nps_share_events(
+                self.holdings, require_coverage=False, max_workers=1
+            )
 
         self.assertEqual(len(rows), 3)
         self.assertIn("유효 페이지 비율이 낮습니다", "\n".join(logs.output))
@@ -646,11 +649,12 @@ class NpsShareCollectorTest(unittest.TestCase):
                 raise RuntimeError("network down")
             return True, [self._event(code, "2026-07-01")]
 
-        with patch("screening._fetch_nps_share_one", side_effect=fetch_one):
-            with self.assertLogs("screening", level="WARNING") as logs:
-                rows = fetch_nps_share_events(
-                    self.holdings[:2], require_coverage=False, max_workers=1
-                )
+        with patch("screening._fetch_nps_share_one", side_effect=fetch_one), self.assertLogs(
+            "screening", level="WARNING"
+        ) as logs:
+            rows = fetch_nps_share_events(
+                self.holdings[:2], require_coverage=False, max_workers=1
+            )
 
         self.assertEqual([row["종목코드"] for row in rows], ["000001"])
         self.assertIn("조회 실패: 1/2", "\n".join(logs.output))
@@ -779,7 +783,7 @@ class ScoringTest(unittest.TestCase):
 
 
 class SourceOrchestrationTest(unittest.TestCase):
-    candidate_state = {
+    candidate_state: ClassVar[dict] = {
         "version": 1,
         "updated_at": "2026-07-12",
         "holdings": {"000003": {"종목명": "C", "보통주": 1000}},
@@ -882,15 +886,14 @@ class SourceOrchestrationTest(unittest.TestCase):
                     "screening.build_nps_buy_signals",
                     create=True,
                     return_value=([{"종목명": "C"}], self.candidate_state),
-                ),
+                ),self.assertRaises(ScreeningDataError)
             ):
-                with self.assertRaises(ScreeningDataError):
-                    fetch_all_data(
-                        "ticker_map.json",
-                        require_all=True,
-                        nps_state_path=state_path,
-                        as_of=date(2026, 7, 12),
-                    )
+                fetch_all_data(
+                    "ticker_map.json",
+                    require_all=True,
+                    nps_state_path=state_path,
+                    as_of=date(2026, 7, 12),
+                )
 
             self.assertEqual(state_path.read_bytes(), original)
 
@@ -928,9 +931,9 @@ class SourceOrchestrationTest(unittest.TestCase):
                 return_value=([], self.candidate_state),
             ),
             patch("screening.save_nps_state", side_effect=OSError("disk full")),
+            self.assertRaisesRegex(ScreeningDataError, "상태 저장 실패"),
         ):
-            with self.assertRaisesRegex(ScreeningDataError, "상태 저장 실패"):
-                fetch_all_data(require_all=True)
+            fetch_all_data(require_all=True)
 
 
 class SupplyTrendResilienceTest(unittest.TestCase):

@@ -811,8 +811,8 @@ class PriceSyncTest(unittest.TestCase):
 
     def test_successful_refresh_kicks_off_price_sync(self):
         stats = {"score_3": 0, "score_2": 0, "score_1": 0}
-        with tempfile.TemporaryDirectory() as directory:
-            with (
+        with (
+            tempfile.TemporaryDirectory() as directory,
                 patch.object(app_module, "CACHE_FILE", str(Path(directory) / "cache_data.json")),
                 patch.object(app_module, "fetch_all_data", return_value=([], [], [])),
                 patch.object(

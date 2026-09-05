@@ -7,20 +7,27 @@
 3개 지표를 종합하여 점수화하고 정적 HTML로 저장
 """
 
+import os
 from datetime import datetime
 from html import escape
-import os
 
 import pandas as pd
 
 from screening import (
     calculate_scores as calculate_score_rows,
+)
+from screening import (
     fetch_all_data,
+)
+from screening import (
     fetch_nps_holdings as fetch_nps_holding_rows,
+)
+from screening import (
     fetch_supply_trend as fetch_supply_trend_rows,
+)
+from screening import (
     fetch_turnaround as fetch_turnaround_rows,
 )
-
 
 # ============================================================
 # 1. 데이터 수집
@@ -88,7 +95,7 @@ def generate_html(result_df, df_turn, df_supply, df_nps, stats, output_path):
     """결과를 단일 HTML 파일로 생성"""
     print(f"\nHTML 파일 생성 중: {output_path}")
 
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # noqa: DTZ005
 
     # 메인 테이블 HTML
     main_rows_html = ""

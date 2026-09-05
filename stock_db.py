@@ -23,6 +23,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
+from typing import ClassVar
 from zoneinfo import ZoneInfo
 
 import duckdb
@@ -37,12 +38,12 @@ DEFAULT_TICKER_MAP_PATH = os.path.join(
 class StockDB:
     """DuckDB 기반 주가 데이터 관리"""
 
-    _mutation_locks = {}
-    _mutation_locks_by_identity = {}
+    _mutation_locks: ClassVar[dict] = {}
+    _mutation_locks_by_identity: ClassVar[dict] = {}
     _mutation_locks_guard = threading.Lock()
     _connect_lock = threading.Lock()
 
-    def __init__(self, db_path: str = None):
+    def __init__(self, db_path: str | None = None):
         if db_path is None:
             db_path = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
@@ -240,7 +241,7 @@ class StockDB:
 
         for result in results:
             if not isinstance(result, dict):
-                raise ValueError("종합결과 행은 dict여야 합니다")
+                raise ValueError("종합결과 행은 dict여야 합니다")  # noqa: TRY004
 
             stock_name = str(result.get("종목명") or "").strip()
             if not stock_name:
@@ -345,7 +346,7 @@ class StockDB:
         if not name_to_code:
             return {}, {}
 
-        now_str = datetime.now().isoformat()
+        now_str = datetime.now().isoformat()  # noqa: DTZ005
         rows = [
             (code, name, None, now_str)
             for name, code in name_to_code.items()
@@ -380,14 +381,14 @@ class StockDB:
 
         query_date = None
         for days_back in range(8):
-            candidate = (datetime.now() - timedelta(days=days_back)).strftime('%Y%m%d')
+            candidate = (datetime.now() - timedelta(days=days_back)).strftime('%Y%m%d')  # noqa: DTZ005
             try:
                 test_tickers = krx_module.get_market_ticker_list(candidate, market='KOSPI')
                 if test_tickers:
                     query_date = candidate
                     logger.info(f"KRX 유효 거래일: {candidate} (오늘-{days_back}일)")
                     break
-            except Exception:
+            except Exception:  # noqa: S112, BLE001
                 continue
 
         if not query_date:
@@ -401,9 +402,9 @@ class StockDB:
                     name = krx_module.get_market_ticker_name(code)
                     name_to_code[name] = code
                     code_to_name[code] = name
-                    now_str = datetime.now().isoformat()
+                    now_str = datetime.now().isoformat()  # noqa: DTZ005
                     rows.append((code, name, market, now_str))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"KRX {market} 종목 목록 조회 실패: {e}")
 
         if rows:
@@ -442,7 +443,7 @@ class StockDB:
         if newest and not need_refresh:
             if isinstance(newest, str):
                 newest = datetime.fromisoformat(newest)
-            if (datetime.now() - newest).days > 7:
+            if (datetime.now() - newest).days > 7:  # noqa: DTZ005
                 need_refresh = True
 
         if need_refresh and krx_module:
@@ -592,7 +593,7 @@ class StockDB:
         """yfinance의 배타적 end 인수에 맞춰 하루 뒤 날짜를 반환한다."""
         compact = end_yyyymmdd.replace('-', '')
         return (
-            datetime.strptime(compact, '%Y%m%d') + timedelta(days=1)
+            datetime.strptime(compact, '%Y%m%d') + timedelta(days=1)  # noqa: DTZ007
         ).strftime('%Y-%m-%d')
 
     @staticmethod
@@ -603,7 +604,7 @@ class StockDB:
     def _download_yfinance(
         self, symbol: str, start_yyyymmdd: str, end_yyyymmdd: str
     ):
-        start = datetime.strptime(
+        start = datetime.strptime(  # noqa: DTZ007
             start_yyyymmdd.replace('-', ''), '%Y%m%d'
         ).strftime('%Y-%m-%d')
         frame = yf.download(
@@ -629,7 +630,7 @@ class StockDB:
                 frame = self._download_yfinance(
                     symbol, start_yyyymmdd, end_yyyymmdd
                 )
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 logger.debug(f"yfinance 조회 실패 ({symbol}): {exc}")
                 continue
             if frame.empty:
@@ -685,7 +686,7 @@ class StockDB:
             frame = self._download_yfinance(
                 symbol, start_yyyymmdd, end_yyyymmdd
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.warning(f"yfinance 지수 조회 실패 ({symbol}): {exc}")
             return []
 
@@ -731,7 +732,7 @@ class StockDB:
                 df = krx_module.get_market_ohlcv_by_date(
                     start_s, end_s, ticker
                 )
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 logger.warning(f"pykrx 데이터 조회 실패 ({ticker}): {exc}")
             else:
                 for date_idx, row in df.iterrows():
@@ -1027,7 +1028,7 @@ class StockDB:
                 df = krx_module.get_index_ohlcv_by_date(
                     start_s, end_s, index_code
                 )
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 logger.warning(
                     f"지수 데이터 조회 실패 ({index_code}): {exc}"
                 )
@@ -1091,7 +1092,7 @@ class StockDB:
     # DB 뷰어용 조회 메서드
     # ----------------------------------------------------------
 
-    _ALLOWED_TABLES = {
+    _ALLOWED_TABLES: ClassVar[set[str]] = {
         'daily_prices',
         'ticker_map',
         'index_prices',
@@ -1125,8 +1126,8 @@ class StockDB:
             con.close()
 
     def query_table(self, table_name: str, page: int = 1, page_size: int = 50,
-                    order_by: str = None, order_dir: str = 'DESC',
-                    filter_col: str = None, filter_val: str = None) -> dict:
+                    order_by: str | None = None, order_dir: str = 'DESC',
+                    filter_col: str | None = None, filter_val: str | None = None) -> dict:
         """Paginated table query with optional filtering
 
         Args:

@@ -22,8 +22,8 @@ def engine_fixture(count=290):
             days.append(day.isoformat())
         day += timedelta(days=1)
     for asset in ETF_ASSETS.values():
-        rows = [dict(date=d, open=100.0, high=110.0, low=99.0,
-                     close=100 + i * 0.01, volume=1000) for i, d in enumerate(days)]
+        rows = [{'date': d, 'open': 100.0, 'high': 110.0, 'low': 99.0,
+                     'close': 100 + i * 0.01, 'volume': 1000} for i, d in enumerate(days)]
         engine.add_price_data(asset.ticker, rows, asset.name)
     return engine, days
 

@@ -16,7 +16,6 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from html import unescape
-from typing import Optional
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -55,26 +54,26 @@ DAUM_FINANCE_HEADERS = {
     "Referer": "https://finance.daum.net/domestic/influential_investors",
 }
 
-_TITLE_TICKER_RE = re.compile(r"<title[^>]*>.*?\(([^()]+)\)\s*\|", re.I | re.S)
+_TITLE_TICKER_RE = re.compile(r"<title[^>]*>.*?\(([^()]+)\)\s*\|", re.IGNORECASE | re.DOTALL)
 _NPS_ROW_RE = re.compile(
     r"<th[^>]*\btitle=[\"']국민연금공단[\"'][^>]*>.*?</th>\s*"
     r"<td[^>]*>(.*?)</td>\s*<td[^>]*>(.*?)</td>\s*"
     r"<td[^>]*>(.*?)</td>",
-    re.I | re.S,
+    re.IGNORECASE | re.DOTALL,
 )
 _NPS_HOLDER_MARKER_RE = re.compile(
-    r'<th[^>]*\btitle=["\']국민연금공단["\'][^>]*>', re.I | re.S
+    r'<th[^>]*\btitle=["\']국민연금공단["\'][^>]*>', re.IGNORECASE | re.DOTALL
 )
 _SHARE_BODY_RE = re.compile(
-    r'<tbody[^>]*id=["\']sharebody["\'][^>]*>(.*?)</tbody>', re.I | re.S
+    r'<tbody[^>]*id=["\']sharebody["\'][^>]*>(.*?)</tbody>', re.IGNORECASE | re.DOTALL
 )
-_HTML_TABLE_RE = re.compile(r"<table\b[^>]*>.*?</table>", re.I | re.S)
-_HTML_CAPTION_RE = re.compile(r"<caption\b[^>]*>(.*?)</caption>", re.I | re.S)
+_HTML_TABLE_RE = re.compile(r"<table\b[^>]*>.*?</table>", re.IGNORECASE | re.DOTALL)
+_HTML_CAPTION_RE = re.compile(r"<caption\b[^>]*>(.*?)</caption>", re.IGNORECASE | re.DOTALL)
 _SHARE_CHANGE_TABLE_ID_RE = re.compile(
-    r'<table\b[^>]*\bid\s*=\s*["\']tbl_own_chg["\']', re.I | re.S
+    r'<table\b[^>]*\bid\s*=\s*["\']tbl_own_chg["\']', re.IGNORECASE | re.DOTALL
 )
-_HTML_ROW_RE = re.compile(r"<tr[^>]*>(.*?)</tr>", re.I | re.S)
-_HTML_CELL_RE = re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>", re.I | re.S)
+_HTML_ROW_RE = re.compile(r"<tr[^>]*>(.*?)</tr>", re.IGNORECASE | re.DOTALL)
+_HTML_CELL_RE = re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>", re.IGNORECASE | re.DOTALL)
 _TAG_RE = re.compile(r"<[^>]+>")
 _thread_local = threading.local()
 
@@ -116,7 +115,7 @@ def _worker_session() -> requests.Session:
 
 
 def fetch_turnaround(
-    *, session: Optional[requests.Session] = None, timeout: float = 20
+    *, session: requests.Session | None = None, timeout: float = 20
 ) -> list[dict]:
     """연간 영업이익 흑자전환 종목을 FnGuide 신버전 API에서 읽는다."""
     client = session or _retry_session()
@@ -170,7 +169,7 @@ def fetch_turnaround(
 
 def fetch_supply_trend(
     *,
-    session: Optional[requests.Session] = None,
+    session: requests.Session | None = None,
     timeout: float = 20,
     ticker_map_path: str = DEFAULT_TICKER_MAP,
 ) -> list[dict]:
@@ -279,7 +278,7 @@ def fetch_supply_trend(
     def fetch_history_safe(symbol_code: str):
         try:
             return symbol_code, fetch_history(symbol_code)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             return symbol_code, exc
 
     histories: dict[str, list[dict]] = {}
@@ -384,7 +383,7 @@ def _cell_text(value: str) -> str:
     return normalize_stock_name(unescape(_TAG_RE.sub("", value)).replace("\xa0", " "))
 
 
-def _snapshot_ticker(html: str) -> Optional[str]:
+def _snapshot_ticker(html: str) -> str | None:
     title_match = _TITLE_TICKER_RE.search(html or "")
     return title_match.group(1).strip().upper() if title_match else None
 
@@ -462,7 +461,7 @@ def _has_share_change_table(html: str) -> bool:
 
 def parse_nps_holding(
     html: str, *, expected_code: str, stock_name: str
-) -> Optional[dict]:
+) -> dict | None:
     """FnGuide Snapshot HTML에서 국민연금공단 주주현황 한 행을 추출한다.
 
     우선주 URL이 보통주 페이지로 연결되는 사례가 있으므로 페이지 제목의
@@ -534,7 +533,7 @@ def _fetch_nps_one(
     *,
     timeout: float,
     session_getter: Callable[[], requests.Session],
-) -> tuple[bool, Optional[dict]]:
+) -> tuple[bool, dict | None]:
     session = session_getter()
     response = session.get(
         SNAPSHOT_URL,
@@ -618,7 +617,7 @@ def fetch_nps_share_events(
                             str(holding.get("종목코드") or "").strip().upper()
                         )
                     rows.extend(page_rows)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 failures += 1
                 logger.debug(
                     "국민연금 변동내역 조회 실패 (%s): %s",
@@ -707,7 +706,7 @@ def fetch_nps_holdings(
                     unverified_required.add(code)
                 if row:
                     rows.append(row)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 failures += 1
                 if code in required:
                     unverified_required.add(code)
@@ -791,7 +790,7 @@ def fetch_all_data(
     for index, label, fetcher in sources:
         try:
             collected[index] = fetcher()
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error("%s 데이터 수집 실패: %s", label, exc)
             errors.append(f"{label}: {exc}")
 
@@ -803,7 +802,7 @@ def fetch_all_data(
                     nps_state_path,
                     as_of=as_of,
                 )
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 logger.error("국민연금 데이터 수집 실패: %s", exc)
                 errors.append(f"국민연금: {exc}")
 

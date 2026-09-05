@@ -2,6 +2,7 @@
   "status": "passed",
   "start": "2018-01-16",
   "end": "2026-09-04",
+  "in_sample_end": "2024-01-31",
   "out_of_sample_start": "2024-02-01",
   "source": "yfinance_auto_adjust",
   "tax_model": "etf_pre_tax",
@@ -12,8 +13,13 @@
   },
   "strategy_version": "1.0",
   "parameters_adjusted": true,
-  "adjustment": "Single shared risk/real-asset budget reduction to 0.5",
-  "out_of_sample_note": "Chronological holdout; shared budget was adjusted once after aggregate evaluation, so this is not an untouched final holdout.",
+  "adjustment": "Shared base risk budget selected using in-sample data only",
+  "selected_base_risk_budget": 0.5,
+  "in_sample_budget_scores": {
+    "1.0": 2,
+    "0.5": 4
+  },
+  "out_of_sample_note": "Chronological holdout; the shared risk budget was selected from the in-sample period only and then frozen before the holdout.",
   "strategies": {
     "defensive_dual_momentum": {
       "passed": true,
@@ -53,6 +59,9 @@
         "end_date": "2026-09-04",
         "trading_days": 630
       },
+      "out_of_sample_passed": true,
+      "out_of_sample_positive_rolling_3y_ratio": null,
+      "out_of_sample_rolling_windows": 0,
       "positive_rolling_3y_ratio": 1.0,
       "rolling_windows": 1388,
       "max_drawdown_overshoot": 0.0,
@@ -224,7 +233,8 @@
             "date": "2023-08-02",
             "ticker": "153130"
           }
-        ]
+        ],
+        "base_risk_budget": 0.5
       }
     },
     "multi_asset_trend_rotation": {
@@ -265,6 +275,9 @@
         "end_date": "2026-09-04",
         "trading_days": 630
       },
+      "out_of_sample_passed": true,
+      "out_of_sample_positive_rolling_3y_ratio": null,
+      "out_of_sample_rolling_windows": 0,
       "positive_rolling_3y_ratio": 1.0,
       "rolling_windows": 1388,
       "max_drawdown_overshoot": 0.019999999999999574,
@@ -568,7 +581,8 @@
             "date": "2023-08-02",
             "ticker": "143850"
           }
-        ]
+        ],
+        "base_risk_budget": 0.5
       }
     },
     "price_regime_ensemble": {
@@ -609,6 +623,9 @@
         "end_date": "2026-09-04",
         "trading_days": 630
       },
+      "out_of_sample_passed": true,
+      "out_of_sample_positive_rolling_3y_ratio": null,
+      "out_of_sample_rolling_windows": 0,
       "positive_rolling_3y_ratio": 1.0,
       "rolling_windows": 1388,
       "max_drawdown_overshoot": 0.0,
@@ -935,7 +952,8 @@
             "date": "2023-08-02",
             "ticker": "148070"
           }
-        ]
+        ],
+        "base_risk_budget": 0.5
       }
     },
     "trend_risk_parity": {
@@ -976,6 +994,9 @@
         "end_date": "2026-09-04",
         "trading_days": 630
       },
+      "out_of_sample_passed": true,
+      "out_of_sample_positive_rolling_3y_ratio": null,
+      "out_of_sample_rolling_windows": 0,
       "positive_rolling_3y_ratio": 1.0,
       "rolling_windows": 1388,
       "max_drawdown_overshoot": 0.0,
@@ -1290,9 +1311,11 @@
             "date": "2023-08-02",
             "ticker": "261240"
           }
-        ]
+        ],
+        "base_risk_budget": 0.5
       }
     }
   },
-  "passed_count": 4
+  "passed_count": 4,
+  "out_of_sample_passed_count": 4
 }

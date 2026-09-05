@@ -1,5 +1,7 @@
 # Adaptive Multi-Asset Backtest Strategies Implementation Plan
 
+> **상태 (2026-09-05):** 구현 및 검증 완료. 계획 초안의 단계별 체크박스는 당시 실행 순서를 보존하며, 최종 근거는 `reports/adaptive_evaluation.md`와 후속 커밋 기록에 반영한다. 표본외 구간은 위험예산 선택에 사용하지 않고 고정된 값으로 평가한다.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 국내 상장 ETF 기반 적응형 자산배분 전략 4개와 공통 10% 낙폭 제어기를 기존 백테스트에 추가하고, 비용 포함 표본외 검증을 통해 최소 2개 전략의 위험·성과 기준 통과를 확인한다.

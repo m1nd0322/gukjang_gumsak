@@ -14,15 +14,16 @@ import argparse
 import os
 import shutil
 import sys
-import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 REPO_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_DB_PATH = REPO_DIR / "stock_data.duckdb"
 DEFAULT_BACKUP_DIR = REPO_DIR / "backups"
 DEFAULT_KEEP = 12
+KST = ZoneInfo("Asia/Seoul")
 VERIFY_TABLES = ("daily_prices", "ticker_map", "index_prices", "screening_results")
 COPY_ATTEMPTS = 3
 RETRY_DELAY_SECONDS = 10
@@ -30,7 +31,7 @@ RETRY_DELAY_SECONDS = 10
 
 def backup_prefix(now=None) -> str:
     """백업 파일 이름에 쓰는 날짜 접두사를 반환한다."""
-    moment = now or datetime.now()
+    moment = now or datetime.now(KST)
     return f"stock_data_{moment.strftime('%Y%m%d')}.duckdb"
 
 
@@ -85,7 +86,7 @@ def create_backup(
             os.replace(temporary, target)
             _prune_old_backups(backup_dir, keep)
             return target, "created"
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             last_error = exc
             for leftover in (
                 temporary,

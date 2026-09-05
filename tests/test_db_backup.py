@@ -35,7 +35,7 @@ class BackupScriptTest(unittest.TestCase):
         )
 
     def test_backup_prefix_uses_the_korea_local_date(self):
-        moment = datetime(2026, 8, 25, 7, 30)
+        moment = datetime(2026, 8, 25, 7, 30)  # noqa: DTZ001
 
         self.assertEqual(backup_prefix(moment), "stock_data_20260825.duckdb")
 

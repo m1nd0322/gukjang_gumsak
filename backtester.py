@@ -470,9 +470,12 @@ class BacktestEngine:
         return trade_units
 
     def run_adaptive_strategy(self, strategy_key: str,
-                              start_date: str = None, end_date: str = None):
+                              start_date: str | None = None, end_date: str | None = None,
+                              base_risk_budget: float = 0.5):
         if not is_etf_strategy(strategy_key):
             raise KeyError(strategy_key)
+        if not math.isfinite(base_risk_budget) or not 0 <= base_risk_budget <= 1:
+            raise ValueError('ETF 기본 위험예산은 0~1 사이여야 합니다')
         tickers = [a.ticker for a in ETF_ASSETS.values()]
         missing = [t for t in tickers if not self.price_data.get(t)]
         if missing:
@@ -495,12 +498,13 @@ class BacktestEngine:
             if len(self.price_data[t]) != len(self._price_idx[t]):
                 raise ValueError(f"ETF 중복 날짜: {t}")
         self.all_dates = dates
-        self.data_quality = dict(
-            source='yfinance_auto_adjust', requested_start=start, actual_start=dates[0],
-            warmup_start=min(self.price_data[t][0]['date'] for t in tickers),
-            available_start={t: self.price_data[t][0]['date'] for t in tickers},
-            missing_assets=[], deferred_orders=[])
-        guard = DrawdownGuard(self.initial_capital)
+        self.data_quality = {
+            'source': 'yfinance_auto_adjust', 'requested_start': start, 'actual_start': dates[0],
+            'warmup_start': min(self.price_data[t][0]['date'] for t in tickers),
+            'available_start': {t: self.price_data[t][0]['date'] for t in tickers},
+            'missing_assets': [], 'deferred_orders': [], 'base_risk_budget': base_risk_budget}
+        guard = DrawdownGuard(self.initial_capital,
+                              base_risk_budget=base_risk_budget)
         self.drawdown_guard_events = guard.events
         previous_equity = self.initial_capital
         last_prices = {t: histories[t][-1] for t in tickers}
@@ -535,7 +539,7 @@ class BacktestEngine:
                 pending = any(t not in opens for t in full_target)
                 for t in full_target:
                     if t not in opens:
-                        self.data_quality['deferred_orders'].append(dict(date=date, ticker=t))
+                        self.data_quality['deferred_orders'].append({'date': date, 'ticker': t})
                 before_cost = self.portfolio.get_cost_summary()['total']
                 for t, shares in units.items():
                     if shares < 0:
@@ -554,19 +558,19 @@ class BacktestEngine:
                     histories[t].append(row['close'])
             self.portfolio.snapshot(date, last_prices)
             previous_equity = self.portfolio.equity(last_prices)
-            self.allocation_history.append(dict(
-                date=date, target_weights=dict(target),
-                actual_weights={t: p['shares'] * last_prices[t] / previous_equity
+            self.allocation_history.append({
+                'date': date, 'target_weights': dict(target),
+                'actual_weights': {t: p['shares'] * last_prices[t] / previous_equity
                                 for t, p in self.portfolio.positions.items()},
-                cash_weight=self.portfolio.cash / previous_equity, guard_state=guard.state))
-            self.regime_history.append(dict(date=date, regime=decision.regime,
-                                            evidence=decision.evidence))
+                'cash_weight': self.portfolio.cash / previous_equity, 'guard_state': guard.state})
+            self.regime_history.append({'date': date, 'regime': decision.regime,
+                                            'evidence': decision.evidence})
 
     # ----------------------------------------------------------
     # 전략 1: 동일 비중 매수 후 보유
     # ----------------------------------------------------------
     def run_equal_weight(self, tickers: list[str],
-                         start_date: str = None, end_date: str = None):
+                         start_date: str | None = None, end_date: str | None = None):
         """
         동일 비중 매수 후 보유 (Buy & Hold)
 
@@ -616,7 +620,7 @@ class BacktestEngine:
     # 전략 2: 주기적 리밸런싱
     # ----------------------------------------------------------
     def run_rebalance(self, tickers: list[str],
-                      start_date: str = None, end_date: str = None,
+                      start_date: str | None = None, end_date: str | None = None,
                       period: int = 20):
         """
         주기적 리밸런싱
@@ -700,8 +704,8 @@ class BacktestEngine:
     # 전략 4: 변동성 가중 + 트레일링 스탑
     # ----------------------------------------------------------
     def run_volatility_trailing_stop(self, tickers: list[str],
-                                      start_date: str = None,
-                                      end_date: str = None,
+                                      start_date: str | None = None,
+                                      end_date: str | None = None,
                                       lookback: int = 20,
                                       stop_pct: float = -10.0,
                                       cooldown: int = 5,
@@ -826,7 +830,7 @@ class BacktestEngine:
     # 전략 5: 이동평균 필터
     # ----------------------------------------------------------
     def run_ma_filter(self, tickers: list[str],
-                      start_date: str = None, end_date: str = None,
+                      start_date: str | None = None, end_date: str | None = None,
                       ma_period: int = 20,
                       rebalance_period: int = 5):
         """
@@ -920,7 +924,7 @@ class BacktestEngine:
     # 전략 6: 복합 전략 (변동성 가중 + MA 필터 + 트레일링 스탑)
     # ----------------------------------------------------------
     def run_composite(self, tickers: list[str],
-                      start_date: str = None, end_date: str = None,
+                      start_date: str | None = None, end_date: str | None = None,
                       ma_period: int = 20,
                       lookback: int = 20,
                       stop_pct: float = -8.0,
@@ -1109,7 +1113,7 @@ class BacktestEngine:
             'regime_history': self.regime_history,
             'drawdown_guard_events': self.drawdown_guard_events,
             'data_quality': getattr(self, 'data_quality', {}),
-            'strategy_parameters': {'base_risk_budget': 0.5, 'throttle_drawdown': 0.08,
+            'strategy_parameters': {'base_risk_budget': getattr(self, 'data_quality', {}).get('base_risk_budget', 0.5), 'throttle_drawdown': 0.08,
                                     'cash_drawdown': 0.10, 'cooldown_sessions': 20,
                                     'reentry_step': 0.25, 'step_sessions': 5}
                                    if self.allocation_history else {},

@@ -52,6 +52,11 @@ CACHE_FILE = os.path.join(DATA_DIR, 'cache_data.json')
 LOG_DIR = os.path.join(DATA_DIR, '.omx', 'logs')
 CACHE_VERSION = 2
 KST = ZoneInfo('Asia/Seoul')
+
+
+class BacktestDataError(RuntimeError):
+    """백테스트 입력·데이터 오류."""
+
 WEB_PORT = web_port()
 BACKTEST_SCORE_OPTIONS = (3, 2, 1)
 DEFAULT_BACKTEST_SCORES = (3, 2)
@@ -140,8 +145,6 @@ def _run_reserved_refresh():
 
 def _refresh_data_locked():
     """데이터 수집 → 점수 계산 → 저장"""
-    global current_data
-
     with data_lock:
         current_data['status'] = 'loading'
         current_data['error_msg'] = ''
@@ -155,7 +158,7 @@ def _refresh_data_locked():
 
         result, stats = calculate_scores(turn, supply, nps)
         stock_db.replace_screening_results(result)
-        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        now = datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S')
 
         with data_lock:
             current_data['turn'] = turn
@@ -180,7 +183,7 @@ def _refresh_data_locked():
         _start_price_sync()
         return True
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"데이터 갱신 실패: {e}")
         with data_lock:
             # 기존 캐시 데이터가 있으면 유지하고 상태만 error로 표시
@@ -226,7 +229,7 @@ def _run_price_sync():
             logger.info("가격 동기화 대상 종목이 없습니다")
             return
 
-        end_dt = datetime.now()
+        end_dt = datetime.now(KST)
         start_dt = end_dt - timedelta(days=PRICE_SYNC_LOOKBACK_DAYS)
         stats = stock_db.ensure_price_data(
             tickers,
@@ -238,7 +241,7 @@ def _run_price_sync():
             "가격 자동 동기화 완료: %d종목 (API 호출 %d종목, 신규 %d일)",
             stats['total'], stats['fetched'], stats['new_days'],
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.error(f"가격 자동 동기화 실패: {exc}\n{traceback.format_exc()}")
     finally:
         price_sync_lock.release()
@@ -254,7 +257,7 @@ def _start_price_sync():
     )
     try:
         thread.start()
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.error(f"가격 동기화 스레드 시작 실패: {exc}")
 
 
@@ -290,7 +293,6 @@ def _write_cache_atomic(cache):
 
 def load_cache():
     """캐시 파일에서 데이터 로드"""
-    global current_data
     if os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, 'r', encoding='utf-8') as f:
@@ -308,7 +310,7 @@ def load_cache():
                 current_data['status'] = 'done'
             logger.info(f"캐시 데이터 로드 완료 (갱신: {current_data['last_updated']})")
             return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"캐시 로드 실패: {e}")
     return False
 
@@ -334,7 +336,7 @@ def api_refresh():
     try:
         thread = threading.Thread(target=_run_reserved_refresh, daemon=True)
         thread.start()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         refresh_lock.release()
         with data_lock:
             if current_data.get('last_updated'):
@@ -403,14 +405,14 @@ def normalize_backtest_filters(params):
     raw_scores = params.get('scores', list(DEFAULT_BACKTEST_SCORES))
     raw_items = params.get('items', [])
     if not isinstance(raw_scores, list):
-        raise ValueError('종합점수 필터는 배열이어야 합니다.')
+        raise ValueError('종합점수 필터는 배열이어야 합니다.')  # noqa: TRY004
     if any(
         type(score) is not int or score not in BACKTEST_SCORE_OPTIONS
         for score in raw_scores
     ):
         raise ValueError('종합점수는 1, 2, 3만 선택할 수 있습니다.')
     if not isinstance(raw_items, list):
-        raise ValueError('항목별 필터는 배열이어야 합니다.')
+        raise ValueError('항목별 필터는 배열이어야 합니다.')  # noqa: TRY004
     if any(
         type(item) is not str or item not in BACKTEST_ITEM_SOURCES
         for item in raw_items
@@ -426,8 +428,6 @@ def run_backtest_task(period_months, initial_capital, strategy,
                       score_filters=DEFAULT_BACKTEST_SCORES, item_filters=(),
                       stop_loss_pct=7.0):
     """백테스트 실행 (별도 스레드) - DuckDB 증분 수집"""
-    global backtest_state
-
     try:
         with bt_lock:
             backtest_state['status'] = 'loading'
@@ -453,7 +453,7 @@ def run_backtest_task(period_months, initial_capital, strategy,
             krx_mod = None
         else:
             if not candidates:
-                raise Exception('선택한 필터 조건에 맞는 종목이 없습니다.')
+                raise BacktestDataError('선택한 필터 조건에 맞는 종목이 없습니다.')
 
             stock_names = [r['종목명'] for r in candidates]
             logger.info(f"백테스트 대상: {len(stock_names)}개 종목 ({', '.join(stock_names[:5])}...)")
@@ -475,7 +475,7 @@ def run_backtest_task(period_months, initial_capital, strategy,
                     unmatched.append(name)
 
             if not matched:
-                raise Exception(f"종목코드 매핑 실패: {', '.join(stock_names[:5])}")
+                raise BacktestDataError(f"종목코드 매핑 실패: {', '.join(stock_names[:5])}")
 
             if unmatched:
                 logger.warning(f"코드 매핑 실패 종목: {', '.join(unmatched)}")
@@ -483,7 +483,7 @@ def run_backtest_task(period_months, initial_capital, strategy,
             logger.info(f"코드 매핑 완료: {len(matched)}개 성공, {len(unmatched)}개 실패")
 
         # 3. 기간 설정
-        end_dt = datetime.now()
+        end_dt = datetime.now(KST)
         start_dt = end_dt - timedelta(days=period_months * 30)
         fetch_start_dt = start_dt - timedelta(days=400) if etf_strategy else start_dt
         start_str = start_dt.strftime('%Y%m%d')
@@ -547,7 +547,7 @@ def run_backtest_task(period_months, initial_capital, strategy,
                 logger.warning(f"  {name}({code}): DuckDB에 데이터 없음")
 
         if not engine.price_data:
-            raise Exception("가격 데이터를 수집한 종목이 없습니다.")
+            raise BacktestDataError("가격 데이터를 수집한 종목이 없습니다.")
 
         # 6. 벤치마크 (KOSPI) - DuckDB 증분 수집
         with bt_lock:
@@ -604,7 +604,7 @@ def run_backtest_task(period_months, initial_capital, strategy,
         logger.info(f"백테스트 완료: 수익률={results['metrics']['total_return']}%, "
                      f"MDD={results['metrics']['mdd']}%, DB크기={db_stats['db_size_mb']}MB")
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error(f"백테스트 실패: {e}\n{traceback.format_exc()}")
         with bt_lock:
             backtest_state['status'] = 'error'
@@ -694,7 +694,7 @@ def api_backtest_run():
     )
     try:
         thread.start()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         with bt_lock:
             backtest_state['status'] = 'error'
             backtest_state['error_msg'] = str(e)
@@ -783,7 +783,7 @@ def api_backtest_csv():
     # 파일명에 전략명과 날짜 포함
     config = results.get('config', {})
     strategy_name = config.get('strategy', 'backtest')
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    timestamp = datetime.now(KST).strftime('%Y%m%d_%H%M%S')
     filename = f'backtest_{strategy_name}_{timestamp}.csv'
 
     return Response(
@@ -2348,7 +2348,7 @@ def _rotate_web_log():
 
         if rotate_if_large(os.path.join(LOG_DIR, 'web.log')):
             logger.info("커진 web.log를 회전했습니다")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.debug(f"로그 회전 건너뜀: {exc}")
 
 
@@ -2381,7 +2381,7 @@ def _schedule_refresh_retry(attempt):
             name='daily_refresh 재시도',
             misfire_grace_time=None,
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.error("자동 갱신 재시도 예약 실패: %s", exc)
         return
     logger.info(
