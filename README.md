@@ -387,12 +387,60 @@ scripts/rotate_logs.py         5MB를 넘은 로그를 세대 교체로 회전
 screening.py                   FnGuide·Daum 수집·검증과 공통 점수 계산
 nps_tracker.py                 국민연금 신호 상태 전이·만료·원자 저장
 backtester.py                  거래비용/FIFO 기반 백테스트 엔진
+strategy_catalog.py            기존·ETF 전략과 고정 ETF 유니버스 카탈로그
+adaptive_strategies.py         네 가지 적응형 ETF 배분 정책
+drawdown_guard.py              8% 감속·10% 현금화·단계 재진입 제어기
+strategy_runner.py              전략별 엔진 실행 분기
+strategy_export.py              적응형 결과 CSV 공통 출력
 stock_db.py                    DuckDB 스키마, 캐시, 스크리닝 이력
 stock_screener.py              정적 HTML 리포트 CLI
 daily_report.py                GitHub Actions 텔레그램 리포트
+scripts/evaluate_adaptive_strategies.py  ETF 전체기간·표본외·충격구간 평가
 ticker_map.json                저장소 기본 종목명→종목코드 매핑
 tests/                         네트워크 독립 회귀 테스트
 requirements.txt               Python 런타임 의존성
 .github/workflows/
   daily_report.yml             평일 08:00 KST 일일 리포트
 ```
+
+### ETF 적응형 자산배분 (실험)
+
+기존 6개 전략에 `defensive_dual_momentum`, `multi_asset_trend_rotation`,
+`trend_risk_parity`, `price_regime_ensemble`을 추가했습니다.
+고정 유니버스는 `069500`, `143850`, `133690`, `148070`, `153130`,
+`132030`, `261240`, `130680`이며 메타데이터는 `strategy_catalog.py`에서 관리합니다.
+
+ETF 전략은 개별주 필터를 사용하지 않습니다. API 요청에 `scores` 또는 `items`가
+포함되면 거절합니다. 요청 시작일보다 400일 앞선 조정가격을 수집하며,
+모든 ETF에 최소 253거래일의 사전 종가가 필요합니다.
+월말까지 관측한 신호는 다음 달 첫 거래일 시가에 실행하며 최초 진입은
+요청 구간 첫 거래일입니다. 당일 종가로 평가하고, 시가가 없으면 주문을 보류합니다.
+연속 5거래일 가격 누락은 실행 오류입니다.
+
+전일 평가액 기준 8% 낙폭에서 위험자산 비중을 절반으로 줄이고,
+10%에서 모든 ETF를 현금화합니다. 최소 20거래일 이후 중립 이상 레짐에서
+25%로 재진입하고, 5거래일마다 25%씩 늘립니다. 재진입의 신규 저점 판정은
+체결비용을 차감한 회복 기준액을 사용하며 완전 복귀 시 방어 기준 고점을 재설정합니다.
+전체 기간 MDD는 최초 자본과 전체 고점 기준으로 별도 계산합니다.
+
+ETF 기본 비용은 편도 수수료 0.015%, 슬리피지 0.10%, 증권거래세 0%입니다.
+보유기간과세를 제외한 세전 성과(`tax_model=etf_pre_tax`)입니다.
+갭 하락과 거래비용 때문에 실제 낙폭이 10%를 넘을 수 있습니다.
+화면과 CSV에서 레짐, 목표·실제 비중, 현금화·재진입 이력과 초과폭을 확인할 수 있습니다.
+과거 성과는 미래 성과를 보장하지 않습니다.
+
+재현 가능한 전체기간·마지막 30% 표본외·36개월 롤링·충격구간 평가는 다음과 같습니다.
+
+```bash
+uv run --isolated --managed-python --python 3.11 --with-requirements requirements.txt python scripts/evaluate_adaptive_strategies.py
+```
+
+`reports/adaptive_evaluation.json`에 결과 또는 데이터 수집 오류를 저장합니다.
+성과 기준을 통과한 현재 평가 결과도 표본외 구간의 독립성 한계 때문에
+신규 전략은 화면에서 `실험`으로 표시합니다.
+
+2026-09-05 평가에서는 공통 주식·원유 위험예산을 한 차례 0.5로 낮춘 뒤
+4개 전략이 승인 기준을 통과했습니다. 남는 비중은 현금이며, 방어 상태의 감속은
+이 기본 위험비중에 추가로 적용합니다. 상세 결과는
+[평가 보고서](reports/adaptive_evaluation.md)에 있습니다.
+평가 후 공통 비중을 조정했으므로 마지막 30% 구간은 완전히 미사용인 최종 검증이 아닙니다.

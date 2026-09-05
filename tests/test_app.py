@@ -281,6 +281,8 @@ class FlaskApiTest(unittest.TestCase):
         config = app_module.backtest_state["results"]["config"]
         engine.run_volatility_trailing_stop.assert_called_once_with(
             ["000001"],
+            unittest.mock.ANY,
+            unittest.mock.ANY,
             lookback=20,
             stop_pct=-10.0,
             cooldown=5,
@@ -343,11 +345,11 @@ class FlaskApiTest(unittest.TestCase):
         self.assertIn("data.error", template)
 
     def test_backtest_page_exposes_and_sends_custom_stop_loss(self):
-        template = app_module.BACKTEST_TEMPLATE
+        template = self.client.get("/backtest").get_data(as_text=True)
 
         self.assertIn(
             '<option value="vol_trailing_stop_loss">'
-            '🛡️ 변동성 가중 + 트레일링 스탑 + 스탑로스</option>',
+            '변동성 가중 + 트레일링 스탑 + 스탑로스</option>',
             template,
         )
         self.assertIn('id="cfgStopLoss"', template)

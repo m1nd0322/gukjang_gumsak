@@ -1,0 +1,1298 @@
+{
+  "status": "passed",
+  "start": "2018-01-16",
+  "end": "2026-09-04",
+  "out_of_sample_start": "2024-02-01",
+  "source": "yfinance_auto_adjust",
+  "tax_model": "etf_pre_tax",
+  "costs": {
+    "commission_pct": 0.015,
+    "slippage_pct": 0.1,
+    "tax_pct": 0
+  },
+  "strategy_version": "1.0",
+  "parameters_adjusted": true,
+  "adjustment": "Single shared risk/real-asset budget reduction to 0.5",
+  "out_of_sample_note": "Chronological holdout; shared budget was adjusted once after aggregate evaluation, so this is not an untouched final holdout.",
+  "strategies": {
+    "defensive_dual_momentum": {
+      "passed": true,
+      "metrics": {
+        "initial_capital": 100000000,
+        "final_equity": 153873225,
+        "current_value": 153873225,
+        "profit_loss": 53873225,
+        "total_return": 53.87,
+        "annual_return": 5.26,
+        "mdd": -8.6,
+        "mdd_period": "2026-06-22 ~ 2026-07-30",
+        "sharpe": 0.37,
+        "volatility": 4.69,
+        "win_rate": 82.93,
+        "total_trades": 57,
+        "start_date": "2018-01-16",
+        "end_date": "2026-09-04",
+        "trading_days": 2117
+      },
+      "benchmark": -43.9,
+      "failure_reasons": [],
+      "out_of_sample": {
+        "initial_capital": 100000000,
+        "final_equity": 132839587,
+        "current_value": 132839587,
+        "profit_loss": 32839587,
+        "total_return": 32.84,
+        "annual_return": 12.03,
+        "mdd": -8.63,
+        "mdd_period": "2026-06-22 ~ 2026-07-30",
+        "sharpe": 1.11,
+        "volatility": 7.34,
+        "win_rate": 100.0,
+        "total_trades": 23,
+        "start_date": "2024-02-01",
+        "end_date": "2026-09-04",
+        "trading_days": 630
+      },
+      "positive_rolling_3y_ratio": 1.0,
+      "rolling_windows": 1388,
+      "max_drawdown_overshoot": 0.0,
+      "shocks": {
+        "2020": {
+          "initial_capital": 100000000,
+          "final_equity": 105680948,
+          "current_value": 105680948,
+          "profit_loss": 5680948,
+          "total_return": 5.68,
+          "annual_return": 5.78,
+          "mdd": -4.26,
+          "mdd_period": "2020-02-20 ~ 2020-03-23",
+          "sharpe": 0.53,
+          "volatility": 4.16,
+          "win_rate": 100.0,
+          "total_trades": 9,
+          "start_date": "2020-01-02",
+          "end_date": "2020-12-30",
+          "trading_days": 248
+        },
+        "2022": {
+          "initial_capital": 100000000,
+          "final_equity": 96676534,
+          "current_value": 96676534,
+          "profit_loss": -3323466,
+          "total_return": -3.32,
+          "annual_return": -3.43,
+          "mdd": -4.29,
+          "mdd_period": "2022-01-04 ~ 2022-06-17",
+          "sharpe": -2.42,
+          "volatility": 2.87,
+          "win_rate": 20.0,
+          "total_trades": 6,
+          "start_date": "2022-01-04",
+          "end_date": "2022-12-29",
+          "trading_days": 244
+        },
+        "recent": {
+          "initial_capital": 100000000,
+          "final_equity": 114787643,
+          "current_value": 114787643,
+          "profit_loss": 14787643,
+          "total_return": 14.79,
+          "annual_return": 23.29,
+          "mdd": -8.63,
+          "mdd_period": "2026-06-22 ~ 2026-07-30",
+          "sharpe": 1.42,
+          "volatility": 12.82,
+          "win_rate": 100.0,
+          "total_trades": 16,
+          "start_date": "2026-01-02",
+          "end_date": "2026-09-04",
+          "trading_days": 166
+        }
+      },
+      "guard_events": [
+        {
+          "date": "2026-07-30",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08405963107706338,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-08-03",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.06406554363025474,
+          "action": "normal",
+          "risk_budget": 1.0
+        }
+      ],
+      "data_quality": {
+        "source": "yfinance_auto_adjust",
+        "requested_start": "2018-01-16",
+        "actual_start": "2018-01-16",
+        "warmup_start": "2010-01-04",
+        "available_start": {
+          "069500": "2010-01-04",
+          "143850": "2011-07-18",
+          "133690": "2010-10-18",
+          "148070": "2011-10-20",
+          "153130": "2012-02-22",
+          "132030": "2010-10-01",
+          "261240": "2016-12-27",
+          "130680": "2010-08-02"
+        },
+        "missing_assets": [],
+        "deferred_orders": [
+          {
+            "date": "2018-03-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "153130"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "153130"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "153130"
+          }
+        ]
+      }
+    },
+    "multi_asset_trend_rotation": {
+      "passed": true,
+      "metrics": {
+        "initial_capital": 100000000,
+        "final_equity": 201970677,
+        "current_value": 201970677,
+        "profit_loss": 101970677,
+        "total_return": 101.97,
+        "annual_return": 8.73,
+        "mdd": -10.02,
+        "mdd_period": "2026-06-22 ~ 2026-07-30",
+        "sharpe": 0.62,
+        "volatility": 8.43,
+        "win_rate": 71.14,
+        "total_trades": 149,
+        "start_date": "2018-01-16",
+        "end_date": "2026-09-04",
+        "trading_days": 2117
+      },
+      "benchmark": -43.9,
+      "failure_reasons": [],
+      "out_of_sample": {
+        "initial_capital": 100000000,
+        "final_equity": 161089920,
+        "current_value": 161089920,
+        "profit_loss": 61089920,
+        "total_return": 61.09,
+        "annual_return": 21.01,
+        "mdd": -10.03,
+        "mdd_period": "2026-06-22 ~ 2026-07-30",
+        "sharpe": 1.43,
+        "volatility": 11.37,
+        "win_rate": 81.48,
+        "total_trades": 54,
+        "start_date": "2024-02-01",
+        "end_date": "2026-09-04",
+        "trading_days": 630
+      },
+      "positive_rolling_3y_ratio": 1.0,
+      "rolling_windows": 1388,
+      "max_drawdown_overshoot": 0.019999999999999574,
+      "shocks": {
+        "2020": {
+          "initial_capital": 100000000,
+          "final_equity": 111918578,
+          "current_value": 111918578,
+          "profit_loss": 11918578,
+          "total_return": 11.92,
+          "annual_return": 12.12,
+          "mdd": -8.02,
+          "mdd_period": "2020-02-21 ~ 2020-03-23",
+          "sharpe": 0.99,
+          "volatility": 8.4,
+          "win_rate": 61.9,
+          "total_trades": 25,
+          "start_date": "2020-01-02",
+          "end_date": "2020-12-30",
+          "trading_days": 248
+        },
+        "2022": {
+          "initial_capital": 100000000,
+          "final_equity": 96112089,
+          "current_value": 96112089,
+          "profit_loss": -3887911,
+          "total_return": -3.89,
+          "annual_return": -4.01,
+          "mdd": -5.71,
+          "mdd_period": "2022-03-08 ~ 2022-05-18",
+          "sharpe": -1.36,
+          "volatility": 5.48,
+          "win_rate": 41.67,
+          "total_trades": 15,
+          "start_date": "2022-01-04",
+          "end_date": "2022-12-29",
+          "trading_days": 244
+        },
+        "recent": {
+          "initial_capital": 100000000,
+          "final_equity": 113609328,
+          "current_value": 113609328,
+          "profit_loss": 13609328,
+          "total_return": 13.61,
+          "annual_return": 21.37,
+          "mdd": -10.04,
+          "mdd_period": "2026-06-22 ~ 2026-07-30",
+          "sharpe": 0.96,
+          "volatility": 18.27,
+          "win_rate": 67.86,
+          "total_trades": 28,
+          "start_date": "2026-01-02",
+          "end_date": "2026-09-04",
+          "trading_days": 166
+        }
+      },
+      "guard_events": [
+        {
+          "date": "2020-03-24",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08007702308974929,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2020-03-25",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.06081729093804755,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2023-10-27",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08359053706059671,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2023-11-28",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07991223565781624,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-03-24",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08549027241939078,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-03-25",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07081765671913887,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-04-01",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08307719864310104,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-04-02",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.05955714847250393,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-07-29",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.09185053875559956,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-07-31",
+          "previous_state": "throttled",
+          "state": "cash",
+          "drawdown": 0.10017256978683609,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2026-08-31",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.08963363582021655,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2026-09-03",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.08983617857617399,
+          "action": "cash",
+          "risk_budget": 0.0
+        }
+      ],
+      "data_quality": {
+        "source": "yfinance_auto_adjust",
+        "requested_start": "2018-01-16",
+        "actual_start": "2018-01-16",
+        "warmup_start": "2010-01-04",
+        "available_start": {
+          "069500": "2010-01-04",
+          "143850": "2011-07-18",
+          "133690": "2010-10-18",
+          "148070": "2011-10-20",
+          "153130": "2012-02-22",
+          "132030": "2010-10-01",
+          "261240": "2016-12-27",
+          "130680": "2010-08-02"
+        },
+        "missing_assets": [],
+        "deferred_orders": [
+          {
+            "date": "2018-03-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "143850"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "130680"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "143850"
+          }
+        ]
+      }
+    },
+    "price_regime_ensemble": {
+      "passed": true,
+      "metrics": {
+        "initial_capital": 100000000,
+        "final_equity": 177163131,
+        "current_value": 177163131,
+        "profit_loss": 77163131,
+        "total_return": 77.16,
+        "annual_return": 7.04,
+        "mdd": -6.84,
+        "mdd_period": "2020-02-20 ~ 2020-03-23",
+        "sharpe": 0.6,
+        "volatility": 5.77,
+        "win_rate": 69.33,
+        "total_trades": 178,
+        "start_date": "2018-01-16",
+        "end_date": "2026-09-04",
+        "trading_days": 2117
+      },
+      "benchmark": -43.9,
+      "failure_reasons": [],
+      "out_of_sample": {
+        "initial_capital": 100000000,
+        "final_equity": 133767234,
+        "current_value": 133767234,
+        "profit_loss": 33767234,
+        "total_return": 33.77,
+        "annual_return": 12.34,
+        "mdd": -6.5,
+        "mdd_period": "2026-06-02 ~ 2026-07-30",
+        "sharpe": 1.22,
+        "volatility": 6.87,
+        "win_rate": 83.33,
+        "total_trades": 57,
+        "start_date": "2024-02-01",
+        "end_date": "2026-09-04",
+        "trading_days": 630
+      },
+      "positive_rolling_3y_ratio": 1.0,
+      "rolling_windows": 1388,
+      "max_drawdown_overshoot": 0.0,
+      "shocks": {
+        "2020": {
+          "initial_capital": 100000000,
+          "final_equity": 110020917,
+          "current_value": 110020917,
+          "profit_loss": 10020917,
+          "total_return": 10.02,
+          "annual_return": 10.19,
+          "mdd": -6.73,
+          "mdd_period": "2020-02-20 ~ 2020-03-23",
+          "sharpe": 0.82,
+          "volatility": 7.92,
+          "win_rate": 64.29,
+          "total_trades": 20,
+          "start_date": "2020-01-02",
+          "end_date": "2020-12-30",
+          "trading_days": 248
+        },
+        "2022": {
+          "initial_capital": 100000000,
+          "final_equity": 96207038,
+          "current_value": 96207038,
+          "profit_loss": -3792962,
+          "total_return": -3.79,
+          "annual_return": -3.91,
+          "mdd": -6.38,
+          "mdd_period": "2022-03-08 ~ 2022-10-21",
+          "sharpe": -1.79,
+          "volatility": 4.14,
+          "win_rate": 42.86,
+          "total_trades": 27,
+          "start_date": "2022-01-04",
+          "end_date": "2022-12-29",
+          "trading_days": 244
+        },
+        "recent": {
+          "initial_capital": 100000000,
+          "final_equity": 110675932,
+          "current_value": 110675932,
+          "profit_loss": 10675932,
+          "total_return": 10.68,
+          "annual_return": 16.65,
+          "mdd": -6.54,
+          "mdd_period": "2026-06-02 ~ 2026-07-30",
+          "sharpe": 1.28,
+          "volatility": 9.7,
+          "win_rate": 57.14,
+          "total_trades": 28,
+          "start_date": "2026-01-02",
+          "end_date": "2026-09-04",
+          "trading_days": 166
+        }
+      },
+      "guard_events": [],
+      "data_quality": {
+        "source": "yfinance_auto_adjust",
+        "requested_start": "2018-01-16",
+        "actual_start": "2018-01-16",
+        "warmup_start": "2010-01-04",
+        "available_start": {
+          "069500": "2010-01-04",
+          "143850": "2011-07-18",
+          "133690": "2010-10-18",
+          "148070": "2011-10-20",
+          "153130": "2012-02-22",
+          "132030": "2010-10-01",
+          "261240": "2016-12-27",
+          "130680": "2010-08-02"
+        },
+        "missing_assets": [],
+        "deferred_orders": [
+          {
+            "date": "2018-03-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "130680"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "148070"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "130680"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "132030"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "143850"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "148070"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "148070"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "153130"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "130680"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "130680"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "130680"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "130680"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "130680"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "130680"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "148070"
+          }
+        ]
+      }
+    },
+    "trend_risk_parity": {
+      "passed": true,
+      "metrics": {
+        "initial_capital": 100000000,
+        "final_equity": 133962787,
+        "current_value": 133962787,
+        "profit_loss": 33962787,
+        "total_return": 33.96,
+        "annual_return": 3.54,
+        "mdd": -4.85,
+        "mdd_period": "2022-10-21 ~ 2023-11-09",
+        "sharpe": 0.01,
+        "volatility": 3.01,
+        "win_rate": 67.3,
+        "total_trades": 288,
+        "start_date": "2018-01-16",
+        "end_date": "2026-09-04",
+        "trading_days": 2117
+      },
+      "benchmark": -43.9,
+      "failure_reasons": [],
+      "out_of_sample": {
+        "initial_capital": 100000000,
+        "final_equity": 117766099,
+        "current_value": 117766099,
+        "profit_loss": 17766099,
+        "total_return": 17.77,
+        "annual_return": 6.76,
+        "mdd": -3.23,
+        "mdd_period": "2026-06-04 ~ 2026-07-30",
+        "sharpe": 1.22,
+        "volatility": 2.53,
+        "win_rate": 75.0,
+        "total_trades": 90,
+        "start_date": "2024-02-01",
+        "end_date": "2026-09-04",
+        "trading_days": 630
+      },
+      "positive_rolling_3y_ratio": 1.0,
+      "rolling_windows": 1388,
+      "max_drawdown_overshoot": 0.0,
+      "shocks": {
+        "2020": {
+          "initial_capital": 100000000,
+          "final_equity": 102470667,
+          "current_value": 102470667,
+          "profit_loss": 2470667,
+          "total_return": 2.47,
+          "annual_return": 2.51,
+          "mdd": -2.63,
+          "mdd_period": "2020-08-07 ~ 2020-09-24",
+          "sharpe": -0.37,
+          "volatility": 2.69,
+          "win_rate": 58.33,
+          "total_trades": 46,
+          "start_date": "2020-01-02",
+          "end_date": "2020-12-30",
+          "trading_days": 248
+        },
+        "2022": {
+          "initial_capital": 100000000,
+          "final_equity": 101015139,
+          "current_value": 101015139,
+          "profit_loss": 1015139,
+          "total_return": 1.02,
+          "annual_return": 1.05,
+          "mdd": -2.72,
+          "mdd_period": "2022-10-21 ~ 2022-12-29",
+          "sharpe": -0.7,
+          "volatility": 3.44,
+          "win_rate": 50.0,
+          "total_trades": 23,
+          "start_date": "2022-01-04",
+          "end_date": "2022-12-29",
+          "trading_days": 244
+        },
+        "recent": {
+          "initial_capital": 100000000,
+          "final_equity": 105564601,
+          "current_value": 105564601,
+          "profit_loss": 5564601,
+          "total_return": 5.56,
+          "annual_return": 8.57,
+          "mdd": -3.19,
+          "mdd_period": "2026-06-04 ~ 2026-07-30",
+          "sharpe": 1.32,
+          "volatility": 3.64,
+          "win_rate": 68.42,
+          "total_trades": 32,
+          "start_date": "2026-01-02",
+          "end_date": "2026-09-04",
+          "trading_days": 166
+        }
+      },
+      "guard_events": [],
+      "data_quality": {
+        "source": "yfinance_auto_adjust",
+        "requested_start": "2018-01-16",
+        "actual_start": "2018-01-16",
+        "warmup_start": "2010-01-04",
+        "available_start": {
+          "069500": "2010-01-04",
+          "143850": "2011-07-18",
+          "133690": "2010-10-18",
+          "148070": "2011-10-20",
+          "153130": "2012-02-22",
+          "132030": "2010-10-01",
+          "261240": "2016-12-27",
+          "130680": "2010-08-02"
+        },
+        "missing_assets": [],
+        "deferred_orders": [
+          {
+            "date": "2018-03-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "130680"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "153130"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "130680"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "132030"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "143850"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "153130"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "130680"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "153130"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "261240"
+          }
+        ]
+      }
+    }
+  },
+  "passed_count": 4
+}

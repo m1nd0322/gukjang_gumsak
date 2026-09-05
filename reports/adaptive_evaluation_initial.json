@@ -1,0 +1,2814 @@
+{
+  "status": "experimental",
+  "start": "2018-01-16",
+  "end": "2026-09-04",
+  "out_of_sample_start": "2024-02-01",
+  "source": "yfinance_auto_adjust",
+  "tax_model": "etf_pre_tax",
+  "costs": {
+    "commission_pct": 0.015,
+    "slippage_pct": 0.1,
+    "tax_pct": 0
+  },
+  "strategy_version": "1.0",
+  "parameters_adjusted": false,
+  "strategies": {
+    "defensive_dual_momentum": {
+      "passed": false,
+      "metrics": {
+        "initial_capital": 100000000,
+        "final_equity": 207407972,
+        "current_value": 207407972,
+        "profit_loss": 107407972,
+        "total_return": 107.41,
+        "annual_return": 9.07,
+        "mdd": -11.82,
+        "mdd_period": "2026-06-22 ~ 2026-09-02",
+        "sharpe": 0.64,
+        "volatility": 8.73,
+        "win_rate": 80.73,
+        "total_trades": 109,
+        "start_date": "2018-01-16",
+        "end_date": "2026-09-04",
+        "trading_days": 2117
+      },
+      "benchmark": -43.9,
+      "out_of_sample": {
+        "initial_capital": 100000000,
+        "final_equity": 168227431,
+        "current_value": 168227431,
+        "profit_loss": 68227431,
+        "total_return": 68.23,
+        "annual_return": 23.13,
+        "mdd": -11.81,
+        "mdd_period": "2026-06-22 ~ 2026-09-02",
+        "sharpe": 1.38,
+        "volatility": 13.22,
+        "win_rate": 82.05,
+        "total_trades": 39,
+        "start_date": "2024-02-01",
+        "end_date": "2026-09-04",
+        "trading_days": 630
+      },
+      "positive_rolling_3y_ratio": 1.0,
+      "rolling_windows": 1388,
+      "max_drawdown_overshoot": 1.8200000000000003,
+      "shocks": {
+        "2020": {
+          "initial_capital": 100000000,
+          "final_equity": 110293496,
+          "current_value": 110293496,
+          "profit_loss": 10293496,
+          "total_return": 10.29,
+          "annual_return": 10.47,
+          "mdd": -8.34,
+          "mdd_period": "2020-02-20 ~ 2020-03-23",
+          "sharpe": 0.82,
+          "volatility": 8.32,
+          "win_rate": 88.89,
+          "total_trades": 19,
+          "start_date": "2020-01-02",
+          "end_date": "2020-12-30",
+          "trading_days": 248
+        },
+        "2022": {
+          "initial_capital": 100000000,
+          "final_equity": 92332818,
+          "current_value": 92332818,
+          "profit_loss": -7667182,
+          "total_return": -7.67,
+          "annual_return": -7.91,
+          "mdd": -8.5,
+          "mdd_period": "2022-01-04 ~ 2022-06-17",
+          "sharpe": -1.98,
+          "volatility": 5.83,
+          "win_rate": 23.08,
+          "total_trades": 14,
+          "start_date": "2022-01-04",
+          "end_date": "2022-12-29",
+          "trading_days": 244
+        },
+        "recent": {
+          "initial_capital": 100000000,
+          "final_equity": 130069887,
+          "current_value": 130069887,
+          "profit_loss": 30069887,
+          "total_return": 30.07,
+          "annual_return": 49.05,
+          "mdd": -11.81,
+          "mdd_period": "2026-06-22 ~ 2026-09-02",
+          "sharpe": 1.73,
+          "volatility": 22.53,
+          "win_rate": 70.83,
+          "total_trades": 24,
+          "start_date": "2026-01-02",
+          "end_date": "2026-09-04",
+          "trading_days": 166
+        }
+      },
+      "guard_events": [
+        {
+          "date": "2018-12-26",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08079057202889461,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2019-01-08",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07600518131985956,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2020-03-24",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08332551896262552,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2020-03-25",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07046370093642085,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-06-20",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08508480228391213,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-06-22",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07969214612609676,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-06-23",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08088808903026856,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-06-24",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07894201340777907,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-07-01",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08065931734728016,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-10-06",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07995859798577853,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-03-05",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08367907065754432,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-03-06",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.05004114348107058,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-04-01",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.0831480172425294,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-04-02",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.05730606152439033,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-07-09",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08937802384743387,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-07-13",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07776914281514546,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-07-14",
+          "previous_state": "normal",
+          "state": "cash",
+          "drawdown": 0.11271482800753474,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2026-08-12",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.11362725078692937,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2026-08-20",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.11273611664855132,
+          "action": "reentry",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-08-27",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.10541866412475931,
+          "action": "reentry",
+          "risk_budget": 0.75
+        },
+        {
+          "date": "2026-09-03",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.11819460402108806,
+          "action": "cash",
+          "risk_budget": 0.0
+        }
+      ],
+      "data_quality": {
+        "source": "yfinance_auto_adjust",
+        "requested_start": "2018-01-16",
+        "actual_start": "2018-01-16",
+        "warmup_start": "2010-01-04",
+        "available_start": {
+          "069500": "2010-01-04",
+          "143850": "2011-07-18",
+          "133690": "2010-10-18",
+          "148070": "2011-10-20",
+          "153130": "2012-02-22",
+          "132030": "2010-10-01",
+          "261240": "2016-12-27",
+          "130680": "2010-08-02"
+        },
+        "missing_assets": [],
+        "deferred_orders": [
+          {
+            "date": "2018-03-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "153130"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "153130"
+          },
+          {
+            "date": "2019-01-08",
+            "ticker": "133690"
+          },
+          {
+            "date": "2019-01-08",
+            "ticker": "153130"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "153130"
+          }
+        ]
+      }
+    },
+    "multi_asset_trend_rotation": {
+      "passed": false,
+      "metrics": {
+        "initial_capital": 100000000,
+        "final_equity": 191555159,
+        "current_value": 191555159,
+        "profit_loss": 91555159,
+        "total_return": 91.56,
+        "annual_return": 8.04,
+        "mdd": -18.54,
+        "mdd_period": "2020-02-20 ~ 2023-10-16",
+        "sharpe": 0.43,
+        "volatility": 11.53,
+        "win_rate": 56.49,
+        "total_trades": 308,
+        "start_date": "2018-01-16",
+        "end_date": "2026-09-04",
+        "trading_days": 2117
+      },
+      "benchmark": -43.9,
+      "out_of_sample": {
+        "initial_capital": 100000000,
+        "final_equity": 201655412,
+        "current_value": 201655412,
+        "profit_loss": 101655412,
+        "total_return": 101.66,
+        "annual_return": 32.39,
+        "mdd": -11.57,
+        "mdd_period": "2026-06-22 ~ 2026-07-08",
+        "sharpe": 1.53,
+        "volatility": 17.01,
+        "win_rate": 69.23,
+        "total_trades": 91,
+        "start_date": "2024-02-01",
+        "end_date": "2026-09-04",
+        "trading_days": 630
+      },
+      "positive_rolling_3y_ratio": 0.5828530259365994,
+      "rolling_windows": 1388,
+      "max_drawdown_overshoot": 8.54,
+      "shocks": {
+        "2020": {
+          "initial_capital": 100000000,
+          "final_equity": 96979004,
+          "current_value": 96979004,
+          "profit_loss": -3020996,
+          "total_return": -3.02,
+          "annual_return": -3.07,
+          "mdd": -10.34,
+          "mdd_period": "2020-02-20 ~ 2020-11-30",
+          "sharpe": -1.1,
+          "volatility": 5.83,
+          "win_rate": 37.04,
+          "total_trades": 30,
+          "start_date": "2020-01-02",
+          "end_date": "2020-12-30",
+          "trading_days": 248
+        },
+        "2022": {
+          "initial_capital": 100000000,
+          "final_equity": 92178328,
+          "current_value": 92178328,
+          "profit_loss": -7821672,
+          "total_return": -7.82,
+          "annual_return": -8.07,
+          "mdd": -9.25,
+          "mdd_period": "2022-03-08 ~ 2022-12-29",
+          "sharpe": -1.29,
+          "volatility": 8.94,
+          "win_rate": 44.83,
+          "total_trades": 32,
+          "start_date": "2022-01-04",
+          "end_date": "2022-12-29",
+          "trading_days": 244
+        },
+        "recent": {
+          "initial_capital": 100000000,
+          "final_equity": 118491997,
+          "current_value": 118491997,
+          "profit_loss": 18491997,
+          "total_return": 18.49,
+          "annual_return": 29.38,
+          "mdd": -11.56,
+          "mdd_period": "2026-06-22 ~ 2026-07-08",
+          "sharpe": 0.99,
+          "volatility": 25.98,
+          "win_rate": 53.33,
+          "total_trades": 45,
+          "start_date": "2026-01-02",
+          "end_date": "2026-09-04",
+          "trading_days": 166
+        }
+      },
+      "guard_events": [
+        {
+          "date": "2018-02-12",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08964360233134594,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2018-02-13",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07292017966261388,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2018-03-29",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.0822341960663936,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2018-04-02",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07883749013651153,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2018-04-04",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.09585812618198664,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2018-04-16",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07897871968958292,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2018-04-26",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08719512964562459,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2018-04-30",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07953026599549073,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2018-05-04",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08250516136710317,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2018-05-09",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07966921245620617,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2018-05-10",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08134542255444055,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2018-05-11",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07603841748147466,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2018-05-30",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08075080665729384,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2018-06-08",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07950690510320868,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2018-06-11",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08074162687566833,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2018-06-12",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.0793524906091786,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2018-10-26",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08470392439605867,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2019-02-12",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07967070088502337,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2019-02-13",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08033742038829494,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2019-02-18",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07897802492490102,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2019-02-19",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08000671966721151,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2019-02-20",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07991842777767366,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2019-02-21",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08047013600907649,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2019-03-04",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07966281609052961,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2019-03-05",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08006238298316548,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2019-03-07",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07957133355055324,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2019-03-08",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08010155489421933,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2019-03-13",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07959878920426444,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2019-06-04",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08035814047119139,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2019-06-07",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07980686164581496,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2020-03-02",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.09516345013119987,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2020-03-13",
+          "previous_state": "throttled",
+          "state": "cash",
+          "drawdown": 0.10418665281928496,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-05-29",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.12401266695445345,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-06-01",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.12484692278541332,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-06-29",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.12427013584458158,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-06-30",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.12501765578348623,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-07-28",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.12422762452085112,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-07-29",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.12492507490726912,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-08-27",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.1250235011945089,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-08-28",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.12651988978361328,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-09-25",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.12670830088547091,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-09-28",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.1272055832558845,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-10-30",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.12534462701775018,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-11-02",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.12843467567990663,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-11-30",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.12854680312859534,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-12-01",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.13127923704867517,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-12-30",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.12993350406019888,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-01-08",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.12423184036990897,
+          "action": "reentry",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2021-01-15",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.12114769436803363,
+          "action": "reentry",
+          "risk_budget": 0.75
+        },
+        {
+          "date": "2021-01-19",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.13558484767922974,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-02-18",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.13434918854761924,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-02-19",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.13588305513740007,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-03-22",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.1365563736206742,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-03-25",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.13715758678119394,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-04-22",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.1385207884528986,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-04-23",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.13876160425277806,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-05-25",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.13988880016216,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-05-28",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.1403842463502274,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-06-25",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.13934318399005918,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-06-30",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.13959886902412566,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-07-28",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.13931589062171834,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-08-02",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.1401759781551576,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-08-31",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.13923305142768183,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-09-07",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.13757117880869751,
+          "action": "reentry",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2021-09-09",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.14077125630365606,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-10-14",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.1419954521638913,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-10-21",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.13711282448953244,
+          "action": "reentry",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2021-10-28",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.1334369677556807,
+          "action": "reentry",
+          "risk_budget": 0.75
+        },
+        {
+          "date": "2021-11-04",
+          "previous_state": "reentry",
+          "state": "normal",
+          "drawdown": 0.12458099472551698,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-04-26",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08528548408307557,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-04-27",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07510740573123542,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-05-04",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08257694881270006,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-05-10",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07771436731246173,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-05-11",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08256597219834239,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-06-14",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07827475215508162,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-06-17",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08039245287038321,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-06-20",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07953862927107258,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-06-21",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08179194061294426,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-06-22",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.0797038680228509,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-06-23",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08343393014544065,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-08-23",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07987054393436899,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-11-14",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08642150778415214,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-11-22",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07980308613621212,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-11-24",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08049091003999553,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2023-02-13",
+          "previous_state": "throttled",
+          "state": "cash",
+          "drawdown": 0.10143096397745466,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2023-05-17",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10194344621832097,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2023-05-22",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.10299869214971613,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2023-06-21",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.1029364610995559,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2023-06-23",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.10423393565133343,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2023-07-21",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10255694103886415,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2023-07-28",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.10172391143917736,
+          "action": "reentry",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2023-08-04",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.10340098786718044,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2023-09-04",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10382348864671054,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2023-09-07",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.10425226153003375,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2023-10-12",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10551232413132572,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2023-10-17",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.10623348859458137,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2023-11-14",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10578788279758422,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2023-11-21",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.1054404644306598,
+          "action": "reentry",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2023-11-28",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.10342730930790245,
+          "action": "reentry",
+          "risk_budget": 0.75
+        },
+        {
+          "date": "2023-12-05",
+          "previous_state": "reentry",
+          "state": "normal",
+          "drawdown": 0.09590534316101407,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2024-08-06",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.09048977672770164,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2024-08-07",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07832287236808522,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2024-08-09",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.0844705790578616,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2024-08-12",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.068126657629074,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-02-03",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.0883298646165267,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-02-04",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.04159586925021275,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-03-05",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08663735615563217,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-03-06",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.04816197630300989,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-03-24",
+          "previous_state": "normal",
+          "state": "cash",
+          "drawdown": 0.11336506261257218,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2026-04-21",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.08526514075318192,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2026-04-28",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.08037607424363968,
+          "action": "reentry",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-05-07",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.05671590046631936,
+          "action": "reentry",
+          "risk_budget": 0.75
+        },
+        {
+          "date": "2026-05-14",
+          "previous_state": "reentry",
+          "state": "normal",
+          "drawdown": 0.020326518898384327,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-07-03",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08172725691188787,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-07-06",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07389060835650307,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-07-08",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.09806835846672102,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-07-09",
+          "previous_state": "throttled",
+          "state": "cash",
+          "drawdown": 0.11570519271653934,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2026-08-07",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10761927807776794,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2026-08-10",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.10958696549902291,
+          "action": "cash",
+          "risk_budget": 0.0
+        }
+      ],
+      "data_quality": {
+        "source": "yfinance_auto_adjust",
+        "requested_start": "2018-01-16",
+        "actual_start": "2018-01-16",
+        "warmup_start": "2010-01-04",
+        "available_start": {
+          "069500": "2010-01-04",
+          "143850": "2011-07-18",
+          "133690": "2010-10-18",
+          "148070": "2011-10-20",
+          "153130": "2012-02-22",
+          "132030": "2010-10-01",
+          "261240": "2016-12-27",
+          "130680": "2010-08-02"
+        },
+        "missing_assets": [],
+        "deferred_orders": [
+          {
+            "date": "2018-03-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "143850"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "130680"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "143850"
+          }
+        ]
+      }
+    },
+    "price_regime_ensemble": {
+      "passed": false,
+      "metrics": {
+        "initial_capital": 100000000,
+        "final_equity": 150509341,
+        "current_value": 150509341,
+        "profit_loss": 50509341,
+        "total_return": 50.51,
+        "annual_return": 4.99,
+        "mdd": -14.47,
+        "mdd_period": "2020-02-20 ~ 2022-10-21",
+        "sharpe": 0.21,
+        "volatility": 8.24,
+        "win_rate": 51.42,
+        "total_trades": 352,
+        "start_date": "2018-01-16",
+        "end_date": "2026-09-04",
+        "trading_days": 2117
+      },
+      "benchmark": -43.9,
+      "out_of_sample": {
+        "initial_capital": 100000000,
+        "final_equity": 141069148,
+        "current_value": 141069148,
+        "profit_loss": 41069148,
+        "total_return": 41.07,
+        "annual_return": 14.76,
+        "mdd": -10.58,
+        "mdd_period": "2026-06-02 ~ 2026-08-27",
+        "sharpe": 0.98,
+        "volatility": 11.16,
+        "win_rate": 48.94,
+        "total_trades": 141,
+        "start_date": "2024-02-01",
+        "end_date": "2026-09-04",
+        "trading_days": 630
+      },
+      "positive_rolling_3y_ratio": 0.8342939481268011,
+      "rolling_windows": 1388,
+      "max_drawdown_overshoot": 4.470000000000001,
+      "shocks": {
+        "2020": {
+          "initial_capital": 100000000,
+          "final_equity": 91342318,
+          "current_value": 91342318,
+          "profit_loss": -8657682,
+          "total_return": -8.66,
+          "annual_return": -8.79,
+          "mdd": -11.96,
+          "mdd_period": "2020-02-20 ~ 2020-12-22",
+          "sharpe": -1.79,
+          "volatility": 6.94,
+          "win_rate": 40.0,
+          "total_trades": 60,
+          "start_date": "2020-01-02",
+          "end_date": "2020-12-30",
+          "trading_days": 248
+        },
+        "2022": {
+          "initial_capital": 100000000,
+          "final_equity": 93370631,
+          "current_value": 93370631,
+          "profit_loss": -6629369,
+          "total_return": -6.63,
+          "annual_return": -6.84,
+          "mdd": -8.72,
+          "mdd_period": "2022-01-04 ~ 2022-10-21",
+          "sharpe": -2.01,
+          "volatility": 5.2,
+          "win_rate": 42.86,
+          "total_trades": 27,
+          "start_date": "2022-01-04",
+          "end_date": "2022-12-29",
+          "trading_days": 244
+        },
+        "recent": {
+          "initial_capital": 100000000,
+          "final_equity": 116272238,
+          "current_value": 116272238,
+          "profit_loss": 16272238,
+          "total_return": 16.27,
+          "annual_return": 25.72,
+          "mdd": -10.58,
+          "mdd_period": "2026-06-02 ~ 2026-08-27",
+          "sharpe": 1.3,
+          "volatility": 15.89,
+          "win_rate": 52.94,
+          "total_trades": 51,
+          "start_date": "2026-01-02",
+          "end_date": "2026-09-04",
+          "trading_days": 166
+        }
+      },
+      "guard_events": [
+        {
+          "date": "2020-03-02",
+          "previous_state": "normal",
+          "state": "cash",
+          "drawdown": 0.1131369033520403,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-05-29",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.11197046036207337,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-06-01",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.11244832172310648,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-06-29",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.11218806518037683,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-06-30",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.11274043548760848,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-07-28",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10982415053684569,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-07-30",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.11046893259947377,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-08-28",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10926278740441775,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-09-04",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.10578299068266339,
+          "action": "reentry",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2020-09-07",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.11065250324538256,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-10-08",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.11473577167275217,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-10-16",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.11330111933668507,
+          "action": "reentry",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2020-10-21",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.11678256838639123,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-11-18",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.11635880985780178,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-11-19",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.11745696034467457,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2020-12-17",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.11847521593878607,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2020-12-23",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.11987044853699291,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-01-25",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.11952131160945034,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-01-27",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.12024219686548088,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-02-26",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.11942471636630336,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-03-02",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.1202499888734343,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-03-30",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.11740235498887697,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-03-31",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.11781581971583821,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-04-28",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.11863477800540534,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-04-29",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.11925380314311529,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2021-05-31",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.11905962519629942,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2021-06-07",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.1191567065579261,
+          "action": "reentry",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2021-06-14",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.11553995844732878,
+          "action": "reentry",
+          "risk_budget": 0.75
+        },
+        {
+          "date": "2021-06-21",
+          "previous_state": "reentry",
+          "state": "normal",
+          "drawdown": 0.11245577575244492,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-09-27",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.0838548229971845,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-10-04",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07729927133724301,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-10-19",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08155881849351199,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-10-27",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07977889806286331,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-10-28",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08099223918466358,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-10-31",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07941291827719599,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2022-11-01",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08251218345159061,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2022-11-10",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07869779437163338,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2024-08-06",
+          "previous_state": "normal",
+          "state": "cash",
+          "drawdown": 0.1015535021576488,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2024-09-04",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.09044959912718598,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2024-09-05",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.09154487518673149,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2024-10-11",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.0917041479673063,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2024-10-14",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.09204503358774097,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2024-11-11",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.09194912314751225,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2024-11-12",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.09247563398567382,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2024-12-10",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.09314473287633729,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2024-12-17",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.09260399470369196,
+          "action": "reentry",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2024-12-20",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.09893752149732149,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2025-01-22",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10024422166937696,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2025-02-04",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.10168667132146703,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2025-03-05",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10062000503434021,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2025-03-06",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.10110756862820247,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2025-05-14",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10160285248582901,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2025-05-15",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.10211543318678062,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2025-06-16",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10319416132411885,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2025-06-23",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.1030766729822199,
+          "action": "reentry",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2025-06-30",
+          "previous_state": "reentry",
+          "state": "reentry",
+          "drawdown": 0.0985646027720043,
+          "action": "reentry",
+          "risk_budget": 0.75
+        },
+        {
+          "date": "2025-07-07",
+          "previous_state": "reentry",
+          "state": "normal",
+          "drawdown": 0.09351734313448856,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-07-21",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08319124020587199,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-07-23",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07737880090188687,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-07-27",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08889625007296076,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-07-29",
+          "previous_state": "throttled",
+          "state": "cash",
+          "drawdown": 0.10506556281305257,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2026-08-27",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10413418410445618,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2026-08-28",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.10555164229704028,
+          "action": "cash",
+          "risk_budget": 0.0
+        }
+      ],
+      "data_quality": {
+        "source": "yfinance_auto_adjust",
+        "requested_start": "2018-01-16",
+        "actual_start": "2018-01-16",
+        "warmup_start": "2010-01-04",
+        "available_start": {
+          "069500": "2010-01-04",
+          "143850": "2011-07-18",
+          "133690": "2010-10-18",
+          "148070": "2011-10-20",
+          "153130": "2012-02-22",
+          "132030": "2010-10-01",
+          "261240": "2016-12-27",
+          "130680": "2010-08-02"
+        },
+        "missing_assets": [],
+        "deferred_orders": [
+          {
+            "date": "2018-03-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "130680"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "148070"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "130680"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "132030"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "143850"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "148070"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "148070"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "153130"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "130680"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "130680"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "130680"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "130680"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "130680"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "130680"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "148070"
+          }
+        ]
+      }
+    },
+    "trend_risk_parity": {
+      "passed": true,
+      "metrics": {
+        "initial_capital": 100000000,
+        "final_equity": 163836169,
+        "current_value": 163836169,
+        "profit_loss": 63836169,
+        "total_return": 63.84,
+        "annual_return": 6.05,
+        "mdd": -10.44,
+        "mdd_period": "2026-06-02 ~ 2026-08-28",
+        "sharpe": 0.39,
+        "volatility": 6.6,
+        "win_rate": 67.42,
+        "total_trades": 353,
+        "start_date": "2018-01-16",
+        "end_date": "2026-09-04",
+        "trading_days": 2117
+      },
+      "benchmark": -43.9,
+      "out_of_sample": {
+        "initial_capital": 100000000,
+        "final_equity": 124038444,
+        "current_value": 124038444,
+        "profit_loss": 24038444,
+        "total_return": 24.04,
+        "annual_return": 9.0,
+        "mdd": -10.46,
+        "mdd_period": "2026-06-02 ~ 2026-08-28",
+        "sharpe": 0.75,
+        "volatility": 7.12,
+        "win_rate": 72.66,
+        "total_trades": 128,
+        "start_date": "2024-02-01",
+        "end_date": "2026-09-04",
+        "trading_days": 630
+      },
+      "positive_rolling_3y_ratio": 1.0,
+      "rolling_windows": 1388,
+      "max_drawdown_overshoot": 0.4399999999999995,
+      "shocks": {
+        "2020": {
+          "initial_capital": 100000000,
+          "final_equity": 112390233,
+          "current_value": 112390233,
+          "profit_loss": 12390233,
+          "total_return": 12.39,
+          "annual_return": 12.6,
+          "mdd": -5.84,
+          "mdd_period": "2020-02-21 ~ 2020-03-23",
+          "sharpe": 1.2,
+          "volatility": 7.21,
+          "win_rate": 66.67,
+          "total_trades": 51,
+          "start_date": "2020-01-02",
+          "end_date": "2020-12-30",
+          "trading_days": 248
+        },
+        "2022": {
+          "initial_capital": 100000000,
+          "final_equity": 96135642,
+          "current_value": 96135642,
+          "profit_loss": -3864358,
+          "total_return": -3.86,
+          "annual_return": -3.99,
+          "mdd": -6.2,
+          "mdd_period": "2022-03-08 ~ 2022-12-29",
+          "sharpe": -1.11,
+          "volatility": 6.6,
+          "win_rate": 42.11,
+          "total_trades": 28,
+          "start_date": "2022-01-04",
+          "end_date": "2022-12-29",
+          "trading_days": 244
+        },
+        "recent": {
+          "initial_capital": 100000000,
+          "final_equity": 106283982,
+          "current_value": 106283982,
+          "profit_loss": 6283982,
+          "total_return": 6.28,
+          "annual_return": 9.69,
+          "mdd": -10.55,
+          "mdd_period": "2026-06-02 ~ 2026-08-28",
+          "sharpe": 0.52,
+          "volatility": 12.6,
+          "win_rate": 61.54,
+          "total_trades": 52,
+          "start_date": "2026-01-02",
+          "end_date": "2026-09-04",
+          "trading_days": 166
+        }
+      },
+      "guard_events": [
+        {
+          "date": "2023-10-27",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08334591939018154,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2023-11-22",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07900225125901106,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-07-21",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08508109762212623,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-07-24",
+          "previous_state": "throttled",
+          "state": "normal",
+          "drawdown": 0.07669905061047066,
+          "action": "normal",
+          "risk_budget": 1.0
+        },
+        {
+          "date": "2026-07-27",
+          "previous_state": "normal",
+          "state": "throttled",
+          "drawdown": 0.08985591884274491,
+          "action": "throttled",
+          "risk_budget": 0.5
+        },
+        {
+          "date": "2026-07-29",
+          "previous_state": "throttled",
+          "state": "cash",
+          "drawdown": 0.10295419382983717,
+          "action": "cash",
+          "risk_budget": 0.0
+        },
+        {
+          "date": "2026-08-27",
+          "previous_state": "cash",
+          "state": "reentry",
+          "drawdown": 0.10289080096343539,
+          "action": "reentry",
+          "risk_budget": 0.25
+        },
+        {
+          "date": "2026-08-28",
+          "previous_state": "reentry",
+          "state": "cash",
+          "drawdown": 0.10430115872907009,
+          "action": "cash",
+          "risk_budget": 0.0
+        }
+      ],
+      "data_quality": {
+        "source": "yfinance_auto_adjust",
+        "requested_start": "2018-01-16",
+        "actual_start": "2018-01-16",
+        "warmup_start": "2010-01-04",
+        "available_start": {
+          "069500": "2010-01-04",
+          "143850": "2011-07-18",
+          "133690": "2010-10-18",
+          "148070": "2011-10-20",
+          "153130": "2012-02-22",
+          "132030": "2010-10-01",
+          "261240": "2016-12-27",
+          "130680": "2010-08-02"
+        },
+        "missing_assets": [],
+        "deferred_orders": [
+          {
+            "date": "2018-03-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "130680"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2018-03-02",
+            "ticker": "153130"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "130680"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "132030"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "143850"
+          },
+          {
+            "date": "2018-03-05",
+            "ticker": "153130"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "130680"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "153130"
+          },
+          {
+            "date": "2022-05-02",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-03",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-04",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-05",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-07-06",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-08-01",
+            "ticker": "261240"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "069500"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "132030"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "133690"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "143850"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "148070"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "153130"
+          },
+          {
+            "date": "2023-08-02",
+            "ticker": "261240"
+          }
+        ]
+      }
+    }
+  },
+  "passed_count": 1
+}

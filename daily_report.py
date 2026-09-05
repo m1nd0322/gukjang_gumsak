@@ -13,15 +13,15 @@
 """
 
 import csv
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from html import escape
 import io
 import json
 import logging
 import math
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
+from html import escape
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -31,6 +31,9 @@ import yfinance as yf
 from backtester import BacktestEngine
 from screening import calculate_scores, fetch_all_data
 from stock_db import StockDB
+from strategy_catalog import ETF_ASSETS, STRATEGIES, is_etf_strategy
+from strategy_export import write_adaptive_csv
+from strategy_runner import run_strategy
 
 logging.basicConfig(
     level=logging.INFO,
@@ -161,6 +164,7 @@ def generate_csv(engine: BacktestEngine, results: dict) -> str:
             t['status'],
         ])
 
+    write_adaptive_csv(writer, results)
     csv_data = output.getvalue()
     output.close()
 
@@ -220,14 +224,7 @@ def format_telegram_message(scored_results: list, stats: dict,
     lines.append("")
 
     # 백테스트 결과
-    strategy_names = {
-        'equal_weight': '동일 비중 Buy & Hold',
-        'rebalance': '월간 리밸런싱',
-        'vol_trailing_stop': '변동성 + 트레일링 스탑',
-        'vol_trailing_stop_loss': '변동성 + 트레일링 스탑 + 스탑로스',
-        'ma_filter': 'MA 필터',
-        'composite': '복합 전략 (MA+변동성+스탑)',
-    }
+    strategy_names = {key: spec.label for key, spec in STRATEGIES.items()}
     lines.append("<b>▸ 백테스트 결과</b>")
     lines.append(f"  전략: {strategy_names.get(STRATEGY, STRATEGY)}")
     lines.append(f"  기간: {metrics.get('start_date', '')} ~ {metrics.get('end_date', '')}")
@@ -401,86 +398,94 @@ def main():
     logger.info("  일일 자동 리포트 시작")
     logger.info("=" * 60)
 
-    # ── 1단계: FnGuide·Daum 데이터 수집 ──
-    logger.info("[1/5] FnGuide·Daum 3개 지표 수집 시작...")
-    try:
-        turn_data, supply_data, nps_data = fetch_all_data(require_all=True)
-    except Exception as exc:
-        msg = f"스크리닝 데이터 수집 실패: {exc}"
-        logger.error(msg)
-        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
-        sys.exit(1)
+    etf_strategy = is_etf_strategy(STRATEGY)
+    if etf_strategy:
+        scored_results, stats = [], {'score_1': 0, 'score_2': 0, 'score_3': 0}
+    else:
+        # ── 1단계: FnGuide·Daum 데이터 수집 ──
+        logger.info("[1/5] FnGuide·Daum 3개 지표 수집 시작...")
+        try:
+            turn_data, supply_data, nps_data = fetch_all_data(require_all=True)
+        except Exception as exc:
+            msg = f"스크리닝 데이터 수집 실패: {exc}"
+            logger.error(msg)
+            send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
+            sys.exit(1)
 
-    source_counts = {
-        "턴어라운드": len(turn_data),
-        "순매수전환": len(supply_data),
-        "국민연금 신규/추가매수": len(nps_data),
-    }
-    logger.info(
-        "  턴어라운드: %d개 | 순매수전환: %d개 | 국민연금 신규/추가매수: %d개",
-        source_counts["턴어라운드"],
-        source_counts["순매수전환"],
-        source_counts["국민연금 신규/추가매수"],
-    )
+        source_counts = {
+            "턴어라운드": len(turn_data),
+            "순매수전환": len(supply_data),
+            "국민연금 신규/추가매수": len(nps_data),
+        }
+        logger.info(
+            "  턴어라운드: %d개 | 순매수전환: %d개 | 국민연금 신규/추가매수: %d개",
+            source_counts["턴어라운드"],
+            source_counts["순매수전환"],
+            source_counts["국민연금 신규/추가매수"],
+        )
 
-    # ── 2단계: 스코어링 ──
-    logger.info("[2/5] 종목 스코어링...")
-    scored_results, stats = calculate_scores(turn_data, supply_data, nps_data)
-    logger.info(f"  3점: {stats['score_3']} | 2점: {stats['score_2']} | 1점: {stats['score_1']}")
+        # ── 2단계: 스코어링 ──
+        logger.info("[2/5] 종목 스코어링...")
+        scored_results, stats = calculate_scores(turn_data, supply_data, nps_data)
+        logger.info(f"  3점: {stats['score_3']} | 2점: {stats['score_2']} | 1점: {stats['score_1']}")
 
-    try:
-        saved_count = StockDB().replace_screening_results(scored_results)
-    except Exception as exc:
-        msg = f"종합결과 DuckDB 저장 실패: {exc}"
-        logger.error(msg)
-        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
-        sys.exit(1)
-    logger.info("  DuckDB 종합결과: %d개 저장", saved_count)
+        try:
+            saved_count = StockDB().replace_screening_results(scored_results)
+        except Exception as exc:
+            msg = f"종합결과 DuckDB 저장 실패: {exc}"
+            logger.error(msg)
+            send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
+            sys.exit(1)
+        logger.info("  DuckDB 종합결과: %d개 저장", saved_count)
 
-    high_score = [r for r in scored_results if r.get('종합점수', 0) >= 2]
-    if not high_score:
-        msg = "2점 이상 종목이 없습니다"
-        logger.warning(msg)
-        send_telegram(f"⚠️ <b>국장검색 리포트</b>\n{msg}\n\n1점 종목: {stats['score_1']}개")
-        sys.exit(0)
+    etf_strategy = is_etf_strategy(STRATEGY)
+    if etf_strategy:
+        matched = {asset.ticker: asset.name for asset in ETF_ASSETS.values()}
+    else:
+        high_score = [r for r in scored_results if r.get('종합점수', 0) >= 2]
+        if not high_score:
+            msg = "2점 이상 종목이 없습니다"
+            logger.warning(msg)
+            send_telegram(f"⚠️ <b>국장검색 리포트</b>\n{msg}\n\n1점 종목: {stats['score_1']}개")
+            sys.exit(0)
 
-    stock_names = [r['종목명'] for r in high_score]
-    logger.info(f"  백테스트 대상: {len(stock_names)}개 종목")
+        stock_names = [r['종목명'] for r in high_score]
+        logger.info(f"  백테스트 대상: {len(stock_names)}개 종목")
 
-    # ── 3단계: 종목코드 매핑 + 가격 데이터 수집 (yfinance) ──
-    logger.info("[3/5] 종목코드 매핑 및 가격 데이터 수집...")
+        # ── 3단계: 종목코드 매핑 + 가격 데이터 수집 (yfinance) ──
+        logger.info("[3/5] 종목코드 매핑 및 가격 데이터 수집...")
 
-    # ticker_map.json 로드 (pykrx 대신 - KRX API는 해외 IP 차단)
-    ticker_map_path = os.path.join(OUTPUT_DIR, 'ticker_map.json')
-    if not os.path.exists(ticker_map_path):
-        msg = "ticker_map.json 파일이 없습니다. 로컬에서 생성 후 커밋하세요."
-        logger.error(msg)
-        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
-        sys.exit(1)
+        # ticker_map.json 로드 (pykrx 대신 - KRX API는 해외 IP 차단)
+        ticker_map_path = os.path.join(OUTPUT_DIR, 'ticker_map.json')
+        if not os.path.exists(ticker_map_path):
+            msg = "ticker_map.json 파일이 없습니다. 로컬에서 생성 후 커밋하세요."
+            logger.error(msg)
+            send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
+            sys.exit(1)
 
-    with open(ticker_map_path, 'r', encoding='utf-8') as f:
-        name_to_code = json.load(f)
-    logger.info(f"  ticker_map.json 로드: {len(name_to_code)}개 종목")
+        with open(ticker_map_path, 'r', encoding='utf-8') as f:
+            name_to_code = json.load(f)
+        logger.info(f"  ticker_map.json 로드: {len(name_to_code)}개 종목")
 
-    matched = {}
-    unmatched = []
-    for name in stock_names:
-        code = name_to_code.get(name)
-        if code:
-            matched[code] = name
-        else:
-            unmatched.append(name)
+        matched = {}
+        unmatched = []
+        for name in stock_names:
+            code = name_to_code.get(name)
+            if code:
+                matched[code] = name
+            else:
+                unmatched.append(name)
 
-    if not matched:
-        msg = f"종목코드 매핑 실패: {', '.join(stock_names[:5])}"
-        logger.error(msg)
-        send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
-        sys.exit(1)
+        if not matched:
+            msg = f"종목코드 매핑 실패: {', '.join(stock_names[:5])}"
+            logger.error(msg)
+            send_telegram(f"❌ <b>국장검색 리포트 실패</b>\n{escape(msg)}")
+            sys.exit(1)
 
-    if unmatched:
-        logger.warning(f"코드 매핑 실패: {', '.join(unmatched)}")
+        if unmatched:
+            logger.warning(f"코드 매핑 실패: {', '.join(unmatched)}")
 
-    logger.info(f"  매핑 성공: {len(matched)}개 | 실패: {len(unmatched)}개")
+        logger.info(f"  매핑 성공: {len(matched)}개 | 실패: {len(unmatched)}개")
 
     # 기간 설정
     end_dt = datetime.now(KST)
@@ -496,13 +501,20 @@ def main():
     logger.info("[4/5] 백테스트 실행...")
     engine = BacktestEngine(
         initial_capital=INITIAL_CAPITAL,
-        slippage_pct=SLIPPAGE_PCT,
+        slippage_pct=0.10 if etf_strategy else SLIPPAGE_PCT,
         commission_pct=COMMISSION_PCT,
-        tax_pct=TAX_PCT,
+        tax_pct=0 if etf_strategy else TAX_PCT,
     )
 
     failed_tickers = []
-    outcomes = collect_price_data(matched, start_iso, end_iso)
+    if etf_strategy:
+        db = StockDB()
+        warmup = (start_dt - timedelta(days=400)).strftime('%Y-%m-%d')
+        db.ensure_adjusted_etf_data(list(matched), warmup, end_iso, matched)
+        prices = db.get_adjusted_prices_many(list(matched), warmup, end_iso)
+        outcomes = {code: (rows, f'{code}.KS', None) for code, rows in prices.items()}
+    else:
+        outcomes = collect_price_data(matched, start_iso, end_iso)
     for code, name in matched.items():
         prices, used_symbol, last_error = outcomes[code]
         if prices:
@@ -545,21 +557,11 @@ def main():
 
     # 전략 실행
     tickers = list(engine.price_data.keys())
-    if STRATEGY == 'rebalance':
-        engine.run_rebalance(tickers, period=20)
-    elif STRATEGY == 'vol_trailing_stop':
-        engine.run_volatility_trailing_stop(
-            tickers, lookback=20, stop_pct=-10.0, cooldown=5, reentry=True)
-    elif STRATEGY == 'ma_filter':
-        engine.run_ma_filter(tickers, ma_period=20, rebalance_period=5)
-    elif STRATEGY == 'composite':
-        engine.run_composite(
-            tickers, ma_period=20, lookback=20,
-            stop_pct=-8.0, cooldown=5, rebalance_period=10)
-    else:
-        engine.run_equal_weight(tickers)
+    run_strategy(engine, STRATEGY, tickers, start_date=start_iso, end_date=end_iso)
 
     bt_results = engine.get_results()
+    bt_results['config'] = dict(strategy=STRATEGY, strategy_version='1.0',
+                                tax_model='etf_pre_tax' if etf_strategy else 'stock')
     cost_summary = bt_results.get('cost_summary', {})
     metrics = bt_results.get('metrics', {})
 

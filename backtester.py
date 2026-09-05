@@ -33,7 +33,10 @@ import logging
 import math
 import statistics
 from dataclasses import dataclass, replace
-from typing import Dict, List, Optional
+
+from adaptive_strategies import build_allocation
+from drawdown_guard import DrawdownGuard
+from strategy_catalog import ETF_ASSETS, is_etf_strategy
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +65,9 @@ class TradeRecord:
     exec_price: float       # 슬리피지 적용 실행가
     shares: int
     entry_cost: float = 0.0  # 매수 시 현금 비용 (수수료)
-    exit_date: Optional[str] = None
-    exit_price: Optional[float] = None
-    exec_exit_price: Optional[float] = None
+    exit_date: str | None = None
+    exit_price: float | None = None
+    exec_exit_price: float | None = None
     exit_cost: float = 0.0   # 매도 시 현금 비용 (수수료+세금)
     pnl: float = 0.0         # 비용 차감 후 순손익
     pnl_pct: float = 0.0
@@ -80,9 +83,9 @@ class Portfolio:
     def __init__(self, initial_capital: float, cost_config: CostConfig = None):
         self.initial_capital = initial_capital
         self.cash = initial_capital
-        self.positions: Dict[str, dict] = {}
-        self.equity_history: List[dict] = []
-        self.trades: List[TradeRecord] = []
+        self.positions: dict[str, dict] = {}
+        self.equity_history: list[dict] = []
+        self.trades: list[TradeRecord] = []
         self.cost = cost_config or CostConfig()
 
         # 누적 비용 추적
@@ -236,14 +239,14 @@ class Portfolio:
                 ) / open_shares
         return actual
 
-    def sell_all(self, prices: Dict[str, float], date: str):
+    def sell_all(self, prices: dict[str, float], date: str):
         """전량 매도"""
         for ticker in list(self.positions.keys()):
             if ticker in prices:
                 self.sell(ticker, prices[ticker],
                           self.positions[ticker]['shares'], date)
 
-    def equity(self, prices: Dict[str, float]) -> float:
+    def equity(self, prices: dict[str, float]) -> float:
         """현재 총 자산 평가 (미실현 슬리피지/수수료 미반영 시가평가)"""
         total = self.cash
         for ticker, pos in self.positions.items():
@@ -251,7 +254,7 @@ class Portfolio:
             total += p * pos['shares']
         return total
 
-    def snapshot(self, date: str, prices: Dict[str, float]):
+    def snapshot(self, date: str, prices: dict[str, float]):
         """일별 자산 스냅샷"""
         eq = self.equity(prices)
         self.equity_history.append({
@@ -309,11 +312,15 @@ class BacktestEngine:
             tax_pct=tax_pct,
         )
         self.portfolio = Portfolio(initial_capital, self.cost_config)
-        self.price_data: Dict[str, List[dict]] = {}
-        self.ticker_names: Dict[str, str] = {}
-        self.all_dates: List[str] = []
-        self.benchmark_data: List[dict] = []
-        self._price_idx: Dict[str, Dict[str, dict]] = {}
+        self.price_data: dict[str, list[dict]] = {}
+        self.ticker_names: dict[str, str] = {}
+        self.all_dates: list[str] = []
+        self.benchmark_data: list[dict] = []
+        self._price_idx: dict[str, dict[str, dict]] = {}
+        self._invalid_price_rows: dict[str, list] = {}
+        self.allocation_history: list[dict] = []
+        self.regime_history: list[dict] = []
+        self.drawdown_guard_events: list[dict] = []
 
     @staticmethod
     def _has_valid_close(value) -> bool:
@@ -324,7 +331,7 @@ class BacktestEngine:
             return False
         return math.isfinite(number) and number > 0
 
-    def add_price_data(self, ticker: str, data: List[dict], name: str = ''):
+    def add_price_data(self, ticker: str, data: list[dict], name: str = ''):
         """
         가격 데이터 추가
 
@@ -337,6 +344,8 @@ class BacktestEngine:
         """
         # 종가가 없거나 비정상(NaN, 0 이하)인 행은 시가평가와 수익률 계산을
         # 망가뜨리므로 입력 단계에서 제외한다.
+        self._invalid_price_rows[ticker] = [row.get('date', '') for row in data
+                                           if not row.get('date') or not self._has_valid_close(row.get('close'))]
         clean_data = sorted(
             (
                 row for row in data
@@ -349,7 +358,7 @@ class BacktestEngine:
             self.ticker_names[ticker] = name
         self._price_idx[ticker] = {row['date']: row for row in clean_data}
 
-    def set_benchmark(self, data: List[dict]):
+    def set_benchmark(self, data: list[dict]):
         """벤치마크 데이터 설정 [{'date': 'YYYY-MM-DD', 'close': float}, ...]"""
         self.benchmark_data = sorted(data, key=lambda x: x['date'])
 
@@ -360,12 +369,12 @@ class BacktestEngine:
                 dates.add(row['date'])
         self.all_dates = sorted(dates)
 
-    def _price(self, ticker: str, date: str, field: str = 'close') -> Optional[float]:
+    def _price(self, ticker: str, date: str, field: str = 'close') -> float | None:
         idx = self._price_idx.get(ticker, {})
         row = idx.get(date)
         return row.get(field) if row else None
 
-    def _prices_on_date(self, date: str) -> Dict[str, float]:
+    def _prices_on_date(self, date: str) -> dict[str, float]:
         result = {}
         for ticker in self.price_data:
             p = self._price(ticker, date)
@@ -373,7 +382,18 @@ class BacktestEngine:
                 result[ticker] = p
         return result
 
-    def _last_known_prices(self, date: str) -> Dict[str, float]:
+    def _field_prices_on_date(self, date: str, field: str) -> dict[str, float]:
+        result = {}
+        for ticker in self.price_data:
+            row = self._price_idx.get(ticker, {}).get(date, {})
+            if not row:
+                continue
+            value = row.get(field)
+            if self._has_valid_close(value):
+                result[ticker] = value
+        return result
+
+    def _last_known_prices(self, date: str) -> dict[str, float]:
         result = {}
         for ticker, data in self.price_data.items():
             last = None
@@ -386,15 +406,15 @@ class BacktestEngine:
                 result[ticker] = last
         return result
 
-    def _inverse_volatility_weights(self, buyable: List[str], date: str,
-                                    lookback: int) -> Dict[str, float]:
+    def _inverse_volatility_weights(self, buyable: list[str], date: str,
+                                    lookback: int) -> dict[str, float]:
         """최근 수익률 표준편차의 역수로 비중을 매긴다.
 
         조회 이력이 짧아 변동성을 못 구하는 종목은 다른 후보의 중간값을
         빌려온다. 고정 최소값을 주면 신규 상장 종목이 사실상 매수되지
         않는 문제가 생긴다.
         """
-        inv_vols: Dict[str, float] = {}
+        inv_vols: dict[str, float] = {}
         unweighted = []
         for t in buyable:
             closes = [
@@ -421,10 +441,131 @@ class BacktestEngine:
                 inv_vols[t] = fallback
         return inv_vols
 
+    def _reconcile_weighted_legs(
+        self, eq: float, target_weights: dict[str, float], price_map: dict[str, float]
+    ) -> dict[str, int]:
+        target_alloc = {ticker: eq * weight for ticker, weight in target_weights.items()}
+        current_alloc = {
+            ticker: self.portfolio.positions.get(ticker, {}).get('shares', 0) * price_map[ticker]
+            for ticker in target_weights
+            if ticker in price_map
+        }
+        deltas = {
+            ticker: target_alloc[ticker] - current_alloc.get(ticker, 0)
+            for ticker in target_weights
+        }
+
+        trade_units: dict[str, int] = {}
+        for ticker in target_weights:
+            price = price_map.get(ticker)
+            if not price or price <= 0:
+                continue
+            if abs(deltas[ticker]) < eq * 0.01:
+                continue
+            qty = abs(deltas[ticker]) / price
+            shares = int(qty)
+            if shares <= 0:
+                continue
+            trade_units[ticker] = shares if deltas[ticker] > 0 else -shares
+        return trade_units
+
+    def run_adaptive_strategy(self, strategy_key: str,
+                              start_date: str = None, end_date: str = None):
+        if not is_etf_strategy(strategy_key):
+            raise KeyError(strategy_key)
+        tickers = [a.ticker for a in ETF_ASSETS.values()]
+        missing = [t for t in tickers if not self.price_data.get(t)]
+        if missing:
+            raise ValueError(f"ETF 가격 누락: {', '.join(missing)}")
+        calendar = sorted({r['date'] for r in self.benchmark_data}
+                          or set(self._price_idx['069500']))
+        start = start_date or calendar[min(253, len(calendar) - 1)]
+        end = end_date or calendar[-1]
+        dates = [d for d in calendar if start <= d <= end]
+        if not dates:
+            raise ValueError(f"ETF 실행 거래일 없음: {start} ~ {end}")
+        histories = {t: [r['close'] for r in self.price_data[t] if r['date'] < dates[0]]
+                     for t in tickers}
+        missing = [t for t in tickers if len(histories[t]) < 253]
+        if missing:
+            raise ValueError(f"ETF 워밍업 253거래일 부족 ({start}): {', '.join(missing)}")
+        for t in tickers:
+            if any(not d or d <= end for d in self._invalid_price_rows.get(t, [])):
+                raise ValueError(f'ETF 비정상 가격: {t}')
+            if len(self.price_data[t]) != len(self._price_idx[t]):
+                raise ValueError(f"ETF 중복 날짜: {t}")
+        self.all_dates = dates
+        self.data_quality = dict(
+            source='yfinance_auto_adjust', requested_start=start, actual_start=dates[0],
+            warmup_start=min(self.price_data[t][0]['date'] for t in tickers),
+            available_start={t: self.price_data[t][0]['date'] for t in tickers},
+            missing_assets=[], deferred_orders=[])
+        guard = DrawdownGuard(self.initial_capital)
+        self.drawdown_guard_events = guard.events
+        previous_equity = self.initial_capital
+        last_prices = {t: histories[t][-1] for t in tickers}
+        missing_days = dict.fromkeys(tickers, 0)
+        last_month, last_target, decision = None, None, None
+        pending = False
+        for date in dates:
+            monthly = date[:7] != last_month
+            if monthly:
+                decision = build_allocation(strategy_key, histories)
+                last_month = date[:7]
+            weights = decision.target_weights
+            if (any(t not in tickers or not math.isfinite(w) or w < 0
+                    for t, w in weights.items()) or sum(weights.values()) > 1 + 1e-9):
+                raise ValueError('ETF 목표비중 오류')
+            daily_regime = build_allocation('price_regime_ensemble', histories).regime
+            target = guard.apply(date, previous_equity, weights, daily_regime)
+            opens = self._field_prices_on_date(date, 'open')
+            for t in tickers:
+                row = self._price_idx[t].get(date)
+                missing_days[t] = 0 if row and t in opens else missing_days[t] + 1
+                if missing_days[t] >= 5:
+                    raise ValueError(f'ETF 가격 5거래일 연속 누락: {t}, {date}')
+            if monthly or target != last_target or pending:
+                equity = self.portfolio.equity({**last_prices, **opens})
+                full_target = {t: target.get(t, 0.0)
+                               for t in sorted(set(target) | set(self.portfolio.positions))}
+                units = self._reconcile_weighted_legs(equity, full_target, opens)
+                for t, pos in self.portfolio.positions.items():
+                    if not full_target[t] and t in opens:
+                        units[t] = -pos['shares']
+                pending = any(t not in opens for t in full_target)
+                for t in full_target:
+                    if t not in opens:
+                        self.data_quality['deferred_orders'].append(dict(date=date, ticker=t))
+                before_cost = self.portfolio.get_cost_summary()['total']
+                for t, shares in units.items():
+                    if shares < 0:
+                        self.portfolio.sell(t, opens[t], -shares, date)
+                for t, shares in units.items():
+                    if shares > 0:
+                        self.portfolio.buy(t, opens[t], shares, date, self.ticker_names.get(t, t))
+                # Trading costs alone must not repeatedly cancel a recovery attempt.
+                if guard.state == 'reentry':
+                    guard.recovery_low -= self.portfolio.get_cost_summary()['total'] - before_cost
+            last_target = target
+            for t in tickers:
+                row = self._price_idx[t].get(date)
+                if row:
+                    last_prices[t] = row['close']
+                    histories[t].append(row['close'])
+            self.portfolio.snapshot(date, last_prices)
+            previous_equity = self.portfolio.equity(last_prices)
+            self.allocation_history.append(dict(
+                date=date, target_weights=dict(target),
+                actual_weights={t: p['shares'] * last_prices[t] / previous_equity
+                                for t, p in self.portfolio.positions.items()},
+                cash_weight=self.portfolio.cash / previous_equity, guard_state=guard.state))
+            self.regime_history.append(dict(date=date, regime=decision.regime,
+                                            evidence=decision.evidence))
+
     # ----------------------------------------------------------
     # 전략 1: 동일 비중 매수 후 보유
     # ----------------------------------------------------------
-    def run_equal_weight(self, tickers: List[str],
+    def run_equal_weight(self, tickers: list[str],
                          start_date: str = None, end_date: str = None):
         """
         동일 비중 매수 후 보유 (Buy & Hold)
@@ -445,8 +586,7 @@ class BacktestEngine:
 
         valid = [
             t for t in tickers
-            if t in self.price_data
-            and self.price_data[t]
+            if self.price_data.get(t)
         ]
         if not valid:
             return
@@ -475,7 +615,7 @@ class BacktestEngine:
     # ----------------------------------------------------------
     # 전략 2: 주기적 리밸런싱
     # ----------------------------------------------------------
-    def run_rebalance(self, tickers: List[str],
+    def run_rebalance(self, tickers: list[str],
                       start_date: str = None, end_date: str = None,
                       period: int = 20):
         """
@@ -492,7 +632,7 @@ class BacktestEngine:
         end = end_date or self.all_dates[-1]
         dates = [d for d in self.all_dates if start <= d <= end]
 
-        valid = [t for t in tickers if t in self.price_data and self.price_data[t]]
+        valid = [t for t in tickers if self.price_data.get(t)]
         if not valid or not dates:
             return
 
@@ -518,7 +658,7 @@ class BacktestEngine:
     # ----------------------------------------------------------
     # 전략 3: 사용자 정의 시그널
     # ----------------------------------------------------------
-    def run_custom(self, signals: List[dict]):
+    def run_custom(self, signals: list[dict]):
         """
         사용자 정의 시그널 기반 실행
 
@@ -530,7 +670,7 @@ class BacktestEngine:
         if not self.all_dates:
             return
 
-        signal_map: Dict[str, List[dict]] = {}
+        signal_map: dict[str, list[dict]] = {}
         for s in signals:
             signal_map.setdefault(s['date'], []).append(s)
 
@@ -559,14 +699,14 @@ class BacktestEngine:
     # ----------------------------------------------------------
     # 전략 4: 변동성 가중 + 트레일링 스탑
     # ----------------------------------------------------------
-    def run_volatility_trailing_stop(self, tickers: List[str],
+    def run_volatility_trailing_stop(self, tickers: list[str],
                                       start_date: str = None,
                                       end_date: str = None,
                                       lookback: int = 20,
                                       stop_pct: float = -10.0,
                                       cooldown: int = 5,
                                       reentry: bool = True,
-                                      stop_loss_pct: Optional[float] = None):
+                                      stop_loss_pct: float | None = None):
         """
         변동성 가중 배분 + 트레일링 스탑
 
@@ -591,14 +731,14 @@ class BacktestEngine:
         start = start_date or self.all_dates[0]
         end = end_date or self.all_dates[-1]
         dates = [d for d in self.all_dates if start <= d <= end]
-        valid = [t for t in tickers if t in self.price_data and self.price_data[t]]
+        valid = [t for t in tickers if self.price_data.get(t)]
         if not valid or not dates:
             return
 
         # 상태 추적
-        peaks: Dict[str, float] = {}          # 보유 중 최고가
-        sold_day: Dict[str, int] = {}         # 마지막 매도 일 인덱스
-        holding: Dict[str, bool] = {}         # 현재 보유 여부
+        peaks: dict[str, float] = {}          # 보유 중 최고가
+        sold_day: dict[str, int] = {}         # 마지막 매도 일 인덱스
+        holding: dict[str, bool] = {}         # 현재 보유 여부
 
         for t in valid:
             holding[t] = False
@@ -685,7 +825,7 @@ class BacktestEngine:
     # ----------------------------------------------------------
     # 전략 5: 이동평균 필터
     # ----------------------------------------------------------
-    def run_ma_filter(self, tickers: List[str],
+    def run_ma_filter(self, tickers: list[str],
                       start_date: str = None, end_date: str = None,
                       ma_period: int = 20,
                       rebalance_period: int = 5):
@@ -709,7 +849,7 @@ class BacktestEngine:
         start = start_date or self.all_dates[0]
         end = end_date or self.all_dates[-1]
         dates = [d for d in self.all_dates if start <= d <= end]
-        valid = [t for t in tickers if t in self.price_data and self.price_data[t]]
+        valid = [t for t in tickers if self.price_data.get(t)]
         if not valid or not dates:
             return
 
@@ -779,7 +919,7 @@ class BacktestEngine:
     # ----------------------------------------------------------
     # 전략 6: 복합 전략 (변동성 가중 + MA 필터 + 트레일링 스탑)
     # ----------------------------------------------------------
-    def run_composite(self, tickers: List[str],
+    def run_composite(self, tickers: list[str],
                       start_date: str = None, end_date: str = None,
                       ma_period: int = 20,
                       lookback: int = 20,
@@ -809,13 +949,13 @@ class BacktestEngine:
         start = start_date or self.all_dates[0]
         end = end_date or self.all_dates[-1]
         dates = [d for d in self.all_dates if start <= d <= end]
-        valid = [t for t in tickers if t in self.price_data and self.price_data[t]]
+        valid = [t for t in tickers if self.price_data.get(t)]
         if not valid or not dates:
             return
 
-        peaks: Dict[str, float] = {}
-        sold_day: Dict[str, int] = {}
-        holding: Dict[str, bool] = {}
+        peaks: dict[str, float] = {}
+        sold_day: dict[str, int] = {}
+        holding: dict[str, bool] = {}
         last_rebal = -rebalance_period
 
         for t in valid:
@@ -923,6 +1063,29 @@ class BacktestEngine:
         metrics = self._calc_metrics(equities, dates)
         dd_curve = metrics.pop('_dd_curve')
 
+        validation = {}
+        if self.allocation_history:
+            from bisect import bisect_left
+            from datetime import date
+
+            rolling = []
+            for i, day in enumerate(dates):
+                observed = date.fromisoformat(day)
+                try:
+                    horizon = observed.replace(year=observed.year + 3).isoformat()
+                except ValueError:
+                    horizon = observed.replace(year=observed.year + 3, day=28).isoformat()
+                j = bisect_left(dates, horizon)
+                if j < len(dates):
+                    rolling.append(equities[j] > equities[i])
+            validation = {
+                'status': 'experimental',
+                'cagr_positive': metrics['annual_return'] > 0,
+                'mdd_limit_passed': abs(metrics['mdd']) <= 10.0,
+                'max_drawdown_overshoot': max(0.0, abs(metrics['mdd']) - 10.0),
+                'positive_rolling_3y_ratio': sum(rolling) / len(rolling) if rolling else None,
+            }
+
         return {
             'equity_curve': [
                 {'date': d, 'equity': round(e)}
@@ -942,9 +1105,20 @@ class BacktestEngine:
             'benchmark': self._calc_benchmark(equities, dates),
             'trades': self._build_trade_details(),
             'trades_by_stock': self._group_trades_by_stock(),
+            'allocation_history': self.allocation_history,
+            'regime_history': self.regime_history,
+            'drawdown_guard_events': self.drawdown_guard_events,
+            'data_quality': getattr(self, 'data_quality', {}),
+            'strategy_parameters': {'base_risk_budget': 0.5, 'throttle_drawdown': 0.08,
+                                    'cash_drawdown': 0.10, 'cooldown_sessions': 20,
+                                    'reentry_step': 0.25, 'step_sessions': 5}
+                                   if self.allocation_history else {},
+            'max_drawdown_limit': 10.0 if self.allocation_history else None,
+            'max_drawdown_overshoot': max(0.0, abs(metrics['mdd']) - 10.0) if self.allocation_history else None,
+            'validation': validation,
         }
 
-    def _build_trade_details(self) -> List[dict]:
+    def _build_trade_details(self) -> list[dict]:
         """
         매매 상세 이력 생성
         필드: 종목코드, 종목명, 매수일, 매수가, 매수수량, 매입금액,
@@ -964,7 +1138,7 @@ class BacktestEngine:
             else:
                 # 보유중 → 마지막 종가로 평가
                 last_price = 0
-                if ticker in self.price_data and self.price_data[ticker]:
+                if self.price_data.get(ticker):
                     last_price = self.price_data[ticker][-1]['close']
                 eval_amount = round(last_price * t.shares)
 
@@ -1004,15 +1178,15 @@ class BacktestEngine:
             })
         return details
 
-    def _group_trades_by_stock(self) -> Dict[str, list]:
+    def _group_trades_by_stock(self) -> dict[str, list]:
         """종목별 매매 이력 그룹핑"""
         details = self._build_trade_details()
-        grouped: Dict[str, list] = {}
+        grouped: dict[str, list] = {}
         for d in details:
             grouped.setdefault(d['ticker'], []).append(d)
         return grouped
 
-    def _calc_metrics(self, equities: List[float], dates: List[str]) -> dict:
+    def _calc_metrics(self, equities: list[float], dates: list[str]) -> dict:
         """핵심 성과 지표 계산"""
         n = len(equities)
         if n == 0 or self.initial_capital <= 0:
@@ -1092,7 +1266,7 @@ class BacktestEngine:
             ],
         }
 
-    def get_daily_detail(self) -> List[dict]:
+    def get_daily_detail(self) -> list[dict]:
         """
         일자별 종목별 상세 데이터 (CSV 저장용)
 
@@ -1118,8 +1292,8 @@ class BacktestEngine:
             self._build_dates()
 
         # 거래를 날짜+종목으로 인덱싱
-        buy_map: Dict[str, Dict[str, list]] = {}   # date -> ticker -> [trades]
-        sell_map: Dict[str, Dict[str, list]] = {}
+        buy_map: dict[str, dict[str, list]] = {}   # date -> ticker -> [trades]
+        sell_map: dict[str, dict[str, list]] = {}
         for t in self.portfolio.trades:
             buy_map.setdefault(t.entry_date, {}).setdefault(t.ticker, []).append(t)
             if t.exit_date:
@@ -1129,7 +1303,7 @@ class BacktestEngine:
         eq_map = {e['date']: e for e in self.portfolio.equity_history}
 
         # 날짜별 보유현황 추적 (시뮬레이션 재현)
-        holdings: Dict[str, int] = {}  # ticker -> shares
+        holdings: dict[str, int] = {}  # ticker -> shares
         rows = []
 
         for date in self.all_dates:
@@ -1210,9 +1384,9 @@ class BacktestEngine:
 
         return rows
 
-    def _calc_strategy_stock_performance(self) -> List[dict]:
+    def _calc_strategy_stock_performance(self) -> list[dict]:
         """실제 거래 로트를 종목별 전략 손익으로 집계한다."""
-        grouped: Dict[str, dict] = {}
+        grouped: dict[str, dict] = {}
 
         for trade in self.portfolio.trades:
             row = grouped.setdefault(
@@ -1270,8 +1444,8 @@ class BacktestEngine:
         performance.sort(key=lambda item: (-item['total_pnl'], item['ticker']))
         return performance
 
-    def _calc_benchmark(self, equities: List[float],
-                        dates: List[str]) -> Optional[dict]:
+    def _calc_benchmark(self, equities: list[float],
+                        dates: list[str]) -> dict | None:
         """벤치마크 대비 성과 계산"""
         if not self.benchmark_data or not dates:
             return None
@@ -1307,11 +1481,9 @@ class BacktestEngine:
         pk = bd[0]['close']
         bmdd = 0
         for b in bd:
-            if b['close'] > pk:
-                pk = b['close']
+            pk = max(pk, b['close'])
             dd = (b['close'] / pk - 1) * 100
-            if dd < bmdd:
-                bmdd = dd
+            bmdd = min(bmdd, dd)
 
         return {
             'return_pct': round(bench_ret, 2),

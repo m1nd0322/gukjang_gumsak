@@ -23,7 +23,6 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
-from typing import Dict, List, Tuple, Optional
 from zoneinfo import ZoneInfo
 
 import duckdb
@@ -116,7 +115,7 @@ class StockDB:
         """)
 
     def _upsert_ticker_map_rows(
-        self, upsert_sql: str, rows: List[tuple]
+        self, upsert_sql: str, rows: list[tuple]
     ) -> None:
         """티커 매핑과 저장된 일봉 종목명을 한 트랜잭션으로 갱신한다."""
         with self._mutation_lock:
@@ -150,6 +149,8 @@ class StockDB:
                     close DOUBLE,
                     volume BIGINT,
                     name VARCHAR,
+                    price_source VARCHAR,
+                    is_adjusted BOOLEAN,
                     PRIMARY KEY (ticker, date)
                 )
             """)
@@ -165,6 +166,24 @@ class StockDB:
                 "ALTER TABLE daily_prices "
                 "ADD COLUMN IF NOT EXISTS name VARCHAR"
             )
+            con.execute(
+                "ALTER TABLE daily_prices "
+                "ADD COLUMN IF NOT EXISTS price_source VARCHAR"
+            )
+            con.execute(
+                "ALTER TABLE daily_prices "
+                "ADD COLUMN IF NOT EXISTS is_adjusted BOOLEAN"
+            )
+            con.execute("""
+                UPDATE daily_prices
+                SET price_source = 'legacy'
+                WHERE price_source IS NULL
+            """)
+            con.execute("""
+                UPDATE daily_prices
+                SET is_adjusted = FALSE
+                WHERE is_adjusted IS NULL
+            """)
             self._sync_daily_price_names(con)
             con.execute("""
                 CREATE TABLE IF NOT EXISTS index_prices (
@@ -209,8 +228,8 @@ class StockDB:
     # ----------------------------------------------------------
     def replace_screening_results(
         self,
-        results: List[dict],
-        snapshot_date: Optional[date] = None,
+        results: list[dict],
+        snapshot_date: date | None = None,
     ) -> int:
         """KST 날짜의 종합결과 전체를 원자적으로 교체한다."""
         snapshot_date = snapshot_date or datetime.now(
@@ -292,7 +311,7 @@ class StockDB:
     # ----------------------------------------------------------
     # 종목 매핑
     # ----------------------------------------------------------
-    def get_ticker_map_from_db(self) -> Tuple[Dict[str, str], Dict[str, str]]:
+    def get_ticker_map_from_db(self) -> tuple[dict[str, str], dict[str, str]]:
         """DB에서 종목 매핑 조회 → (name_to_code, code_to_name)"""
         con = self._connect()
         try:
@@ -305,7 +324,7 @@ class StockDB:
 
     def load_ticker_map_file(
         self, path: str = DEFAULT_TICKER_MAP_PATH
-    ) -> Tuple[Dict[str, str], Dict[str, str]]:
+    ) -> tuple[dict[str, str], dict[str, str]]:
         """저장소의 종목 매핑 JSON을 DuckDB 초기값으로 적재한다."""
         try:
             with open(path, encoding='utf-8') as file:
@@ -344,7 +363,7 @@ class StockDB:
             code: name for name, code in name_to_code.items()
         }
 
-    def refresh_ticker_map(self, krx_module) -> Tuple[Dict[str, str], Dict[str, str]]:
+    def refresh_ticker_map(self, krx_module) -> tuple[dict[str, str], dict[str, str]]:
         """
         pykrx로 KRX 전 종목 매핑을 갱신하고 DB에 저장
 
@@ -360,7 +379,7 @@ class StockDB:
         rows = []
 
         query_date = None
-        for days_back in range(0, 8):
+        for days_back in range(8):
             candidate = (datetime.now() - timedelta(days=days_back)).strftime('%Y%m%d')
             try:
                 test_tickers = krx_module.get_market_ticker_list(candidate, market='KOSPI')
@@ -404,7 +423,7 @@ class StockDB:
         self,
         krx_module=None,
         fallback_path: str = DEFAULT_TICKER_MAP_PATH,
-    ) -> Tuple[Dict[str, str], Dict[str, str]]:
+    ) -> tuple[dict[str, str], dict[str, str]]:
         """
         DB에 캐시된 매핑이 있으면 사용, 없거나 오래되면 갱신
         """
@@ -443,7 +462,7 @@ class StockDB:
     # ----------------------------------------------------------
     # 일봉 데이터
     # ----------------------------------------------------------
-    def get_stored_date_range(self, ticker: str) -> Tuple[Optional[str], Optional[str]]:
+    def get_stored_date_range(self, ticker: str) -> tuple[str | None, str | None]:
         """DB에 저장된 해당 종목의 날짜 범위"""
         con = self._connect()
         try:
@@ -468,13 +487,21 @@ class StockDB:
         finally:
             con.close()
 
-    def save_prices(self, ticker: str, data: List[dict]):
+    def save_prices(
+        self,
+        ticker: str,
+        data: list[dict],
+        *,
+        name: str | None = None,
+        price_source: str = "legacy",
+        is_adjusted: bool = False,
+    ):
         """
         일봉 데이터 저장 (UPSERT)
 
         Args:
             ticker: 종목코드
-            data: [{'date': 'YYYY-MM-DD', 'open': .., 'high': .., 'low': .., 'close': .., 'volume': ..}]
+            data: [{'date': 'YYYY-MM-DD', 'open': .., 'close': .., ...}]
         """
         if not data:
             return
@@ -482,11 +509,14 @@ class StockDB:
         with self._mutation_lock:
             con = self._connect()
             try:
-                name_row = con.execute(
-                    "SELECT name FROM ticker_map WHERE ticker = ?",
-                    [ticker],
-                ).fetchone()
-                name = name_row[0] if name_row else None
+                if name is None:
+                    name_row = con.execute(
+                        "SELECT name FROM ticker_map WHERE ticker = ?",
+                        [ticker],
+                    ).fetchone()
+                    stored_name = name_row[0] if name_row else None
+                else:
+                    stored_name = name
                 rows = [
                     (
                         ticker,
@@ -496,27 +526,34 @@ class StockDB:
                         d['low'],
                         d['close'],
                         d['volume'],
-                        name,
+                        stored_name,
+                        price_source,
+                        is_adjusted,
                     )
                     for d in data
                 ]
                 con.executemany("""
                     INSERT INTO daily_prices
-                        (ticker, date, open, high, low, close, volume, name)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        (
+                            ticker, date, open, high, low, close, volume,
+                            name, price_source, is_adjusted
+                        )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT (ticker, date) DO UPDATE SET
                         open = EXCLUDED.open,
                         high = EXCLUDED.high,
                         low = EXCLUDED.low,
                         close = EXCLUDED.close,
                         volume = EXCLUDED.volume,
-                        name = COALESCE(EXCLUDED.name, daily_prices.name)
+                        name = COALESCE(EXCLUDED.name, daily_prices.name),
+                        price_source = EXCLUDED.price_source,
+                        is_adjusted = EXCLUDED.is_adjusted
                 """, rows)
                 logger.debug(f"  {ticker}: {len(rows)}일 저장")
             finally:
                 con.close()
 
-    def get_prices(self, ticker: str, start_date: str, end_date: str) -> List[dict]:
+    def get_prices(self, ticker: str, start_date: str, end_date: str) -> list[dict]:
         """
         DB에서 일봉 데이터 조회
 
@@ -558,6 +595,11 @@ class StockDB:
             datetime.strptime(compact, '%Y%m%d') + timedelta(days=1)
         ).strftime('%Y-%m-%d')
 
+    @staticmethod
+    def _yyyymmdd_to_iso(value: str) -> str:
+        compact = value.replace('-', '')
+        return f"{compact[:4]}-{compact[4:6]}-{compact[6:8]}"
+
     def _download_yfinance(
         self, symbol: str, start_yyyymmdd: str, end_yyyymmdd: str
     ):
@@ -579,7 +621,7 @@ class StockDB:
 
     def _fetch_yfinance_stock(
         self, ticker: str, start_yyyymmdd: str, end_yyyymmdd: str
-    ) -> List[dict]:
+    ) -> list[dict]:
         """KRX 인증 없이 yfinance의 KOSPI/KOSDAQ 심볼을 순서대로 조회한다."""
         for suffix in ('.KS', '.KQ'):
             symbol = f"{ticker}{suffix}"
@@ -611,9 +653,30 @@ class StockDB:
                 return rows
         return []
 
+    def _fetch_yfinance_adjusted_etf(
+        self, ticker: str, start_yyyymmdd: str, end_yyyymmdd: str
+    ) -> list[dict]:
+        """ETF 전용 yfinance 조정가격을 KOSPI 심볼로만 조회한다."""
+        symbol = f"{ticker}.KS"
+        frame = self._download_yfinance(symbol, start_yyyymmdd, end_yyyymmdd)
+        rows = []
+        for date_idx, row in frame.iterrows():
+            close = self._number(row.get('Close'))
+            if close <= 0:
+                continue
+            rows.append({
+                'date': date_idx.strftime('%Y-%m-%d'),
+                'open': self._number(row.get('Open')),
+                'high': self._number(row.get('High'), close),
+                'low': self._number(row.get('Low'), close),
+                'close': close,
+                'volume': int(self._number(row.get('Volume'))),
+            })
+        return rows
+
     def _fetch_yfinance_index(
         self, index_code: str, start_yyyymmdd: str, end_yyyymmdd: str
-    ) -> List[dict]:
+    ) -> list[dict]:
         """지원 지수의 yfinance 대체 데이터를 반환한다."""
         symbol = {'1001': '^KS11'}.get(index_code)
         if not symbol:
@@ -709,7 +772,7 @@ class StockDB:
 
         return len(new_data)
 
-    def ensure_price_data(self, tickers: List[str], start_yyyymmdd: str, end_yyyymmdd: str,
+    def ensure_price_data(self, tickers: list[str], start_yyyymmdd: str, end_yyyymmdd: str,
                           krx_module=None, progress_callback=None,
                           delay: float = 0.3, max_workers: int = 6) -> dict:
         """
@@ -757,8 +820,74 @@ class StockDB:
 
         return stats
 
-    def get_prices_many(self, tickers: List[str], start_date: str,
-                        end_date: str) -> Dict[str, List[dict]]:
+    def _has_adjusted_price_range(
+        self, ticker: str, start_date: str, end_date: str
+    ) -> bool:
+        con = self._connect()
+        try:
+            row = con.execute("""
+                SELECT MIN(date), MAX(date)
+                FROM daily_prices
+                WHERE ticker = ?
+                  AND date >= ? AND date <= ?
+                  AND price_source = 'yfinance_auto_adjust'
+                  AND is_adjusted = TRUE
+            """, [ticker, start_date, end_date]).fetchone()
+            return bool(
+                row
+                and row[0]
+                and str(row[0]) <= start_date
+                and str(row[1]) >= end_date
+            )
+        finally:
+            con.close()
+
+    def ensure_adjusted_etf_data(
+        self,
+        tickers: list[str],
+        start_yyyymmdd: str,
+        end_yyyymmdd: str,
+        names: dict[str, str],
+        progress_callback=None,
+    ) -> dict:
+        """ETF 전략용 yfinance 자동조정 OHLCV만 저장한다."""
+        stats = {'total': len(tickers), 'fetched': 0, 'new_days': 0}
+        if not tickers:
+            return stats
+
+        start_date = self._yyyymmdd_to_iso(start_yyyymmdd)
+        end_date = self._yyyymmdd_to_iso(end_yyyymmdd)
+
+        for loaded, ticker in enumerate(tickers, start=1):
+            if self._has_adjusted_price_range(ticker, start_date, end_date):
+                if progress_callback:
+                    progress_callback(
+                        loaded, len(tickers), names.get(ticker, ticker)
+                    )
+                continue
+
+            rows = self._fetch_yfinance_adjusted_etf(
+                ticker, start_yyyymmdd, end_yyyymmdd
+            )
+            if rows:
+                self.save_prices(
+                    ticker,
+                    rows,
+                    name=names.get(ticker),
+                    price_source="yfinance_auto_adjust",
+                    is_adjusted=True,
+                )
+                stats['fetched'] += 1
+                stats['new_days'] += len(rows)
+            if progress_callback:
+                progress_callback(
+                    loaded, len(tickers), names.get(ticker, ticker)
+                )
+
+        return stats
+
+    def get_prices_many(self, tickers: list[str], start_date: str,
+                        end_date: str) -> dict[str, list[dict]]:
         """
         여러 종목의 일봉 데이터를 한 번의 쿼리로 조회
 
@@ -785,7 +914,7 @@ class StockDB:
                 list(tickers) + [start_date, end_date],
             ).fetchall()
 
-            result: Dict[str, List[dict]] = {}
+            result: dict[str, list[dict]] = {}
             for r in rows:
                 result.setdefault(r[0], []).append({
                     'date': r[1], 'open': r[2], 'high': r[3],
@@ -795,10 +924,48 @@ class StockDB:
         finally:
             con.close()
 
+    def get_adjusted_prices_many(
+        self, tickers: list[str], start_date: str, end_date: str
+    ) -> dict[str, list[dict]]:
+        """
+        ETF 전략용 yfinance 자동조정 일봉 데이터를 한 번의 쿼리로 조회한다.
+        """
+        if not tickers:
+            return {}
+
+        placeholders = ", ".join(["?"] * len(tickers))
+        con = self._connect()
+        try:
+            rows = con.execute(
+                f"""
+                SELECT ticker, CAST(date AS VARCHAR), open, high, low, close, volume
+                FROM daily_prices
+                WHERE ticker IN ({placeholders})
+                  AND date >= ? AND date <= ?
+                  AND price_source = 'yfinance_auto_adjust'
+                  AND is_adjusted = TRUE
+                ORDER BY ticker, date
+                """,
+                list(tickers) + [start_date, end_date],
+            ).fetchall()
+        finally:
+            con.close()
+
+        result: dict[str, list[dict]] = {}
+        for r in rows:
+            result.setdefault(r[0], []).append({
+                'date': r[1], 'open': r[2], 'high': r[3],
+                'low': r[4], 'close': r[5], 'volume': int(r[6] or 0),
+            })
+        missing = [ticker for ticker in tickers if not result.get(ticker)]
+        if missing:
+            raise ValueError(f"ETF 조정가격이 없습니다: {', '.join(missing)}")
+        return result
+
     # ----------------------------------------------------------
     # KOSPI 지수
     # ----------------------------------------------------------
-    def save_index_prices(self, index_code: str, data: List[dict]):
+    def save_index_prices(self, index_code: str, data: list[dict]):
         """지수 데이터 저장"""
         if not data:
             return
@@ -813,7 +980,7 @@ class StockDB:
         finally:
             con.close()
 
-    def get_index_prices(self, index_code: str, start_date: str, end_date: str) -> List[dict]:
+    def get_index_prices(self, index_code: str, start_date: str, end_date: str) -> list[dict]:
         """DB에서 지수 데이터 조회"""
         con = self._connect()
         try:
@@ -931,7 +1098,7 @@ class StockDB:
         'screening_results',
     }
 
-    def get_table_list(self) -> List[dict]:
+    def get_table_list(self) -> list[dict]:
         """Get list of all tables with row counts"""
         con = self._connect()
         try:
@@ -945,7 +1112,7 @@ class StockDB:
         finally:
             con.close()
 
-    def get_table_schema(self, table_name: str) -> List[dict]:
+    def get_table_schema(self, table_name: str) -> list[dict]:
         """Get column info for a table"""
         if table_name not in self._ALLOWED_TABLES:
             raise ValueError(f"Unknown table: {table_name!r}")
@@ -1030,7 +1197,7 @@ class StockDB:
         finally:
             con.close()
 
-    def get_ticker_summary(self) -> List[dict]:
+    def get_ticker_summary(self) -> list[dict]:
         """Get summary per ticker: ticker, name, min_date, max_date, count, latest_close"""
         con = self._connect()
         try:

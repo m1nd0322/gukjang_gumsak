@@ -1,5 +1,5 @@
-import os
 import json
+import os
 import tempfile
 import threading
 import unittest
@@ -51,6 +51,19 @@ class StockDbCacheTest(unittest.TestCase):
         if os.path.exists(self.db_path):
             os.unlink(self.db_path)
 
+    @staticmethod
+    def price_frame(close=70_500.0):
+        return pd.DataFrame(
+            {
+                "Open": [close],
+                "High": [close],
+                "Low": [close],
+                "Close": [close],
+                "Volume": [1_000],
+            },
+            index=pd.to_datetime(["2026-01-02"]),
+        )
+
     def test_new_daily_prices_schema_includes_nullable_name(self):
         connection = self.db._connect()
         try:
@@ -63,7 +76,6 @@ class StockDbCacheTest(unittest.TestCase):
         column_names = [row[1] for row in columns]
         self.assertIn("name", column_names)
         name_column = columns[column_names.index("name")]
-        self.assertEqual(column_names[-1], "name")
         self.assertEqual(name_column[2], "VARCHAR")
         self.assertFalse(name_column[3])
 
@@ -128,14 +140,15 @@ class StockDbCacheTest(unittest.TestCase):
                 ).fetchall()
                 column_names = [row[1] for row in columns]
                 row = connection.execute(
-                    "SELECT * FROM daily_prices"
+                    "SELECT name, price_source, is_adjusted FROM daily_prices"
                 ).fetchone()
             finally:
                 connection.close()
 
             self.assertIn("name", column_names)
-            self.assertEqual(column_names[-1], "name")
-            self.assertEqual(row[column_names.index("name")], "삼성전자")
+            self.assertIn("price_source", column_names)
+            self.assertIn("is_adjusted", column_names)
+            self.assertEqual(row, ("삼성전자", "legacy", False))
         finally:
             if os.path.exists(legacy_path):
                 os.unlink(legacy_path)
@@ -449,6 +462,50 @@ class StockDbCacheTest(unittest.TestCase):
             connection.close()
 
         self.assertEqual(row, ("삼성전자", 71200.0))
+
+    def test_daily_prices_tracks_source_and_adjustment_contract(self):
+        columns = {
+            row[1]: row[2]
+            for row in self.db._connect().execute(
+                "PRAGMA table_info('daily_prices')"
+            ).fetchall()
+        }
+        self.assertEqual(columns["price_source"], "VARCHAR")
+        self.assertEqual(columns["is_adjusted"], "BOOLEAN")
+
+    @patch("stock_db.yf.download")
+    def test_adjusted_etf_fetch_uses_ks_symbol_and_adjusted_prices(self, download):
+        download.return_value = self.price_frame(close=12_345.0)
+
+        stats = self.db.ensure_adjusted_etf_data(
+            ["069500"], "20260102", "20260105", {"069500": "KODEX 200"}
+        )
+
+        self.assertEqual(stats["fetched"], 1)
+        self.assertEqual(download.call_args.args[0], "069500.KS")
+        self.assertTrue(download.call_args.kwargs["auto_adjust"])
+        rows = self.db.get_adjusted_prices_many(
+            ["069500"], "2026-01-02", "2026-01-05"
+        )
+        self.assertEqual(rows["069500"][0]["close"], 12_345.0)
+
+    def test_adjusted_reader_rejects_legacy_or_raw_rows(self):
+        self.db.save_prices(
+            "069500",
+            [{
+                "date": "2026-01-02",
+                "open": 10,
+                "high": 10,
+                "low": 10,
+                "close": 10,
+                "volume": 1,
+            }],
+            name="KODEX 200",
+        )
+        with self.assertRaisesRegex(ValueError, "조정가격"):
+            self.db.get_adjusted_prices_many(
+                ["069500"], "2026-01-02", "2026-01-02"
+            )
 
     def test_save_prices_stores_null_name_for_unmapped_ticker(self):
         self.db.save_prices("999999", [{

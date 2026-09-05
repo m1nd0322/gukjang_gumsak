@@ -11,24 +11,34 @@
 브라우저: http://localhost:5050
 """
 
-from flask import Flask, jsonify, render_template_string, request, Response
-from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timedelta
-from decimal import Decimal, ROUND_HALF_UP
 import json
+import logging
 import math
 import os
-import logging
 import tempfile
 import threading
 import traceback
+from datetime import datetime, timedelta
+from decimal import ROUND_HALF_UP, Decimal
 from zoneinfo import ZoneInfo
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from flask import Flask, Response, jsonify, render_template_string, request
 
 from backtester import BacktestEngine
 from daily_refresh import refresh_is_due
 from runtime_config import daily_price_sync_enabled, web_port
 from screening import calculate_scores, fetch_all_data
 from stock_db import StockDB
+from strategy_catalog import (
+    ETF_ASSETS,
+    STRATEGIES,
+    get_strategy,
+    is_etf_strategy,
+    strategy_groups,
+)
+from strategy_export import write_adaptive_csv
+from strategy_runner import run_strategy
 
 # ============================================================
 # 설정
@@ -248,6 +258,16 @@ def _start_price_sync():
         logger.error(f"가격 동기화 스레드 시작 실패: {exc}")
 
 
+def _build_strategy_options():
+    lines = []
+    for group_name, specs in strategy_groups():
+        lines.append(f'                <optgroup label="{group_name}">')
+        for spec in specs:
+            lines.append(f'                    <option value="{spec.key}"{chr(32) + "data-etf=1" if spec.kind == "etf" else ""}>{spec.label}{" (실험)" if spec.kind == "etf" else ""}</option>')
+        lines.append('                </optgroup>')
+    return '\n'.join(lines)
+
+
 def _write_cache_atomic(cache):
     """임시 파일에 기록한 뒤 원자적으로 교체해 부분 기록을 막는다."""
     directory = os.path.dirname(CACHE_FILE)
@@ -420,44 +440,58 @@ def run_backtest_task(period_months, initial_capital, strategy,
         candidates = filter_backtest_candidates(
             results, score_filters, item_filters
         )
+        etf_strategy = is_etf_strategy(strategy)
 
-        if not candidates:
-            raise Exception('선택한 필터 조건에 맞는 종목이 없습니다.')
+        if etf_strategy:
+            matched = {
+                spec.ticker: spec.name
+                for spec in ETF_ASSETS.values()
+            }
+            unmatched = []
+            stock_names = list(matched.values())
+            logger.info(f"백테스트 대상: {len(stock_names)}개 ETF 자산 ({', '.join(stock_names[:5])}...)")
+            krx_mod = None
+        else:
+            if not candidates:
+                raise Exception('선택한 필터 조건에 맞는 종목이 없습니다.')
 
-        stock_names = [r['종목명'] for r in candidates]
-        logger.info(f"백테스트 대상: {len(stock_names)}개 종목 ({', '.join(stock_names[:5])}...)")
+            stock_names = [r['종목명'] for r in candidates]
+            logger.info(f"백테스트 대상: {len(stock_names)}개 종목 ({', '.join(stock_names[:5])}...)")
 
-        # 2. 종목코드 매핑 (DuckDB 캐시 + pykrx 갱신)
-        with bt_lock:
-            backtest_state['progress'] = f'종목 코드 매핑 중... ({len(stock_names)}종목)'
+            # 2. 종목코드 매핑 (DuckDB 캐시 + pykrx 갱신)
+            with bt_lock:
+                backtest_state['progress'] = f'종목 코드 매핑 중... ({len(stock_names)}종목)'
 
-        krx_mod = krx if HAS_PYKRX else None
-        name_to_code, code_to_name = stock_db.get_or_refresh_ticker_map(krx_mod)
+            krx_mod = krx if HAS_PYKRX else None
+            name_to_code, _ = stock_db.get_or_refresh_ticker_map(krx_mod)
 
-        matched = {}
-        unmatched = []
-        for name in stock_names:
-            code = name_to_code.get(name)
-            if code:
-                matched[code] = name
-            else:
-                unmatched.append(name)
+            matched = {}
+            unmatched = []
+            for name in stock_names:
+                code = name_to_code.get(name)
+                if code:
+                    matched[code] = name
+                else:
+                    unmatched.append(name)
 
-        if not matched:
-            raise Exception(f"종목코드 매핑 실패: {', '.join(stock_names[:5])}")
+            if not matched:
+                raise Exception(f"종목코드 매핑 실패: {', '.join(stock_names[:5])}")
 
-        if unmatched:
-            logger.warning(f"코드 매핑 실패 종목: {', '.join(unmatched)}")
+            if unmatched:
+                logger.warning(f"코드 매핑 실패 종목: {', '.join(unmatched)}")
 
-        logger.info(f"코드 매핑 완료: {len(matched)}개 성공, {len(unmatched)}개 실패")
+            logger.info(f"코드 매핑 완료: {len(matched)}개 성공, {len(unmatched)}개 실패")
 
         # 3. 기간 설정
         end_dt = datetime.now()
         start_dt = end_dt - timedelta(days=period_months * 30)
+        fetch_start_dt = start_dt - timedelta(days=400) if etf_strategy else start_dt
         start_str = start_dt.strftime('%Y%m%d')
+        fetch_start_str = fetch_start_dt.strftime('%Y%m%d')
         end_str = end_dt.strftime('%Y%m%d')
         start_iso = start_dt.strftime('%Y-%m-%d')
         end_iso = end_dt.strftime('%Y-%m-%d')
+        fetch_start_iso = fetch_start_dt.strftime('%Y-%m-%d')
 
         # 4. DuckDB 증분 수집 (이미 있는 데이터는 스킵)
         ticker_list = list(matched.keys())
@@ -470,11 +504,30 @@ def run_backtest_task(period_months, initial_capital, strategy,
         with bt_lock:
             backtest_state['progress'] = f'주가 데이터 증분 수집 중... (총 {len(ticker_list)}종목)'
 
-        fetch_stats = stock_db.ensure_price_data(
-            ticker_list, start_str, end_str,
-            krx_module=krx_mod,
-            progress_callback=progress_cb,
-        )
+        if etf_strategy:
+            fetch_stats = stock_db.ensure_adjusted_etf_data(
+                ticker_list, fetch_start_str, end_str,
+                matched, progress_callback=progress_cb,
+            )
+            prices_by_ticker = stock_db.get_adjusted_prices_many(
+                ticker_list, fetch_start_iso, end_iso
+            )
+        else:
+            fetch_stats = stock_db.ensure_price_data(
+                ticker_list, start_str, end_str,
+                krx_module=krx_mod,
+                progress_callback=progress_cb,
+            )
+            prices_by_ticker = stock_db.get_prices_many(
+                list(matched.keys()), start_iso, end_iso
+            )
+            if len(prices_by_ticker) < len(matched):
+                for code in matched:
+                    if code in prices_by_ticker:
+                        continue
+                    prices_by_ticker[code] = stock_db.get_prices(
+                        code, start_iso, end_iso
+                    )
         logger.info(f"데이터 수집: API 호출 {fetch_stats['fetched']}종목, "
                      f"신규 {fetch_stats['new_days']}일 (DB 캐시 활용)")
 
@@ -486,9 +539,6 @@ def run_backtest_task(period_months, initial_capital, strategy,
             tax_pct=tax_pct,
         )
 
-        prices_by_ticker = stock_db.get_prices_many(
-            list(matched.keys()), start_iso, end_iso
-        )
         for code, name in matched.items():
             prices = prices_by_ticker.get(code, [])
             if prices:
@@ -510,52 +560,35 @@ def run_backtest_task(period_months, initial_capital, strategy,
         # 7. 백테스트 실행
         with bt_lock:
             backtest_state['progress'] = '백테스트 실행 중...'
-
         tickers = list(engine.price_data.keys())
-        if strategy == 'rebalance':
-            engine.run_rebalance(tickers, period=20)
-        elif strategy == 'vol_trailing_stop':
-            engine.run_volatility_trailing_stop(
-                tickers, lookback=20, stop_pct=-10.0,
-                cooldown=5, reentry=True)
-        elif strategy == 'vol_trailing_stop_loss':
-            engine.run_volatility_trailing_stop(
-                tickers, lookback=20, stop_pct=-10.0,
-                cooldown=5, reentry=True,
-                stop_loss_pct=stop_loss_pct)
-        elif strategy == 'ma_filter':
-            engine.run_ma_filter(
-                tickers, ma_period=20, rebalance_period=5)
-        elif strategy == 'composite':
-            engine.run_composite(
-                tickers, ma_period=20, lookback=20,
-                stop_pct=-8.0, cooldown=5, rebalance_period=10)
-        else:
-            engine.run_equal_weight(tickers)
+        run_strategy(
+            engine,
+            strategy,
+            tickers,
+            start_date=start_iso,
+            end_date=end_iso,
+            stop_loss_pct=stop_loss_pct,
+        )
 
         results = engine.get_results()
 
         # 8. 추가 정보
         db_stats = stock_db.get_db_stats()
-        strategy_names = {
-            'equal_weight': '동일 비중 Buy & Hold',
-            'rebalance': '월간 리밸런싱 (20일)',
-            'vol_trailing_stop': '변동성 가중 + 트레일링 스탑',
-            'vol_trailing_stop_loss': '변동성 가중 + 트레일링 스탑 + 스탑로스',
-            'ma_filter': '이동평균 필터 (MA20)',
-            'composite': '복합 전략 (MA + 변동성 + 스탑)',
-        }
+        strategy_names = {key: get_strategy(key).label for key in STRATEGIES}
         results['config'] = {
             'period_months': period_months,
             'initial_capital': initial_capital,
             'strategy': strategy,
             'strategy_name': strategy_names.get(strategy, strategy),
+            'strategy_version': '1.0',
+            'tax_model': 'etf_pre_tax' if etf_strategy else 'stock',
+            'universe': list(matched) if etf_strategy else [],
             'stop_loss_pct': stop_loss_pct,
             'total_stocks': len(matched),
             'loaded_stocks': len(engine.price_data),
             'unmatched': unmatched,
-            'score_filters': list(score_filters or BACKTEST_SCORE_OPTIONS),
-            'item_filters': list(item_filters),
+            'score_filters': [] if etf_strategy else list(score_filters or BACKTEST_SCORE_OPTIONS),
+            'item_filters': [] if etf_strategy else list(item_filters),
             'item_filter_labels': [
                 BACKTEST_ITEM_SOURCES[key] for key in item_filters
             ],
@@ -584,7 +617,10 @@ def run_backtest_task(period_months, initial_capital, strategy,
 # ============================================================
 @app.route('/backtest')
 def backtest_page():
-    return render_template_string(BACKTEST_TEMPLATE)
+    return render_template_string(
+        BACKTEST_TEMPLATE,
+        strategy_options=_build_strategy_options(),
+    )
 
 
 @app.route('/api/backtest/run', methods=['POST'])
@@ -603,9 +639,10 @@ def api_backtest_run():
     try:
         period = int(params.get('period', 6))
         capital = int(params.get('capital', 100_000_000))
-        slippage = float(params.get('slippage', 0.3))
+        etf_request = isinstance(params.get('strategy'), str) and is_etf_strategy(params['strategy'])
+        slippage = float(params.get('slippage', 0.10 if etf_request else 0.3))
         commission = float(params.get('commission', 0.015))
-        tax = float(params.get('tax', 0.20))
+        tax = float(params.get('tax', 0 if etf_request else 0.20))
     except (TypeError, ValueError):
         return jsonify({'error': '기간, 자본금, 거래비용은 숫자여야 합니다.'}), 400
     try:
@@ -616,12 +653,13 @@ def api_backtest_run():
         return jsonify({'error': '스탑로스는 0.1~50 사이의 숫자여야 합니다.'}), 400
 
     strategy = params.get('strategy', 'equal_weight')
-    allowed_strategies = {
-        'equal_weight', 'rebalance', 'vol_trailing_stop',
-        'vol_trailing_stop_loss', 'ma_filter', 'composite',
-    }
-    if strategy not in allowed_strategies:
+    allowed_strategies = set(STRATEGIES.keys())
+    if not isinstance(strategy, str) or strategy not in allowed_strategies:
         return jsonify({'error': '지원하지 않는 백테스트 전략입니다.'}), 400
+    if etf_request and ('scores' in params or 'items' in params):
+        return jsonify({'error': 'ETF 전략에는 개별주 필터를 전달할 수 없습니다.'}), 400
+    if etf_request and tax != 0:
+        return jsonify({'error': 'ETF 거래세는 0이어야 합니다.'}), 400
     if not 1 <= period <= 120:
         return jsonify({'error': '기간은 1~120개월이어야 합니다.'}), 400
     if capital <= 0:
@@ -738,6 +776,7 @@ def api_backtest_csv():
             t['status'],
         ])
 
+    write_adaptive_csv(writer, results)
     csv_data = output.getvalue()
     output.close()
 
@@ -1254,12 +1293,7 @@ tr:hover{background:#f8fafc}
         <div class="cfg-group">
             <label>전략</label>
             <select id="cfgStrategy">
-                <option value="equal_weight">동일 비중 Buy & Hold</option>
-                <option value="rebalance">월간 리밸런싱 (20일)</option>
-                <option value="vol_trailing_stop">🛡️ 변동성 가중 + 트레일링 스탑</option>
-                <option value="vol_trailing_stop_loss">🛡️ 변동성 가중 + 트레일링 스탑 + 스탑로스</option>
-                <option value="ma_filter">📊 이동평균 필터 (MA20)</option>
-                <option value="composite">🔒 복합 전략 (MA + 변동성 + 스탑)</option>
+                {{ strategy_options|safe }}
             </select>
         </div>
         <div class="cfg-group">
@@ -1390,6 +1424,28 @@ let pollTimer = null;
 let equityChartObj = null;
 let ddChartObj = null;
 
+function isEtfSelection() {
+    return document.getElementById('cfgStrategy').selectedOptions[0].dataset.etf === '1';
+}
+window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('cfgStrategy').addEventListener('change', () => {
+        const etf = isEtfSelection();
+        document.querySelectorAll('input[name="scoreFilter"], input[name="itemFilter"]').forEach(
+            input => { input.disabled = etf; });
+        document.getElementById('cfgTax').disabled = etf;
+        document.getElementById('cfgTax').value = etf ? 0 : 0.20;
+        document.getElementById('cfgSlippage').value = etf ? 0.10 : 0.3;
+        document.getElementById('cfgCommission').value = 0.015;
+        let note = document.getElementById('etfNote');
+        if (!note) {
+            note = document.createElement('p'); note.id = 'etfNote';
+            document.getElementById('cfgStrategy').parentElement.appendChild(note);
+        }
+        note.hidden = !etf;
+        note.textContent = '고정 ETF 8종 자산배분 (실험). 보유기간과세 제외 세전 성과이며, 10% 낙폭은 절대 손실 보장이 아닙니다.';
+    });
+});
+
 // 페이지 로드 시 기존 결과 확인
 window.addEventListener('DOMContentLoaded', () => {
     fetch('/api/backtest/status').then(r=>r.json()).then(d => {
@@ -1420,11 +1476,11 @@ function runBacktest() {
         slippage: +document.getElementById('cfgSlippage').value,
         commission: +document.getElementById('cfgCommission').value,
         tax: +document.getElementById('cfgTax').value,
-        scores: Array.from(
+        scores: isEtfSelection() ? undefined : Array.from(
             document.querySelectorAll('input[name="scoreFilter"]:checked'),
             input => +input.value,
         ),
-        items: Array.from(
+        items: isEtfSelection() ? undefined : Array.from(
             document.querySelectorAll('input[name="itemFilter"]:checked'),
             input => input.value,
         ),
@@ -1481,6 +1537,33 @@ function resetBtn() {
 }
 
 function renderResults(r) {
+    let detail = document.getElementById('adaptiveDetail');
+    if (!detail) {
+        detail = document.createElement('pre');
+        detail.id = 'adaptiveDetail';
+        detail.style.cssText = 'white-space:pre-wrap;padding:20px;line-height:1.8;max-width:1100px;margin:20px auto;background:#f1f5f9';
+        document.querySelector('body').appendChild(detail);
+    }
+    const allocations = r.allocation_history || [];
+    detail.hidden = !allocations.length;
+    if (allocations.length) {
+        const latest = allocations[allocations.length - 1];
+        const regime = (r.regime_history || []).slice(-1)[0] || {};
+        const pct = value => ((value || 0) * 100).toFixed(2) + '%';
+        const names = Object.fromEntries((r.strategy_stock_performance || []).map(s => [s.ticker, s.name]));
+        const weights = [...new Set([...Object.keys(latest.target_weights), ...Object.keys(latest.actual_weights)])]
+            .map(t => `${names[t] || t}: 목표 ${pct(latest.target_weights[t])} / 실제 ${pct(latest.actual_weights[t])}`);
+        detail.textContent = ['ETF 자산배분 (실험)', '보유기간과세를 제외한 세전 성과입니다.',
+            '10%는 현금화 신호이며 갭과 거래비용 때문에 실제 낙폭은 초과할 수 있습니다.',
+            `현재 레짐: ${regime.regime || '-'} / 방어 상태: ${latest.guard_state}`,
+            ...weights, `현금: ${pct(latest.cash_weight)}`,
+            `10% 상한 초과폭: ${r.max_drawdown_overshoot || 0}%p`,
+            `조정가격 시작일: ${(r.data_quality || {}).warmup_start || '-'}`,
+            `시가 누락 주문 보류: ${((r.data_quality || {}).deferred_orders || []).length}건`,
+            '현금화·재진입 이력:', ...(r.drawdown_guard_events || []).map(e => `${e.date}: ${e.previous_state} → ${e.state} (낙폭 ${pct(e.drawdown)})`)
+        ].join('\n');
+    }
+
     document.getElementById('resultsArea').style.display = '';
     document.getElementById('emptyState').style.display = 'none';
 
