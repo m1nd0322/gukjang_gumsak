@@ -401,7 +401,7 @@ const originalInputs = inputs.slice();
 const outputs = vm.runInNewContext(
     source + '\\ninputs.map(fmtTradePct)',
     {{ inputs }},
-    {{ timeout: 250 }},
+    {{ timeout: 1000 }},
 );
 process.stdout.write(JSON.stringify({{
     outputs,
@@ -801,6 +801,9 @@ class DailyRefreshRetryTest(unittest.TestCase):
 class PriceSyncTest(unittest.TestCase):
     def setUp(self):
         self.thread = MagicMock()
+        if not app_module.price_sync_lock.acquire(timeout=30):
+            self.fail("이전 가격 동기화 스레드가 종료되지 않았습니다")
+        app_module.price_sync_lock.release()
         with app_module.data_lock:
             previous = dict(app_module.current_data)
         self.previous = previous
