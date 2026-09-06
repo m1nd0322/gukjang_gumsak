@@ -89,6 +89,30 @@ class DailyRefreshDueTest(unittest.TestCase):
         self.assertEqual(captured["url"], daily_refresh.DASHBOARD_URL + "/api/status/summary")
         self.assertEqual(status["status"], "done")
 
+    def test_dashboard_refresh_marks_the_request_as_automatic(self):
+        captured = {}
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                return b'{"status":"started"}'
+
+        def fake_urlopen(request, timeout=None):
+            captured["request"] = request
+            return FakeResponse()
+
+        with patch.object(daily_refresh, "urlopen", fake_urlopen):
+            result = daily_refresh._request_dashboard_refresh()
+
+        headers = {key.lower(): value for key, value in captured["request"].header_items()}
+        self.assertEqual(headers["x-gukjang-refresh-source"], "automatic")
+        self.assertEqual(result["status"], "started")
+
 
 class LaunchAgentConfigTest(unittest.TestCase):
     def test_agent_runs_at_login_and_every_day_at_seven(self):

@@ -68,6 +68,20 @@ BACKTEST_ITEM_SOURCES = {
 RETURN_PCT_QUANTUM = Decimal("0.01")
 # 자동 가격 동기화가 소급해서 채우는 기간(일). 백테스트 기본 12개월을 커버한다.
 PRICE_SYNC_LOOKBACK_DAYS = 400
+REFRESH_SOURCE_MANUAL = 'manual'
+REFRESH_SOURCE_AUTOMATIC = 'automatic'
+REFRESH_SOURCE_STARTUP = 'startup'
+REFRESH_SOURCE_HEADER = 'X-Gukjang-Refresh-Source'
+VALID_REFRESH_SOURCES = {
+    REFRESH_SOURCE_MANUAL,
+    REFRESH_SOURCE_AUTOMATIC,
+    REFRESH_SOURCE_STARTUP,
+}
+REFRESH_SOURCE_LABELS = {
+    REFRESH_SOURCE_MANUAL: '수동',
+    REFRESH_SOURCE_AUTOMATIC: '자동',
+    REFRESH_SOURCE_STARTUP: '시작',
+}
 
 
 def _format_return_pct(value):
@@ -89,6 +103,8 @@ current_data = {
     'result': [],
     'stats': {},
     'last_updated': None,
+    'last_auto_updated': None,
+    'last_refresh_source': None,
     'status': 'idle',  # idle, loading, done, error
     'error_msg': '',
 }
@@ -127,24 +143,31 @@ stock_db = StockDB()
 # ============================================================
 # 데이터 갱신
 # ============================================================
-def refresh_data():
+def _normalize_refresh_source(refresh_source):
+    if refresh_source in VALID_REFRESH_SOURCES:
+        return refresh_source
+    return REFRESH_SOURCE_MANUAL
+
+
+def refresh_data(refresh_source=REFRESH_SOURCE_MANUAL):
     """한 번에 하나의 데이터 갱신만 실행한다."""
     if not refresh_lock.acquire(blocking=False):
         logger.info("이미 데이터 갱신이 진행 중이므로 중복 실행을 건너뜁니다")
         return False
-    return _run_reserved_refresh()
+    return _run_reserved_refresh(refresh_source=refresh_source)
 
 
-def _run_reserved_refresh():
+def _run_reserved_refresh(refresh_source=REFRESH_SOURCE_MANUAL):
     """이미 확보한 단일 실행 잠금을 해제할 때까지 갱신한다."""
     try:
-        return _refresh_data_locked()
+        return _refresh_data_locked(refresh_source=refresh_source)
     finally:
         refresh_lock.release()
 
 
-def _refresh_data_locked():
+def _refresh_data_locked(refresh_source=REFRESH_SOURCE_MANUAL):
     """데이터 수집 → 점수 계산 → 저장"""
+    refresh_source = _normalize_refresh_source(refresh_source)
     with data_lock:
         current_data['status'] = 'loading'
         current_data['error_msg'] = ''
@@ -167,17 +190,31 @@ def _refresh_data_locked():
             current_data['result'] = result
             current_data['stats'] = stats
             current_data['last_updated'] = now
+            current_data['last_refresh_source'] = refresh_source
+            if refresh_source == REFRESH_SOURCE_AUTOMATIC:
+                current_data['last_auto_updated'] = now
+            last_auto_updated = current_data['last_auto_updated']
             current_data['status'] = 'done'
 
         # 캐시 파일 저장
         cache = {
             'version': CACHE_VERSION,
             'turn': turn, 'supply': supply, 'nps': nps,
-            'result': result, 'stats': stats, 'last_updated': now,
+            'result': result,
+            'stats': stats,
+            'last_updated': now,
+            'last_auto_updated': last_auto_updated,
+            'last_refresh_source': refresh_source,
         }
         _write_cache_atomic(cache)
 
-        logger.info(f"데이터 갱신 완료: 3점={stats['score_3']}, 2점={stats['score_2']}, 1점={stats['score_1']}")
+        logger.info(
+            "데이터 갱신 완료 (%s): 3점=%s, 2점=%s, 1점=%s",
+            REFRESH_SOURCE_LABELS[refresh_source],
+            stats['score_3'],
+            stats['score_2'],
+            stats['score_1'],
+        )
 
         # 백테스트용 가격 데이터를 화면과 무관하게 뒤에서 동기화한다.
         _start_price_sync()
@@ -307,6 +344,8 @@ def load_cache():
                 current_data['result'] = cache.get('result', [])
                 current_data['stats'] = cache.get('stats', {})
                 current_data['last_updated'] = cache.get('last_updated')
+                current_data['last_auto_updated'] = cache.get('last_auto_updated')
+                current_data['last_refresh_source'] = cache.get('last_refresh_source')
                 current_data['status'] = 'done'
             logger.info(f"캐시 데이터 로드 완료 (갱신: {current_data['last_updated']})")
             return True
@@ -333,8 +372,15 @@ def api_refresh():
         current_data['status'] = 'loading'
         current_data['error_msg'] = ''
 
+    refresh_source = _normalize_refresh_source(
+        request.headers.get(REFRESH_SOURCE_HEADER, REFRESH_SOURCE_MANUAL)
+    )
     try:
-        thread = threading.Thread(target=_run_reserved_refresh, daemon=True)
+        thread = threading.Thread(
+            target=_run_reserved_refresh,
+            args=(refresh_source,),
+            daemon=True,
+        )
         thread.start()
     except Exception as e:  # noqa: BLE001
         refresh_lock.release()
@@ -356,6 +402,8 @@ def api_status():
         return jsonify({
             'status': current_data['status'],
             'last_updated': current_data['last_updated'],
+            'last_auto_updated': current_data['last_auto_updated'],
+            'last_refresh_source': current_data['last_refresh_source'],
             'error_msg': current_data['error_msg'],
             'stats': current_data['stats'],
             'result': current_data['result'],
@@ -372,6 +420,8 @@ def api_status_summary():
         return jsonify({
             'status': current_data['status'],
             'last_updated': current_data['last_updated'],
+            'last_auto_updated': current_data['last_auto_updated'],
+            'last_refresh_source': current_data['last_refresh_source'],
             'error_msg': current_data['error_msg'],
         })
 
@@ -1113,7 +1163,14 @@ function renderData(d) {
     document.getElementById('statTurn').textContent = stats.turn_count || 0;
     document.getElementById('statSupply').textContent = stats.supply_count || 0;
     document.getElementById('statNps').textContent = stats.nps_count || 0;
-    document.getElementById('updateInfo').textContent = '마지막 갱신: ' + (d.last_updated || '-');
+    const sourceLabels = { automatic: '자동', manual: '수동', startup: '시작' };
+    const sourceLabel = sourceLabels[d.last_refresh_source] || '';
+    const latestUpdate = '마지막 갱신: ' + (d.last_updated || '-');
+    const automaticUpdate = d.last_auto_updated
+        ? ' · 자동 갱신: ' + d.last_auto_updated
+        : '';
+    document.getElementById('updateInfo').textContent =
+        latestUpdate + (sourceLabel ? ' (' + sourceLabel + ')' : '') + automaticUpdate;
     document.getElementById('tabTurn').textContent = '연간실적호전 (' + (stats.turn_count||0) + ')';
     document.getElementById('tabSupply').textContent = '순매수전환 (' + (stats.supply_count||0) + ')';
     document.getElementById('tabNps').textContent = '국민연금 매수 (' + (stats.nps_count||0) + ')';
@@ -2396,14 +2453,14 @@ def _run_refresh_retry(attempt):
         return
     logger.info("일일 자동 갱신 재시도 (%d/%d)",
                 attempt + 1, len(DAILY_REFRESH_RETRY_DELAYS))
-    if refresh_data():
+    if refresh_data(refresh_source=REFRESH_SOURCE_AUTOMATIC):
         return
     _schedule_refresh_retry(attempt + 1)
 
 
 def run_daily_refresh_job():
     """매일 07:00에 실행되는 예약 갱신. 실패 시 단계적 재시도를 예약한다."""
-    if refresh_data():
+    if refresh_data(refresh_source=REFRESH_SOURCE_AUTOMATIC):
         return
     _schedule_refresh_retry(0)
 
@@ -2441,7 +2498,7 @@ if __name__ == '__main__':
     # 캐시 로드 시도
     if not load_cache():
         logger.info("캐시 없음. 초기 데이터 수집 시작...")
-        refresh_data()
+        refresh_data(refresh_source=REFRESH_SOURCE_STARTUP)
     else:
         # 재시작 사이에 밀린 일봉을 백그라운드에서 메운다.
         _start_price_sync()

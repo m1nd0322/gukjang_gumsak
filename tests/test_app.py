@@ -93,6 +93,8 @@ class FlaskApiTest(unittest.TestCase):
                 supply=[],
                 nps=[],
                 last_updated=None,
+                last_auto_updated=None,
+                last_refresh_source=None,
             )
         with app_module.bt_lock:
             app_module.backtest_state.update(
@@ -567,6 +569,115 @@ process.stdout.write(JSON.stringify({{
 
         self.assertEqual(cache["version"], app_module.CACHE_VERSION)
 
+    def test_load_cache_restores_automatic_refresh_metadata(self):
+        automatic_time = "2026-09-06 07:00:22"
+        with tempfile.TemporaryDirectory() as directory:
+            cache_path = Path(directory) / "cache_data.json"
+            cache_path.write_text(
+                json.dumps(
+                    {
+                        "version": app_module.CACHE_VERSION,
+                        "turn": [],
+                        "supply": [],
+                        "nps": [],
+                        "result": [],
+                        "stats": {},
+                        "last_updated": "2026-09-06 13:31:27",
+                        "last_auto_updated": automatic_time,
+                        "last_refresh_source": "manual",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with patch.object(app_module, "CACHE_FILE", str(cache_path)):
+                loaded = app_module.load_cache()
+
+        self.assertTrue(loaded)
+        self.assertEqual(
+            app_module.current_data["last_auto_updated"], automatic_time
+        )
+        self.assertEqual(app_module.current_data["last_refresh_source"], "manual")
+
+    def test_automatic_refresh_records_a_separate_timestamp(self):
+        stats = {"score_3": 0, "score_2": 0, "score_1": 0}
+        with tempfile.TemporaryDirectory() as directory:
+            cache_path = Path(directory) / "cache_data.json"
+            with (
+                patch.object(app_module, "CACHE_FILE", str(cache_path)),
+                patch.object(
+                    app_module, "fetch_all_data", return_value=([], [], [])
+                ),
+                patch.object(
+                    app_module, "calculate_scores", return_value=([], stats)
+                ),
+                patch.object(
+                    app_module.stock_db,
+                    "replace_screening_results",
+                    return_value=0,
+                ),
+                patch.object(app_module, "_start_price_sync"),
+            ):
+                refreshed = app_module.refresh_data(refresh_source="automatic")
+
+            cache = json.loads(cache_path.read_text(encoding="utf-8"))
+
+        self.assertTrue(refreshed)
+        self.assertEqual(
+            app_module.current_data["last_auto_updated"],
+            app_module.current_data["last_updated"],
+        )
+        self.assertEqual(app_module.current_data["last_refresh_source"], "automatic")
+        self.assertEqual(cache["last_auto_updated"], cache["last_updated"])
+        self.assertEqual(cache["last_refresh_source"], "automatic")
+
+    def test_manual_refresh_keeps_the_previous_automatic_timestamp(self):
+        automatic_time = "2026-09-06 07:00:22"
+        with app_module.data_lock:
+            app_module.current_data["last_auto_updated"] = automatic_time
+
+        stats = {"score_3": 0, "score_2": 0, "score_1": 0}
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(
+                app_module, "CACHE_FILE", str(Path(directory) / "cache.json")
+            ),
+            patch.object(
+                app_module, "fetch_all_data", return_value=([], [], [])
+            ),
+            patch.object(
+                app_module, "calculate_scores", return_value=([], stats)
+            ),
+            patch.object(
+                app_module.stock_db,
+                "replace_screening_results",
+                return_value=0,
+            ),
+            patch.object(app_module, "_start_price_sync"),
+        ):
+            refreshed = app_module.refresh_data()
+
+        self.assertTrue(refreshed)
+        self.assertEqual(app_module.current_data["last_auto_updated"], automatic_time)
+        self.assertEqual(app_module.current_data["last_refresh_source"], "manual")
+
+    def test_automatic_api_refresh_passes_the_source_to_the_worker(self):
+        with patch.object(app_module.threading, "Thread") as thread:
+            try:
+                response = self.client.post(
+                    "/api/refresh",
+                    headers={"X-Gukjang-Refresh-Source": "automatic"},
+                )
+            finally:
+                if app_module.refresh_lock.locked():
+                    app_module.refresh_lock.release()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            thread.call_args.kwargs["args"],
+            ("automatic",),
+        )
+
     def test_refresh_persists_results_before_publishing_cache(self):
         result = [
             {"종목명": "A", "종합점수": 1, "출처": "연간실적호전"}
@@ -704,6 +815,8 @@ process.stdout.write(JSON.stringify({{
         self.assertIn("국민연금 신규/추가매수", app_module.HTML_TEMPLATE)
         self.assertIn("매수일부터 3개월 동안만 1점", app_module.HTML_TEMPLATE)
         self.assertIn("FnGuide 공개 주요주주 범위", app_module.HTML_TEMPLATE)
+        self.assertIn("last_auto_updated", app_module.HTML_TEMPLATE)
+        self.assertIn("자동 갱신:", app_module.HTML_TEMPLATE)
 
     def test_dashboard_escapes_screening_values_before_html_rendering(self):
         template = app_module.HTML_TEMPLATE
@@ -718,7 +831,16 @@ process.stdout.write(JSON.stringify({{
 
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
-        self.assertEqual(set(payload), {"status", "last_updated", "error_msg"})
+        self.assertEqual(
+            set(payload),
+            {
+                "status",
+                "last_updated",
+                "last_auto_updated",
+                "last_refresh_source",
+                "error_msg",
+            },
+        )
 
 
 class DailyRefreshRetryTest(unittest.TestCase):
@@ -728,10 +850,13 @@ class DailyRefreshRetryTest(unittest.TestCase):
     def test_failed_scheduled_refresh_schedules_a_one_shot_retry(self):
         with (
             patch.object(app_module, "scheduler", self.scheduler),
-            patch.object(app_module, "refresh_data", return_value=False),
+            patch.object(
+                app_module, "refresh_data", return_value=False
+            ) as refresh_data,
         ):
             app_module.run_daily_refresh_job()
 
+        refresh_data.assert_called_once_with(refresh_source="automatic")
         self.scheduler.add_job.assert_called_once()
         kwargs = self.scheduler.add_job.call_args.kwargs
         self.assertEqual(kwargs["id"], "daily_refresh_retry_0")
@@ -744,7 +869,7 @@ class DailyRefreshRetryTest(unittest.TestCase):
         ):
             app_module.run_daily_refresh_job()
 
-        refresh_data.assert_called_once()
+        refresh_data.assert_called_once_with(refresh_source="automatic")
         self.scheduler.add_job.assert_not_called()
 
     def test_retry_skips_when_todays_data_is_already_fresh(self):
@@ -762,12 +887,15 @@ class DailyRefreshRetryTest(unittest.TestCase):
         with (
             patch.object(app_module, "scheduler", self.scheduler),
             patch.object(app_module, "_refresh_still_due", return_value=True),
-            patch.object(app_module, "refresh_data", return_value=False),
+            patch.object(
+                app_module, "refresh_data", return_value=False
+            ) as refresh_data,
         ):
             app_module._run_refresh_retry(0)
 
         kwargs = self.scheduler.add_job.call_args.kwargs
         self.assertEqual(kwargs["id"], "daily_refresh_retry_1")
+        refresh_data.assert_called_once_with(refresh_source="automatic")
 
     def test_retry_chain_gives_up_after_the_final_delay(self):
         exhausted = len(app_module.DAILY_REFRESH_RETRY_DELAYS)

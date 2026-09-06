@@ -18,6 +18,7 @@ DASHBOARD_URL = dashboard_url()
 MAX_ATTEMPTS = 3
 POLL_INTERVAL_SECONDS = 10
 POLL_TIMEOUT_SECONDS = 600
+REFRESH_SOURCE_HEADER = "X-Gukjang-Refresh-Source"
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +51,12 @@ def _dashboard_status():
 
 
 def _request_dashboard_refresh():
-    request = Request(f"{DASHBOARD_URL}/api/refresh", data=b"", method="POST")
+    request = Request(
+        f"{DASHBOARD_URL}/api/refresh",
+        data=b"",
+        headers={REFRESH_SOURCE_HEADER: "automatic"},
+        method="POST",
+    )
     with urlopen(request, timeout=5) as response:
         return json.load(response)
 
@@ -103,13 +109,13 @@ def run(now=None):
                 )
                 break
             logger.info("웹 서버가 없어 독립 프로세스에서 예약 갱신을 시작합니다")
-            if app_module.refresh_data():
+            if app_module.refresh_data(refresh_source="automatic"):
                 return 0
             # 동기 갱신이 실패하면 남은 횟수 동안 다시 시도한다.
             for retry in range(2, MAX_ATTEMPTS + 1):
                 time.sleep(POLL_INTERVAL_SECONDS)
                 logger.info("독립 프로세스 갱신 재시도 (%d/%d)", retry, MAX_ATTEMPTS)
-                if app_module.refresh_data():
+                if app_module.refresh_data(refresh_source="automatic"):
                     return 0
             logger.error("예약 갱신을 완료하지 못했습니다 (%d회 시도)", MAX_ATTEMPTS)
             return 1
