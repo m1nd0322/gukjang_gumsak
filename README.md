@@ -447,3 +447,25 @@ uv run --isolated --managed-python --python 3.11 --with-requirements requirement
 추가로 적용합니다. 상세 결과는
 [평가 보고서](reports/adaptive_evaluation.md)에 있습니다.
 표본외 구간에는 예산 선택 결과를 반영하지 않고 고정된 값을 사용했습니다.
+# 생존편향 완전 검증 준비
+
+ETF 백테스트의 생존편향을 분리해 검증하는 경로를 준비했다.
+
+- `data/etf_universe_history.csv`: 날짜별 ETF listing 계약이다. `valid_from`, `valid_to`, `lifecycle_event`, `successor_ticker`로 상장·상장폐지·승계 이력을 표현한다.
+- `etf_universe.py`: 유니버스 중복 기간, 잘못된 날짜, 승계 필드 누락을 검증하고 리밸런싱 날짜의 활성 종목을 계산한다.
+- `scripts/import_krx_etf_universe.py`: KRX ETF 검색 결과를 검토 가능한 정규화 CSV로 변환한다. KRX 검색에서 상장폐지종목 포함 옵션으로 내보낸 자료를 입력해야 한다.
+- `scripts/validate_etf_universe.py`: 정규화 파일의 무결성과 `coverage` 상태를 검사한다.
+- `scripts/evaluate_adaptive_strategies.py`: `--universe-mode survivor|point_in_time|both`를 지원한다. `both`는 `universe_comparison.survivor_only`와 `universe_comparison.point_in_time`을 같은 보고서에 기록한다.
+- `backtester.py`: PIT 유니버스에서 활성 종목만 신호·리밸런싱 대상으로 사용하고, 비활성 보유 종목은 마지막 가격으로 현금청산하며 `data_quality.delisting_liquidations`에 기록한다.
+
+현재 저장소의 기본 CSV는 기존 현재 종목 목록을 `coverage=survivor_only`로 표시한 준비 파일이다. 실제 무편향 숫자를 산출하려면 KRX의 상장폐지종목 포함 ETF 목록에서 listing history를 가져와 다음처럼 변환·검증해야 한다.
+
+```bash
+python scripts/import_krx_etf_universe.py \
+  --input /path/to/krx_etf_issues_with_delisted.csv \
+  --output data/etf_universe_history.csv
+python scripts/validate_etf_universe.py data/etf_universe_history.csv
+python scripts/evaluate_adaptive_strategies.py --universe-mode both
+```
+
+`coverage=survivor_only` 또는 `mixed`이면 PIT 결과는 `blocked`로 남는다. 이 상태에서 생존자 전용 수익률을 완전 검증 결과로 해석하지 않는다. 원천 자료는 [KRX ETF 데이터 검색](https://data.krx.co.kr/comm/finder/finder_dataetfisu.jsp)과 [KRX ETF 상장폐지 기준](https://listing.krx.co.kr/contents/LST/06/06010600/LST06010600.jsp)을 사용한다.

@@ -15,7 +15,7 @@ class DrawdownGuard:
     recovery_low: float = 0.0
     events: list = field(default_factory=list)
 
-    def apply(self, date, equity, weights, regime):
+    def apply(self, date, equity, weights, regime, risk_tickers=None):
         previous, old_budget = self.state, self.budget
         self.peak = max(self.peak, equity)
         drawdown = max(0.0, 1 - equity / self.peak)
@@ -44,7 +44,9 @@ class DrawdownGuard:
             self.events.append({'date': date, 'previous_state': previous,
                                     'state': self.state, 'drawdown': drawdown,
                                     'action': self.state, 'risk_budget': self.budget})
-        risk = {a.ticker for a in ETF_ASSETS.values() if a.role in {'risk', 'real_asset'}}
+        risk = set(risk_tickers) if risk_tickers is not None else {
+            a.ticker for a in ETF_ASSETS.values() if a.role in {'risk', 'real_asset'}
+        }
         if self.state == 'cash':
             return {}
         return {t: w * (self.base_risk_budget if t in risk else 1)

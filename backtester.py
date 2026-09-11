@@ -34,7 +34,7 @@ import math
 import statistics
 from dataclasses import dataclass, replace
 
-from adaptive_strategies import build_allocation
+from adaptive_strategies import build_allocation, build_allocation_for_universe
 from drawdown_guard import DrawdownGuard
 from strategy_catalog import ETF_ASSETS, is_etf_strategy
 
@@ -471,17 +471,27 @@ class BacktestEngine:
 
     def run_adaptive_strategy(self, strategy_key: str,
                               start_date: str | None = None, end_date: str | None = None,
-                              base_risk_budget: float = 0.5):
+                              base_risk_budget: float = 0.5,
+                              universe_history=None,
+                              delisting_policy: str = 'cash'):
         if not is_etf_strategy(strategy_key):
             raise KeyError(strategy_key)
         if not math.isfinite(base_risk_budget) or not 0 <= base_risk_budget <= 1:
             raise ValueError('ETF 기본 위험예산은 0~1 사이여야 합니다')
-        tickers = [a.ticker for a in ETF_ASSETS.values()]
+        if delisting_policy not in {'cash', 'error'}:
+            raise ValueError("delisting_policy must be 'cash' or 'error'")
+        if universe_history is not None:
+            tickers = list(universe_history.known_tickers)
+        else:
+            tickers = [a.ticker for a in ETF_ASSETS.values()]
         missing = [t for t in tickers if not self.price_data.get(t)]
-        if missing:
+        if missing and universe_history is None:
             raise ValueError(f"ETF 가격 누락: {', '.join(missing)}")
+        tickers = [t for t in tickers if self.price_data.get(t)]
+        if not tickers:
+            raise ValueError('ETF 가격 누락: 사용 가능한 종목이 없습니다')
         calendar = sorted({r['date'] for r in self.benchmark_data}
-                          or set(self._price_idx['069500']))
+                          or {d for ticker in tickers for d in self._price_idx[ticker]})
         start = start_date or calendar[min(253, len(calendar) - 1)]
         end = end_date or calendar[-1]
         dates = [d for d in calendar if start <= d <= end]
@@ -490,7 +500,7 @@ class BacktestEngine:
         histories = {t: [r['close'] for r in self.price_data[t] if r['date'] < dates[0]]
                      for t in tickers}
         missing = [t for t in tickers if len(histories[t]) < 253]
-        if missing:
+        if missing and universe_history is None:
             raise ValueError(f"ETF 워밍업 253거래일 부족 ({start}): {', '.join(missing)}")
         for t in tickers:
             if any(not d or d <= end for d in self._invalid_price_rows.get(t, [])):
@@ -503,31 +513,102 @@ class BacktestEngine:
             'warmup_start': min(self.price_data[t][0]['date'] for t in tickers),
             'available_start': {t: self.price_data[t][0]['date'] for t in tickers},
             'missing_assets': [], 'deferred_orders': [], 'base_risk_budget': base_risk_budget}
+        self.data_quality['universe_mode'] = (
+            'point_in_time' if universe_history is not None else 'survivor_only'
+        )
+        self.data_quality['universe_coverage'] = (
+            getattr(universe_history, 'coverage', 'point_in_time')
+            if universe_history is not None else 'survivor_only'
+        )
+        self.data_quality['delisting_liquidations'] = []
+        self.data_quality['lifecycle_events'] = []
+        self.data_quality['universe_rebalance_history'] = []
         guard = DrawdownGuard(self.initial_capital,
                               base_risk_budget=base_risk_budget)
         self.drawdown_guard_events = guard.events
         previous_equity = self.initial_capital
-        last_prices = {t: histories[t][-1] for t in tickers}
+        last_prices = {t: histories[t][-1] for t in tickers if histories[t]}
         missing_days = dict.fromkeys(tickers, 0)
         last_month, last_target, decision = None, None, None
         pending = False
         for date in dates:
+            active_universe = (
+                universe_history.active_specs_by_ticker(date)
+                if universe_history is not None else None
+            )
+            active_tickers = set(active_universe) if universe_history is not None else set(tickers)
             monthly = date[:7] != last_month
             if monthly:
-                decision = build_allocation(strategy_key, histories)
+                decision = (
+                    build_allocation_for_universe(strategy_key, histories, active_universe)
+                    if universe_history is not None else build_allocation(strategy_key, histories)
+                )
+                if universe_history is not None:
+                    self.data_quality['universe_rebalance_history'].append({
+                        'date': date,
+                        'active_tickers': sorted(active_tickers),
+                        'history_eligible_tickers': sorted(
+                            item.ticker for item in active_universe.values()
+                            if len(histories.get(item.ticker, [])) >= 253
+                        ),
+                        'active_keys': sorted(
+                            item.key for item in active_universe.values()
+                        ),
+                    })
                 last_month = date[:7]
             weights = decision.target_weights
             if (any(t not in tickers or not math.isfinite(w) or w < 0
                     for t, w in weights.items()) or sum(weights.values()) > 1 + 1e-9):
                 raise ValueError('ETF 목표비중 오류')
-            daily_regime = build_allocation('price_regime_ensemble', histories).regime
-            target = guard.apply(date, previous_equity, weights, daily_regime)
+            daily_regime = (
+                build_allocation_for_universe('price_regime_ensemble', histories, active_universe).regime
+                if universe_history is not None else build_allocation('price_regime_ensemble', histories).regime
+            )
+            target = guard.apply(
+                date, previous_equity, weights, daily_regime,
+                risk_tickers=(universe_history.risk_tickers(date) if universe_history is not None else None),
+            )
             opens = self._field_prices_on_date(date, 'open')
             for t in tickers:
+                if t not in active_tickers:
+                    missing_days[t] = 0
+                    continue
                 row = self._price_idx[t].get(date)
                 missing_days[t] = 0 if row and t in opens else missing_days[t] + 1
                 if missing_days[t] >= 5:
                     raise ValueError(f'ETF 가격 5거래일 연속 누락: {t}, {date}')
+            if universe_history is not None:
+                for t, pos in list(self.portfolio.positions.items()):
+                    if t in active_tickers:
+                        continue
+                    liquidation_price = last_prices.get(t)
+                    if delisting_policy == 'error':
+                        raise ValueError(f'ETF 상장폐지/교체 미처리: {t}, {date}')
+                    if not liquidation_price or liquidation_price <= 0:
+                        raise ValueError(f'ETF 현금청산 가격 누락: {t}, {date}')
+                    self.portfolio.sell(t, liquidation_price, pos['shares'], date)
+                    self.data_quality['delisting_liquidations'].append({
+                        'date': date,
+                        'ticker': t,
+                        'shares': pos['shares'],
+                        'price': liquidation_price,
+                        'action': 'cash_liquidation',
+                    })
+                    self.data_quality['lifecycle_events'].append({
+                        'date': date,
+                        'ticker': t,
+                        'action': 'listing_inactive',
+                        'lifecycle_event': next(
+                            (item.lifecycle_event for item in universe_history.listings
+                             if item.ticker == t),
+                            'inactive',
+                        ),
+                        'successor_ticker': next(
+                            (item.successor_ticker for item in universe_history.listings
+                             if item.ticker == t),
+                            None,
+                        ),
+                    })
             if monthly or target != last_target or pending:
                 equity = self.portfolio.equity({**last_prices, **opens})
                 full_target = {t: target.get(t, 0.0)

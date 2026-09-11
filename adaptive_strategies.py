@@ -402,3 +402,37 @@ def _build_regime_evidence(
         "macro_up": len(macro_up),
         "regime": _build_regime_ensemble(closes_by_ticker),
     }
+
+
+def build_allocation_for_universe(
+    strategy_key: str,
+    closes_by_ticker: Mapping[str, Sequence[float]],
+    active_universe: Mapping[str, object] | Sequence[object] | None,
+) -> AllocationDecision:
+    """Run legacy strategy formulas against the listing active on a date."""
+
+    if active_universe is None:
+        return build_allocation(strategy_key, closes_by_ticker)
+
+    active_values = active_universe.values() if isinstance(active_universe, Mapping) else active_universe
+    active_by_key = {getattr(item, "key"): item for item in active_values}
+    canonical_histories: dict[str, Sequence[float]] = {}
+    ticker_map: dict[str, str] = {}
+    for canonical in ETF_ASSETS.values():
+        active = active_by_key.get(canonical.key)
+        if active is None:
+            continue
+        ticker = getattr(active, "ticker")
+        if ticker in closes_by_ticker:
+            canonical_histories[canonical.ticker] = closes_by_ticker[ticker]
+            ticker_map[canonical.ticker] = ticker
+
+    decision = build_allocation(strategy_key, canonical_histories)
+    remapped = {
+        ticker_map.get(ticker, ticker): weight
+        for ticker, weight in decision.target_weights.items()
+        if ticker_map.get(ticker, ticker) in closes_by_ticker
+    }
+    from dataclasses import replace
+
+    return replace(decision, target_weights=remapped)

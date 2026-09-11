@@ -1,0 +1,9 @@
+key,ticker,name,asset_class,role,max_weight,valid_from,valid_to,lifecycle_event,successor_ticker,coverage,source
+kr_equity,069500,KODEX 200,equity,risk,0.40,1900-01-01,,survivor_only,,survivor_only,legacy_current_asset_list; dates_are_not_listing_dates
+us_equity,143850,TIGER 미국S&P500선물(H),equity,risk,0.40,1900-01-01,,survivor_only,,survivor_only,legacy_current_asset_list; dates_are_not_listing_dates
+us_tech,133690,TIGER 미국나스닥100,equity,risk,0.30,1900-01-01,,survivor_only,,survivor_only,legacy_current_asset_list; dates_are_not_listing_dates
+kr_bond_10y,148070,KIWOOM 국고채10년,bond,defensive,0.40,1900-01-01,,survivor_only,,survivor_only,legacy_current_asset_list; dates_are_not_listing_dates
+short_bond,153130,KODEX 단기채권,cash_like,defensive,0.50,1900-01-01,,survivor_only,,survivor_only,legacy_current_asset_list; dates_are_not_listing_dates
+gold,132030,KODEX 골드선물(H),commodity,defensive,0.30,1900-01-01,,survivor_only,,survivor_only,legacy_current_asset_list; dates_are_not_listing_dates
+usd,261240,KODEX 미국달러선물,currency,defensive,0.25,1900-01-01,,survivor_only,,survivor_only,legacy_current_asset_list; dates_are_not_listing_dates
+oil,130680,TIGER 원유선물Enhanced(H),commodity,real_asset,0.10,1900-01-01,,survivor_only,,survivor_only,legacy_current_asset_list; dates_are_not_listing_dates
