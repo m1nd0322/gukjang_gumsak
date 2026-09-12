@@ -1,0 +1,472 @@
+[
+  {
+    "row": 130,
+    "ticker": "322120",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 131,
+    "ticker": "322150",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 135,
+    "ticker": "483420",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 465,
+    "ticker": "104580",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 470,
+    "ticker": "296710",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 474,
+    "ticker": "086630",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 477,
+    "ticker": "306960",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 502,
+    "ticker": "247780",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 551,
+    "ticker": "200020",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 645,
+    "ticker": "166060",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 649,
+    "ticker": "097700",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 684,
+    "ticker": "144750",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 685,
+    "ticker": "247800",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 696,
+    "ticker": "069600",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 697,
+    "ticker": "074170",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 698,
+    "ticker": "086800",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 699,
+    "ticker": "152280",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 700,
+    "ticker": "091190",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 701,
+    "ticker": "331910",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 702,
+    "ticker": "091200",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 703,
+    "ticker": "394340",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 704,
+    "ticker": "097730",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 705,
+    "ticker": "260200",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 706,
+    "ticker": "123930",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 707,
+    "ticker": "260270",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 708,
+    "ticker": "097740",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 709,
+    "ticker": "445930",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 710,
+    "ticker": "445950",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 711,
+    "ticker": "291610",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 712,
+    "ticker": "144670",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 713,
+    "ticker": "069550",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 714,
+    "ticker": "157650",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 715,
+    "ticker": "108480",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 716,
+    "ticker": "168300",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 748,
+    "ticker": "148040",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 757,
+    "ticker": "436180",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 759,
+    "ticker": "333940",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 760,
+    "ticker": "333950",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 761,
+    "ticker": "333960",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 762,
+    "ticker": "333970",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 763,
+    "ticker": "333980",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 771,
+    "ticker": "433850",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 772,
+    "ticker": "433860",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 773,
+    "ticker": "433870",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 786,
+    "ticker": "489010",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 809,
+    "ticker": "426410",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 899,
+    "ticker": "411720",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 979,
+    "ticker": "427110",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1001,
+    "ticker": "449540",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1002,
+    "ticker": "469820",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1003,
+    "ticker": "462540",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1046,
+    "ticker": "481200",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1053,
+    "ticker": "459370",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1080,
+    "ticker": "429990",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1104,
+    "ticker": "447780",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1105,
+    "ticker": "453530",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1106,
+    "ticker": "447820",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1107,
+    "ticker": "470260",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1108,
+    "ticker": "453540",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1109,
+    "ticker": "494900",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1128,
+    "ticker": "091210",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1130,
+    "ticker": "307610",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1131,
+    "ticker": "307620",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1147,
+    "ticker": "217790",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1148,
+    "ticker": "097710",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1157,
+    "ticker": "302180",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1158,
+    "ticker": "302170",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1182,
+    "ticker": "253990",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1214,
+    "ticker": "483240",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1245,
+    "ticker": "097720",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1252,
+    "ticker": "098560",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1255,
+    "ticker": "170350",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1256,
+    "ticker": "105020",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1257,
+    "ticker": "139300",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1285,
+    "ticker": "248260",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1289,
+    "ticker": "292570",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1290,
+    "ticker": "292580",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1291,
+    "ticker": "292590",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1292,
+    "ticker": "157510",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1297,
+    "ticker": "292120",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1298,
+    "ticker": "292140",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1299,
+    "ticker": "292130",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1302,
+    "ticker": "302210",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1304,
+    "ticker": "266140",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1335,
+    "ticker": "267300",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1340,
+    "ticker": "122390",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1375,
+    "ticker": "097750",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1384,
+    "ticker": "422260",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1385,
+    "ticker": "452440",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1387,
+    "ticker": "468820",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1407,
+    "ticker": "292340",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1415,
+    "ticker": "211210",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1430,
+    "ticker": "226810",
+    "error": "missing_identity_or_listing_date"
+  },
+  {
+    "row": 1431,
+    "ticker": "275540",
+    "error": "missing_identity_or_listing_date"
+  }
+]

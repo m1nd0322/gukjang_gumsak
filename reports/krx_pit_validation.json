@@ -1,0 +1,3418 @@
+{
+  "status": "blocked",
+  "audit_kind": "acquisition_and_input_integrity_preflight",
+  "updated_at": "2026-09-12T04:56:15.648053+00:00",
+  "scope": {
+    "start": "2010-01-01",
+    "end": "2026-09-11",
+    "initial_positions": "empty",
+    "note": "Date overlap only; no inferred strategy membership"
+  },
+  "inventory": "data/krx/etf_inventory_reconciled.csv",
+  "total": 1434,
+  "delisted": 266,
+  "listing_dates_resolved": 1434,
+  "missing_listing_dates": 0,
+  "listing_artifact_integrity_failures": [],
+  "artifact_hash_match_is_not_semantic_verification": true,
+  "in_scope": 1424,
+  "excluded_by_dates": [
+    {
+      "ticker": "086630",
+      "listing_date": "2005-10-28",
+      "delisting_date": "2009-01-21"
+    },
+    {
+      "ticker": "097690",
+      "listing_date": "2007-07-31",
+      "delisting_date": "2009-03-26"
+    },
+    {
+      "ticker": "097680",
+      "listing_date": "2007-07-31",
+      "delisting_date": "2009-03-26"
+    },
+    {
+      "ticker": "097700",
+      "listing_date": "2007-07-31",
+      "delisting_date": "2009-01-20"
+    },
+    {
+      "ticker": "069600",
+      "listing_date": "2002-10-14",
+      "delisting_date": "2004-02-23"
+    },
+    {
+      "ticker": "074170",
+      "listing_date": "2003-10-13",
+      "delisting_date": "2006-08-10"
+    },
+    {
+      "ticker": "086800",
+      "listing_date": "2005-12-15",
+      "delisting_date": "2007-10-31"
+    },
+    {
+      "ticker": "097730",
+      "listing_date": "2007-07-31",
+      "delisting_date": "2009-08-11"
+    },
+    {
+      "ticker": "069550",
+      "listing_date": "2002-10-14",
+      "delisting_date": "2004-01-19"
+    },
+    {
+      "ticker": "072350",
+      "listing_date": "2003-04-28",
+      "delisting_date": "2006-01-05"
+    }
+  ],
+  "in_scope_delisted": 256,
+  "delisted_vendor_series_available": 256,
+  "missing_vendor_series": [],
+  "vendor_series_with_integrity_flags": 256,
+  "vendor_series_details": [
+    {
+      "rows": 469,
+      "first_date": "2023-09-19",
+      "last_date": "2025-08-26",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "466400",
+      "expected_history_start": "2023-09-19",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 537,
+      "first_date": "2023-12-12",
+      "last_date": "2026-03-03",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "472350",
+      "expected_history_start": "2023-12-12",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 265,
+      "first_date": "2022-11-22",
+      "last_date": "2023-12-15",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "448870",
+      "expected_history_start": "2022-11-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 509,
+      "first_date": "2022-11-22",
+      "last_date": "2024-12-17",
+      "issues": {
+        "inconsistent_ohlc": 9,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "448880",
+      "expected_history_start": "2022-11-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 489,
+      "first_date": "2023-06-20",
+      "last_date": "2025-06-24",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "461260",
+      "expected_history_start": "2023-06-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 733,
+      "first_date": "2023-06-20",
+      "last_date": "2026-06-24",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "461270",
+      "expected_history_start": "2023-06-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 286,
+      "first_date": "2025-02-18",
+      "last_date": "2026-04-20",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "0010E0",
+      "expected_history_start": "2025-02-18",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 323,
+      "first_date": "2025-03-11",
+      "last_date": "2026-07-06",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "0021D0",
+      "expected_history_start": "2025-03-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 325,
+      "first_date": "2025-03-11",
+      "last_date": "2026-07-08",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "0021E0",
+      "expected_history_start": "2025-03-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 325,
+      "first_date": "2025-03-11",
+      "last_date": "2026-07-08",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "0021C0",
+      "expected_history_start": "2025-03-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1468,
+      "first_date": "2018-06-08",
+      "last_date": "2024-05-24",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "299070",
+      "expected_history_start": "2018-06-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1468,
+      "first_date": "2018-06-08",
+      "last_date": "2024-05-24",
+      "issues": {
+        "nonpositive_ohlc": 2,
+        "inconsistent_ohlc": 2
+      },
+      "ticker": "299080",
+      "expected_history_start": "2018-06-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 893,
+      "first_date": "2021-12-22",
+      "last_date": "2025-08-14",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "411050",
+      "expected_history_start": "2021-12-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 729,
+      "first_date": "2021-08-05",
+      "last_date": "2024-07-23",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "391590",
+      "expected_history_start": "2021-08-05",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 3000,
+      "first_date": "2012-10-08",
+      "last_date": "2024-12-17",
+      "issues": {
+        "inconsistent_ohlc": 812,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "143460",
+      "expected_history_start": "2011-06-21",
+      "starts_after_required_date": true,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1000,
+      "first_date": "2020-11-25",
+      "last_date": "2024-12-17",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "371130",
+      "expected_history_start": "2020-11-25",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1301,
+      "first_date": "2019-04-16",
+      "last_date": "2024-07-23",
+      "issues": {
+        "inconsistent_ohlc": 379,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "322130",
+      "expected_history_start": "2019-04-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1730,
+      "first_date": "2017-07-11",
+      "last_date": "2024-07-23",
+      "issues": {
+        "inconsistent_ohlc": 494,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "272220",
+      "expected_history_start": "2017-07-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1730,
+      "first_date": "2017-07-11",
+      "last_date": "2024-07-23",
+      "issues": {
+        "inconsistent_ohlc": 528,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "272230",
+      "expected_history_start": "2017-07-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1301,
+      "first_date": "2019-04-16",
+      "last_date": "2024-07-23",
+      "issues": {
+        "inconsistent_ohlc": 351,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "322120",
+      "expected_history_start": "2019-04-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1301,
+      "first_date": "2019-04-16",
+      "last_date": "2024-07-23",
+      "issues": {
+        "inconsistent_ohlc": 356,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "322150",
+      "expected_history_start": "2019-04-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 862,
+      "first_date": "2019-12-27",
+      "last_date": "2023-06-23",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "342140",
+      "expected_history_start": "2019-12-27",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 505,
+      "first_date": "2024-06-11",
+      "last_date": "2026-07-08",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "483420",
+      "expected_history_start": "2024-06-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1715,
+      "first_date": "2016-09-06",
+      "last_date": "2023-08-24",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "251890",
+      "expected_history_start": "2016-09-06",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1507,
+      "first_date": "2018-05-11",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 193,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "295820",
+      "expected_history_start": "2018-05-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 389,
+      "first_date": "2018-05-11",
+      "last_date": "2019-12-10",
+      "issues": {
+        "inconsistent_ohlc": 19,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "295890",
+      "expected_history_start": "2018-05-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 389,
+      "first_date": "2018-05-11",
+      "last_date": "2019-12-10",
+      "issues": {
+        "inconsistent_ohlc": 23,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "295860",
+      "expected_history_start": "2018-05-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 389,
+      "first_date": "2018-05-11",
+      "last_date": "2019-12-10",
+      "issues": {
+        "inconsistent_ohlc": 16,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "295840",
+      "expected_history_start": "2018-05-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 389,
+      "first_date": "2018-05-11",
+      "last_date": "2019-12-10",
+      "issues": {
+        "inconsistent_ohlc": 21,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "295880",
+      "expected_history_start": "2018-05-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1547,
+      "first_date": "2017-08-31",
+      "last_date": "2023-12-14",
+      "issues": {
+        "inconsistent_ohlc": 226,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "278420",
+      "expected_history_start": "2017-08-31",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 981,
+      "first_date": "2011-05-18",
+      "last_date": "2015-05-06",
+      "issues": {
+        "inconsistent_ohlc": 332,
+        "nonpositive_ohlc": 211
+      },
+      "ticker": "141250",
+      "expected_history_start": "2011-05-18",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1539,
+      "first_date": "2018-03-26",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 182,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "292750",
+      "expected_history_start": "2018-03-26",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 654,
+      "first_date": "2018-11-08",
+      "last_date": "2021-07-01",
+      "issues": {
+        "inconsistent_ohlc": 51,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "309170",
+      "expected_history_start": "2018-11-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 377,
+      "first_date": "2018-11-08",
+      "last_date": "2020-05-21",
+      "issues": {
+        "inconsistent_ohlc": 7,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "309180",
+      "expected_history_start": "2018-11-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 377,
+      "first_date": "2018-11-08",
+      "last_date": "2020-05-21",
+      "issues": {
+        "inconsistent_ohlc": 8,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "309190",
+      "expected_history_start": "2018-11-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 377,
+      "first_date": "2018-11-08",
+      "last_date": "2020-05-21",
+      "issues": {
+        "inconsistent_ohlc": 10,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "309200",
+      "expected_history_start": "2018-11-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1225,
+      "first_date": "2018-11-08",
+      "last_date": "2023-10-26",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "309210",
+      "expected_history_start": "2018-11-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1369,
+      "first_date": "2009-10-27",
+      "last_date": "2015-05-06",
+      "issues": {
+        "inconsistent_ohlc": 179,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "117740",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 827,
+      "first_date": "2015-06-29",
+      "last_date": "2018-11-09",
+      "issues": {
+        "inconsistent_ohlc": 86,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "222170",
+      "expected_history_start": "2015-06-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1295,
+      "first_date": "2012-08-29",
+      "last_date": "2017-12-01",
+      "issues": {
+        "inconsistent_ohlc": 118,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "161490",
+      "expected_history_start": "2012-08-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1295,
+      "first_date": "2012-08-29",
+      "last_date": "2017-12-01",
+      "issues": {
+        "inconsistent_ohlc": 97,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "161500",
+      "expected_history_start": "2012-08-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1210,
+      "first_date": "2010-06-17",
+      "last_date": "2015-05-06",
+      "issues": {
+        "inconsistent_ohlc": 225,
+        "nonpositive_ohlc": 21
+      },
+      "ticker": "129270",
+      "expected_history_start": "2010-06-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 901,
+      "first_date": "2017-01-25",
+      "last_date": "2020-09-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "263190",
+      "expected_history_start": "2017-01-25",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1644,
+      "first_date": "2013-12-19",
+      "last_date": "2020-08-28",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "190160",
+      "expected_history_start": "2013-12-19",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1349,
+      "first_date": "2013-12-19",
+      "last_date": "2019-06-21",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "190150",
+      "expected_history_start": "2013-12-19",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1068,
+      "first_date": "2016-01-12",
+      "last_date": "2020-05-21",
+      "issues": {
+        "inconsistent_ohlc": 108,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "236460",
+      "expected_history_start": "2016-01-12",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1202,
+      "first_date": "2015-06-29",
+      "last_date": "2020-05-21",
+      "issues": {
+        "inconsistent_ohlc": 134,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "222190",
+      "expected_history_start": "2015-06-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1202,
+      "first_date": "2015-06-29",
+      "last_date": "2020-05-21",
+      "issues": {
+        "inconsistent_ohlc": 153,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "222200",
+      "expected_history_start": "2015-06-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1202,
+      "first_date": "2015-06-29",
+      "last_date": "2020-05-21",
+      "issues": {
+        "inconsistent_ohlc": 120,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "222180",
+      "expected_history_start": "2015-06-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 608,
+      "first_date": "2016-05-19",
+      "last_date": "2018-11-09",
+      "issues": {
+        "inconsistent_ohlc": 54,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "244820",
+      "expected_history_start": "2016-05-19",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 609,
+      "first_date": "2012-08-29",
+      "last_date": "2015-02-17",
+      "issues": {
+        "inconsistent_ohlc": 24,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "161520",
+      "expected_history_start": "2012-08-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 609,
+      "first_date": "2012-08-29",
+      "last_date": "2015-02-17",
+      "issues": {
+        "inconsistent_ohlc": 31,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "161530",
+      "expected_history_start": "2012-08-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1183,
+      "first_date": "2014-08-25",
+      "last_date": "2019-06-21",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "204420",
+      "expected_history_start": "2014-08-25",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 609,
+      "first_date": "2012-08-29",
+      "last_date": "2015-02-17",
+      "issues": {
+        "inconsistent_ohlc": 30,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "161540",
+      "expected_history_start": "2012-08-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1844,
+      "first_date": "2011-05-18",
+      "last_date": "2018-11-09",
+      "issues": {
+        "inconsistent_ohlc": 491,
+        "nonpositive_ohlc": 188
+      },
+      "ticker": "141240",
+      "expected_history_start": "2011-05-18",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1269,
+      "first_date": "2018-07-05",
+      "last_date": "2023-08-24",
+      "issues": {
+        "inconsistent_ohlc": 202,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "301440",
+      "expected_history_start": "2018-07-05",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 588,
+      "first_date": "2021-02-05",
+      "last_date": "2023-06-23",
+      "issues": {
+        "inconsistent_ohlc": 45,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "376250",
+      "expected_history_start": "2021-02-05",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 609,
+      "first_date": "2012-08-29",
+      "last_date": "2015-02-17",
+      "issues": {
+        "inconsistent_ohlc": 17,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "161550",
+      "expected_history_start": "2012-08-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 253,
+      "first_date": "2023-11-14",
+      "last_date": "2024-11-26",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "470320",
+      "expected_history_start": "2023-11-14",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 365,
+      "first_date": "2024-12-03",
+      "last_date": "2026-06-08",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "495710",
+      "expected_history_start": "2024-12-03",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1766,
+      "first_date": "2009-02-03",
+      "last_date": "2016-03-11",
+      "issues": {
+        "inconsistent_ohlc": 706,
+        "nonpositive_ohlc": 16
+      },
+      "ticker": "108630",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1863,
+      "first_date": "2018-03-26",
+      "last_date": "2025-10-28",
+      "issues": {
+        "inconsistent_ohlc": 619,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "292730",
+      "expected_history_start": "2018-03-26",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 722,
+      "first_date": "2021-09-30",
+      "last_date": "2024-09-03",
+      "issues": {
+        "inconsistent_ohlc": 115,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "402520",
+      "expected_history_start": "2021-09-30",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1925,
+      "first_date": "2008-12-24",
+      "last_date": "2016-09-28",
+      "issues": {
+        "inconsistent_ohlc": 276,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "107560",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1093,
+      "first_date": "2011-01-27",
+      "last_date": "2015-07-01",
+      "issues": {
+        "inconsistent_ohlc": 424,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "138210",
+      "expected_history_start": "2011-01-27",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1487,
+      "first_date": "2009-12-15",
+      "last_date": "2015-12-14",
+      "issues": {
+        "inconsistent_ohlc": 777,
+        "nonpositive_ohlc": 40
+      },
+      "ticker": "120210",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 289,
+      "first_date": "2024-07-09",
+      "last_date": "2025-09-15",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "486780",
+      "expected_history_start": "2024-07-09",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 280,
+      "first_date": "2024-10-15",
+      "last_date": "2025-12-05",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "489570",
+      "expected_history_start": "2024-10-15",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 389,
+      "first_date": "2023-11-14",
+      "last_date": "2025-06-23",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "471290",
+      "expected_history_start": "2023-11-14",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 303,
+      "first_date": "2023-12-21",
+      "last_date": "2025-03-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "473380",
+      "expected_history_start": "2023-12-21",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1424,
+      "first_date": "2020-01-16",
+      "last_date": "2025-11-04",
+      "issues": {
+        "inconsistent_ohlc": 124,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "346000",
+      "expected_history_start": "2020-01-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 708,
+      "first_date": "2021-10-29",
+      "last_date": "2024-09-10",
+      "issues": {
+        "inconsistent_ohlc": 57,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "404470",
+      "expected_history_start": "2021-10-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 548,
+      "first_date": "2023-08-01",
+      "last_date": "2025-11-04",
+      "issues": {
+        "inconsistent_ohlc": 6,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "464060",
+      "expected_history_start": "2023-08-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 744,
+      "first_date": "2022-06-08",
+      "last_date": "2025-06-23",
+      "issues": {
+        "inconsistent_ohlc": 44,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "432850",
+      "expected_history_start": "2022-06-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 565,
+      "first_date": "2022-11-30",
+      "last_date": "2025-03-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "448510",
+      "expected_history_start": "2022-11-30",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1037,
+      "first_date": "2022-04-19",
+      "last_date": "2026-07-15",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "424460",
+      "expected_history_start": "2022-04-19",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 918,
+      "first_date": "2021-06-25",
+      "last_date": "2025-03-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "390950",
+      "expected_history_start": "2021-06-25",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 686,
+      "first_date": "2018-09-18",
+      "last_date": "2021-07-01",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "306540",
+      "expected_history_start": "2018-09-18",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 815,
+      "first_date": "2022-02-22",
+      "last_date": "2025-06-23",
+      "issues": {
+        "inconsistent_ohlc": 64,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "419170",
+      "expected_history_start": "2022-02-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 379,
+      "first_date": "2023-11-28",
+      "last_date": "2025-06-23",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "472490",
+      "expected_history_start": "2023-11-28",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 387,
+      "first_date": "2023-05-16",
+      "last_date": "2024-12-12",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "456100",
+      "expected_history_start": "2023-05-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 355,
+      "first_date": "2024-06-11",
+      "last_date": "2025-11-25",
+      "issues": {
+        "inconsistent_ohlc": 2,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "482870",
+      "expected_history_start": "2024-06-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 289,
+      "first_date": "2024-07-09",
+      "last_date": "2025-09-15",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "486790",
+      "expected_history_start": "2024-07-09",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 529,
+      "first_date": "2009-11-05",
+      "last_date": "2011-12-16",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "110550",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 404,
+      "first_date": "2010-05-07",
+      "last_date": "2011-12-16",
+      "issues": {
+        "inconsistent_ohlc": 46,
+        "nonpositive_ohlc": 14
+      },
+      "ticker": "124090",
+      "expected_history_start": "2010-05-07",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 843,
+      "first_date": "2021-07-06",
+      "last_date": "2024-12-09",
+      "issues": {
+        "nonpositive_ohlc": 2,
+        "inconsistent_ohlc": 2
+      },
+      "ticker": "391680",
+      "expected_history_start": "2021-07-06",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1609,
+      "first_date": "2017-12-08",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 218,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "285000",
+      "expected_history_start": "2017-12-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1599,
+      "first_date": "2017-12-22",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 181,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "287300",
+      "expected_history_start": "2017-12-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1599,
+      "first_date": "2017-12-22",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 226,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "287310",
+      "expected_history_start": "2017-12-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1599,
+      "first_date": "2017-12-22",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 238,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "287320",
+      "expected_history_start": "2017-12-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1599,
+      "first_date": "2017-12-22",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 199,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "287330",
+      "expected_history_start": "2017-12-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1609,
+      "first_date": "2017-12-08",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 203,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "284990",
+      "expected_history_start": "2017-12-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1609,
+      "first_date": "2017-12-08",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 177,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "285010",
+      "expected_history_start": "2017-12-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1609,
+      "first_date": "2017-12-08",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 189,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "285020",
+      "expected_history_start": "2017-12-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1342,
+      "first_date": "2019-01-15",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 138,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "315480",
+      "expected_history_start": "2019-01-15",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 246,
+      "first_date": "2022-11-22",
+      "last_date": "2023-11-20",
+      "issues": {
+        "inconsistent_ohlc": 69,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "448590",
+      "expected_history_start": "2022-11-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 854,
+      "first_date": "2020-11-10",
+      "last_date": "2024-04-25",
+      "issues": {
+        "inconsistent_ohlc": 68,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "368200",
+      "expected_history_start": "2020-11-10",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 504,
+      "first_date": "2018-07-18",
+      "last_date": "2020-08-03",
+      "issues": {
+        "inconsistent_ohlc": 67,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "300300",
+      "expected_history_start": "2018-07-18",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 504,
+      "first_date": "2018-07-18",
+      "last_date": "2020-08-03",
+      "issues": {
+        "inconsistent_ohlc": 72,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "300310",
+      "expected_history_start": "2018-07-18",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1365,
+      "first_date": "2018-10-16",
+      "last_date": "2024-04-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "307010",
+      "expected_history_start": "2018-10-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1301,
+      "first_date": "2019-03-19",
+      "last_date": "2024-06-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "319870",
+      "expected_history_start": "2019-03-19",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 543,
+      "first_date": "2018-10-16",
+      "last_date": "2020-12-23",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "307020",
+      "expected_history_start": "2018-10-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 494,
+      "first_date": "2019-12-19",
+      "last_date": "2021-12-17",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "342500",
+      "expected_history_start": "2019-12-19",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 494,
+      "first_date": "2019-12-19",
+      "last_date": "2021-12-17",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "342600",
+      "expected_history_start": "2019-12-19",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 494,
+      "first_date": "2019-12-19",
+      "last_date": "2021-12-17",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "342610",
+      "expected_history_start": "2019-12-19",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 494,
+      "first_date": "2019-12-19",
+      "last_date": "2021-12-17",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "342620",
+      "expected_history_start": "2019-12-19",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 654,
+      "first_date": "2021-10-29",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 59,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "403990",
+      "expected_history_start": "2021-10-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1618,
+      "first_date": "2010-04-09",
+      "last_date": "2016-10-24",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "123760",
+      "expected_history_start": "2010-04-09",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1893,
+      "first_date": "2016-10-14",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 464,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "252730",
+      "expected_history_start": "2016-10-14",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1893,
+      "first_date": "2016-10-14",
+      "last_date": "2024-06-25",
+      "issues": {
+        "inconsistent_ohlc": 402,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "252720",
+      "expected_history_start": "2016-10-14",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1763,
+      "first_date": "2017-04-20",
+      "last_date": "2024-06-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "267500",
+      "expected_history_start": "2017-04-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1441,
+      "first_date": "2014-06-16",
+      "last_date": "2020-04-24",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "196220",
+      "expected_history_start": "2014-06-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 690,
+      "first_date": "2018-07-18",
+      "last_date": "2021-05-06",
+      "issues": {
+        "inconsistent_ohlc": 95,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "300280",
+      "expected_history_start": "2018-07-18",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 690,
+      "first_date": "2018-07-18",
+      "last_date": "2021-05-06",
+      "issues": {
+        "inconsistent_ohlc": 84,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "300290",
+      "expected_history_start": "2018-07-18",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 589,
+      "first_date": "2017-11-30",
+      "last_date": "2020-04-24",
+      "issues": {
+        "inconsistent_ohlc": 54,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "283930",
+      "expected_history_start": "2017-11-30",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 409,
+      "first_date": "2020-08-21",
+      "last_date": "2022-04-19",
+      "issues": {
+        "inconsistent_ohlc": 46,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "361590",
+      "expected_history_start": "2020-08-21",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 942,
+      "first_date": "2021-11-16",
+      "last_date": "2025-09-17",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "407170",
+      "expected_history_start": "2021-11-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 942,
+      "first_date": "2021-11-16",
+      "last_date": "2025-09-17",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "407160",
+      "expected_history_start": "2021-11-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 457,
+      "first_date": "2020-11-10",
+      "last_date": "2022-09-15",
+      "issues": {
+        "inconsistent_ohlc": 67,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "368470",
+      "expected_history_start": "2020-11-10",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 929,
+      "first_date": "2015-12-03",
+      "last_date": "2019-09-19",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "232590",
+      "expected_history_start": "2015-12-03",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1665,
+      "first_date": "2014-12-17",
+      "last_date": "2021-09-24",
+      "issues": {
+        "inconsistent_ohlc": 573,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "211260",
+      "expected_history_start": "2014-12-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 673,
+      "first_date": "2013-08-01",
+      "last_date": "2016-04-28",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "181450",
+      "expected_history_start": "2013-08-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1886,
+      "first_date": "2008-09-25",
+      "last_date": "2016-04-28",
+      "issues": {
+        "inconsistent_ohlc": 640,
+        "nonpositive_ohlc": 159
+      },
+      "ticker": "105270",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 388,
+      "first_date": "2015-10-01",
+      "last_date": "2017-04-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "227930",
+      "expected_history_start": "2015-10-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 334,
+      "first_date": "2015-12-17",
+      "last_date": "2017-04-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "234790",
+      "expected_history_start": "2015-12-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1805,
+      "first_date": "2009-01-22",
+      "last_date": "2016-04-28",
+      "issues": {
+        "inconsistent_ohlc": 413,
+        "nonpositive_ohlc": 52
+      },
+      "ticker": "108440",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 476,
+      "first_date": "2023-10-17",
+      "last_date": "2025-09-25",
+      "issues": {
+        "inconsistent_ohlc": 13,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "467620",
+      "expected_history_start": "2023-10-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 246,
+      "first_date": "2024-09-24",
+      "last_date": "2025-09-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "489870",
+      "expected_history_start": "2024-09-24",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 667,
+      "first_date": "2023-06-27",
+      "last_date": "2026-03-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "460280",
+      "expected_history_start": "2023-06-27",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 594,
+      "first_date": "2022-12-23",
+      "last_date": "2025-06-02",
+      "issues": {
+        "inconsistent_ohlc": 8,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "450120",
+      "expected_history_start": "2022-12-23",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 694,
+      "first_date": "2022-07-29",
+      "last_date": "2025-06-02",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "437550",
+      "expected_history_start": "2022-07-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 349,
+      "first_date": "2023-12-21",
+      "last_date": "2025-06-02",
+      "issues": {
+        "inconsistent_ohlc": 4,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "473500",
+      "expected_history_start": "2023-12-21",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1144,
+      "first_date": "2021-07-20",
+      "last_date": "2026-03-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "394350",
+      "expected_history_start": "2021-07-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 740,
+      "first_date": "2022-05-24",
+      "last_date": "2025-06-02",
+      "issues": {
+        "inconsistent_ohlc": 183,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "429870",
+      "expected_history_start": "2022-05-24",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 956,
+      "first_date": "2022-04-26",
+      "last_date": "2026-03-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "426330",
+      "expected_history_start": "2022-04-26",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 857,
+      "first_date": "2022-09-20",
+      "last_date": "2026-03-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "441330",
+      "expected_history_start": "2022-09-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 391,
+      "first_date": "2023-10-24",
+      "last_date": "2025-06-02",
+      "issues": {
+        "inconsistent_ohlc": 8,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "467540",
+      "expected_history_start": "2023-10-24",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 390,
+      "first_date": "2008-09-25",
+      "last_date": "2010-04-13",
+      "issues": {
+        "inconsistent_ohlc": 10,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "105450",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 258,
+      "first_date": "2022-11-22",
+      "last_date": "2023-12-06",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "448310",
+      "expected_history_start": "2022-11-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 258,
+      "first_date": "2022-11-22",
+      "last_date": "2023-12-06",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "448320",
+      "expected_history_start": "2022-11-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 300,
+      "first_date": "2023-09-12",
+      "last_date": "2024-12-05",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "465680",
+      "expected_history_start": "2023-09-12",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 415,
+      "first_date": "2024-03-05",
+      "last_date": "2025-11-18",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "476810",
+      "expected_history_start": "2024-03-05",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 510,
+      "first_date": "2023-10-11",
+      "last_date": "2025-11-13",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "467940",
+      "expected_history_start": "2023-10-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 299,
+      "first_date": "2024-09-10",
+      "last_date": "2025-12-05",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "491080",
+      "expected_history_start": "2024-09-10",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1633,
+      "first_date": "2008-07-28",
+      "last_date": "2015-02-17",
+      "issues": {
+        "inconsistent_ohlc": 50,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "104580",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 842,
+      "first_date": "2018-03-16",
+      "last_date": "2021-08-12",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "291660",
+      "expected_history_start": "2018-03-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 786,
+      "first_date": "2018-06-08",
+      "last_date": "2021-08-12",
+      "issues": {
+        "inconsistent_ohlc": 367,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "296710",
+      "expected_history_start": "2018-06-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 484,
+      "first_date": "2018-10-16",
+      "last_date": "2020-09-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "306960",
+      "expected_history_start": "2018-10-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1048,
+      "first_date": "2016-06-24",
+      "last_date": "2020-09-25",
+      "issues": {
+        "inconsistent_ohlc": 237,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "247780",
+      "expected_history_start": "2016-06-24",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1054,
+      "first_date": "2014-06-12",
+      "last_date": "2018-09-21",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "200050",
+      "expected_history_start": "2014-06-12",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1295,
+      "first_date": "2014-06-12",
+      "last_date": "2019-09-19",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "200020",
+      "expected_history_start": "2014-06-12",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1295,
+      "first_date": "2014-06-12",
+      "last_date": "2019-09-19",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "200040",
+      "expected_history_start": "2014-06-12",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1048,
+      "first_date": "2016-06-24",
+      "last_date": "2020-09-25",
+      "issues": {
+        "inconsistent_ohlc": 310,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "247790",
+      "expected_history_start": "2016-06-24",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1596,
+      "first_date": "2010-12-07",
+      "last_date": "2017-05-24",
+      "issues": {
+        "inconsistent_ohlc": 387,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "136280",
+      "expected_history_start": "2010-12-07",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 581,
+      "first_date": "2012-10-10",
+      "last_date": "2015-02-17",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "166060",
+      "expected_history_start": "2012-10-10",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 476,
+      "first_date": "2011-07-27",
+      "last_date": "2013-06-25",
+      "issues": {
+        "inconsistent_ohlc": 46,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "144750",
+      "expected_history_start": "2011-07-27",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1048,
+      "first_date": "2016-06-24",
+      "last_date": "2020-09-25",
+      "issues": {
+        "inconsistent_ohlc": 233,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "247800",
+      "expected_history_start": "2016-06-24",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 2259,
+      "first_date": "2012-01-13",
+      "last_date": "2021-03-22",
+      "issues": {
+        "nonpositive_ohlc": 3,
+        "inconsistent_ohlc": 3
+      },
+      "ticker": "152280",
+      "expected_history_start": "2012-01-13",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1741,
+      "first_date": "2006-06-27",
+      "last_date": "2013-06-25",
+      "issues": {
+        "inconsistent_ohlc": 528,
+        "nonpositive_ohlc": 22
+      },
+      "ticker": "091190",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1287,
+      "first_date": "2019-08-13",
+      "last_date": "2024-11-05",
+      "issues": {
+        "inconsistent_ohlc": 190,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "331910",
+      "expected_history_start": "2019-08-13",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 2146,
+      "first_date": "2006-06-27",
+      "last_date": "2015-02-17",
+      "issues": {
+        "inconsistent_ohlc": 365,
+        "nonpositive_ohlc": 6
+      },
+      "ticker": "091200",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 809,
+      "first_date": "2021-07-20",
+      "last_date": "2024-11-05",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "394340",
+      "expected_history_start": "2021-07-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1044,
+      "first_date": "2016-12-16",
+      "last_date": "2021-03-22",
+      "issues": {
+        "inconsistent_ohlc": 73,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "260200",
+      "expected_history_start": "2016-12-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 796,
+      "first_date": "2010-04-15",
+      "last_date": "2013-06-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "123930",
+      "expected_history_start": "2010-04-15",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1044,
+      "first_date": "2016-12-16",
+      "last_date": "2021-03-22",
+      "issues": {
+        "inconsistent_ohlc": 71,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "260270",
+      "expected_history_start": "2016-12-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 696,
+      "first_date": "2007-07-31",
+      "last_date": "2010-05-17",
+      "issues": {
+        "inconsistent_ohlc": 169,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "097740",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 499,
+      "first_date": "2022-10-25",
+      "last_date": "2024-11-05",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "445930",
+      "expected_history_start": "2022-10-25",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 499,
+      "first_date": "2022-10-25",
+      "last_date": "2024-11-05",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "445950",
+      "expected_history_start": "2022-10-25",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 741,
+      "first_date": "2018-03-16",
+      "last_date": "2021-03-22",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "291610",
+      "expected_history_start": "2018-03-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 939,
+      "first_date": "2011-07-18",
+      "last_date": "2015-05-06",
+      "issues": {
+        "inconsistent_ohlc": 292,
+        "nonpositive_ohlc": 10
+      },
+      "ticker": "144670",
+      "expected_history_start": "2011-07-18",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 880,
+      "first_date": "2012-05-23",
+      "last_date": "2015-12-14",
+      "issues": {
+        "inconsistent_ohlc": 618,
+        "nonpositive_ohlc": 19
+      },
+      "ticker": "157650",
+      "expected_history_start": "2012-05-23",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1715,
+      "first_date": "2009-01-22",
+      "last_date": "2015-12-14",
+      "issues": {
+        "inconsistent_ohlc": 322,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "108480",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 2730,
+      "first_date": "2012-11-12",
+      "last_date": "2023-12-14",
+      "issues": {
+        "inconsistent_ohlc": 629,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "168300",
+      "expected_history_start": "2012-11-12",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1208,
+      "first_date": "2011-10-20",
+      "last_date": "2016-09-07",
+      "issues": {
+        "inconsistent_ohlc": 711,
+        "nonpositive_ohlc": 104
+      },
+      "ticker": "148040",
+      "expected_history_start": "2011-10-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 523,
+      "first_date": "2022-07-13",
+      "last_date": "2024-08-26",
+      "issues": {
+        "inconsistent_ohlc": 18,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "436180",
+      "expected_history_start": "2022-07-13",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1246,
+      "first_date": "2019-09-05",
+      "last_date": "2024-09-26",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "333940",
+      "expected_history_start": "2019-09-05",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1262,
+      "first_date": "2019-09-05",
+      "last_date": "2024-10-23",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "333950",
+      "expected_history_start": "2019-09-05",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1246,
+      "first_date": "2019-09-05",
+      "last_date": "2024-09-26",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "333960",
+      "expected_history_start": "2019-09-05",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1262,
+      "first_date": "2019-09-05",
+      "last_date": "2024-10-23",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "333970",
+      "expected_history_start": "2019-09-05",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1226,
+      "first_date": "2019-09-05",
+      "last_date": "2024-08-26",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "333980",
+      "expected_history_start": "2019-09-05",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 744,
+      "first_date": "2022-06-30",
+      "last_date": "2025-07-15",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "433850",
+      "expected_history_start": "2022-06-30",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 769,
+      "first_date": "2022-06-30",
+      "last_date": "2025-08-20",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "433860",
+      "expected_history_start": "2022-06-30",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 789,
+      "first_date": "2022-06-30",
+      "last_date": "2025-09-17",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "433870",
+      "expected_history_start": "2022-06-30",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 657,
+      "first_date": "2022-08-17",
+      "last_date": "2025-04-23",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "438210",
+      "expected_history_start": "2022-08-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 493,
+      "first_date": "2024-08-13",
+      "last_date": "2026-08-26",
+      "issues": {
+        "inconsistent_ohlc": 3,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "489010",
+      "expected_history_start": "2024-08-13",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 680,
+      "first_date": "2022-05-11",
+      "last_date": "2025-02-19",
+      "issues": {
+        "inconsistent_ohlc": 9,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "426410",
+      "expected_history_start": "2022-05-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1228,
+      "first_date": "2020-12-16",
+      "last_date": "2025-12-18",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "373530",
+      "expected_history_start": "2020-12-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1951,
+      "first_date": "2018-07-11",
+      "last_date": "2026-06-24",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "301410",
+      "expected_history_start": "2018-07-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 383,
+      "first_date": "2023-08-17",
+      "last_date": "2025-03-18",
+      "issues": {
+        "inconsistent_ohlc": 114,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "464540",
+      "expected_history_start": "2023-08-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 246,
+      "first_date": "2024-06-18",
+      "last_date": "2025-06-24",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "483230",
+      "expected_history_start": "2024-06-18",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 732,
+      "first_date": "2022-11-22",
+      "last_date": "2025-11-20",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "448600",
+      "expected_history_start": "2022-11-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 293,
+      "first_date": "2023-11-09",
+      "last_date": "2025-01-21",
+      "issues": {
+        "inconsistent_ohlc": 13,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "469580",
+      "expected_history_start": "2023-11-09",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1214,
+      "first_date": "2021-08-31",
+      "last_date": "2026-08-19",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "397420",
+      "expected_history_start": "2021-08-31",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 910,
+      "first_date": "2021-08-31",
+      "last_date": "2025-05-21",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "397410",
+      "expected_history_start": "2021-08-31",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 756,
+      "first_date": "2021-12-22",
+      "last_date": "2025-01-21",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "411720",
+      "expected_history_start": "2021-12-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 659,
+      "first_date": "2022-05-17",
+      "last_date": "2025-01-21",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "427110",
+      "expected_history_start": "2022-05-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 360,
+      "first_date": "2022-12-16",
+      "last_date": "2024-06-05",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "449540",
+      "expected_history_start": "2022-12-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 266,
+      "first_date": "2023-11-07",
+      "last_date": "2024-12-06",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "469820",
+      "expected_history_start": "2023-11-07",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 507,
+      "first_date": "2023-08-08",
+      "last_date": "2025-09-08",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "462540",
+      "expected_history_start": "2023-08-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 426,
+      "first_date": "2024-05-21",
+      "last_date": "2026-02-20",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "481200",
+      "expected_history_start": "2024-05-21",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1821,
+      "first_date": "2014-11-24",
+      "last_date": "2022-04-19",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "208470",
+      "expected_history_start": "2014-11-24",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 610,
+      "first_date": "2023-06-20",
+      "last_date": "2025-12-18",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "459370",
+      "expected_history_start": "2023-06-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 638,
+      "first_date": "2022-06-14",
+      "last_date": "2025-01-16",
+      "issues": {
+        "inconsistent_ohlc": 17,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "429990",
+      "expected_history_start": "2022-06-14",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 249,
+      "first_date": "2022-12-09",
+      "last_date": "2023-12-12",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "447780",
+      "expected_history_start": "2022-12-09",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 257,
+      "first_date": "2023-03-23",
+      "last_date": "2024-04-08",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "453530",
+      "expected_history_start": "2023-03-23",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 459,
+      "first_date": "2022-11-22",
+      "last_date": "2024-10-07",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "447820",
+      "expected_history_start": "2022-11-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 263,
+      "first_date": "2023-11-21",
+      "last_date": "2024-12-17",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "470260",
+      "expected_history_start": "2023-11-21",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 622,
+      "first_date": "2023-03-23",
+      "last_date": "2025-10-14",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "453540",
+      "expected_history_start": "2023-03-23",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 277,
+      "first_date": "2024-10-29",
+      "last_date": "2025-12-16",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "494900",
+      "expected_history_start": "2024-10-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 320,
+      "first_date": "2024-12-24",
+      "last_date": "2026-04-21",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "0001S0",
+      "expected_history_start": "2024-12-24",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 3000,
+      "first_date": "2007-07-31",
+      "last_date": "2019-09-19",
+      "issues": {
+        "inconsistent_ohlc": 1602,
+        "nonpositive_ohlc": 41
+      },
+      "ticker": "091210",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 543,
+      "first_date": "2018-10-16",
+      "last_date": "2020-12-23",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "307610",
+      "expected_history_start": "2018-10-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 484,
+      "first_date": "2018-10-16",
+      "last_date": "2020-09-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "307620",
+      "expected_history_start": "2018-10-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1882,
+      "first_date": "2015-04-29",
+      "last_date": "2022-12-20",
+      "issues": {
+        "inconsistent_ohlc": 715,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "217790",
+      "expected_history_start": "2015-04-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 2079,
+      "first_date": "2007-07-31",
+      "last_date": "2015-12-14",
+      "issues": {
+        "inconsistent_ohlc": 707,
+        "nonpositive_ohlc": 31
+      },
+      "ticker": "097710",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 842,
+      "first_date": "2018-07-20",
+      "last_date": "2021-12-17",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "302180",
+      "expected_history_start": "2018-07-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 842,
+      "first_date": "2018-07-20",
+      "last_date": "2021-12-17",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "302170",
+      "expected_history_start": "2018-07-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1207,
+      "first_date": "2011-01-27",
+      "last_date": "2015-12-14",
+      "issues": {
+        "inconsistent_ohlc": 285,
+        "nonpositive_ohlc": 5
+      },
+      "ticker": "137990",
+      "expected_history_start": "2011-01-27",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 3000,
+      "first_date": "2013-05-15",
+      "last_date": "2025-08-01",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "139310",
+      "expected_history_start": "2011-04-08",
+      "starts_after_required_date": true,
+      "coverage_certified": false
+    },
+    {
+      "rows": 910,
+      "first_date": "2016-10-07",
+      "last_date": "2020-06-22",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "253990",
+      "expected_history_start": "2016-10-07",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 763,
+      "first_date": "2018-03-30",
+      "last_date": "2021-05-06",
+      "issues": {
+        "inconsistent_ohlc": 304,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "292110",
+      "expected_history_start": "2018-03-30",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 763,
+      "first_date": "2018-03-30",
+      "last_date": "2021-05-06",
+      "issues": {
+        "inconsistent_ohlc": 289,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "292100",
+      "expected_history_start": "2018-03-30",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 375,
+      "first_date": "2024-11-19",
+      "last_date": "2026-06-08",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "483240",
+      "expected_history_start": "2024-11-19",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 2079,
+      "first_date": "2007-07-31",
+      "last_date": "2015-12-14",
+      "issues": {
+        "inconsistent_ohlc": 889,
+        "nonpositive_ohlc": 87
+      },
+      "ticker": "097720",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 3000,
+      "first_date": "2013-09-11",
+      "last_date": "2025-12-03",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "098560",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": true,
+      "coverage_certified": false
+    },
+    {
+      "rows": 2041,
+      "first_date": "2013-01-17",
+      "last_date": "2021-05-06",
+      "issues": {
+        "inconsistent_ohlc": 1314,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "170350",
+      "expected_history_start": "2013-01-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1612,
+      "first_date": "2008-08-27",
+      "last_date": "2015-02-17",
+      "issues": {
+        "inconsistent_ohlc": 81,
+        "nonpositive_ohlc": 2
+      },
+      "ticker": "105020",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 551,
+      "first_date": "2011-04-08",
+      "last_date": "2013-06-25",
+      "issues": {
+        "inconsistent_ohlc": 79,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "139300",
+      "expected_history_start": "2011-04-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1702,
+      "first_date": "2012-01-17",
+      "last_date": "2018-12-17",
+      "issues": {
+        "inconsistent_ohlc": 370,
+        "nonpositive_ohlc": 4
+      },
+      "ticker": "152180",
+      "expected_history_start": "2012-01-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 483,
+      "first_date": "2011-07-18",
+      "last_date": "2013-06-25",
+      "issues": {
+        "nonpositive_ohlc": 102,
+        "inconsistent_ohlc": 102
+      },
+      "ticker": "143570",
+      "expected_history_start": "2011-07-18",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1593,
+      "first_date": "2016-07-01",
+      "last_date": "2022-12-20",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "248260",
+      "expected_history_start": "2016-07-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 719,
+      "first_date": "2018-04-17",
+      "last_date": "2021-03-22",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "292570",
+      "expected_history_start": "2018-04-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 719,
+      "first_date": "2018-04-17",
+      "last_date": "2021-03-22",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "292580",
+      "expected_history_start": "2018-04-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 719,
+      "first_date": "2018-04-17",
+      "last_date": "2021-03-22",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "292590",
+      "expected_history_start": "2018-04-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1621,
+      "first_date": "2012-05-16",
+      "last_date": "2018-12-17",
+      "issues": {
+        "inconsistent_ohlc": 551,
+        "nonpositive_ohlc": 3
+      },
+      "ticker": "157510",
+      "expected_history_start": "2012-05-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 674,
+      "first_date": "2018-03-30",
+      "last_date": "2020-12-23",
+      "issues": {
+        "inconsistent_ohlc": 250,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "292120",
+      "expected_history_start": "2018-03-30",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 763,
+      "first_date": "2018-03-30",
+      "last_date": "2021-05-06",
+      "issues": {
+        "inconsistent_ohlc": 203,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "292140",
+      "expected_history_start": "2018-03-30",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 763,
+      "first_date": "2018-03-30",
+      "last_date": "2021-05-06",
+      "issues": {
+        "inconsistent_ohlc": 170,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "292130",
+      "expected_history_start": "2018-03-30",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 599,
+      "first_date": "2018-07-20",
+      "last_date": "2020-12-23",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "302200",
+      "expected_history_start": "2018-07-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 599,
+      "first_date": "2018-07-20",
+      "last_date": "2020-12-23",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "302210",
+      "expected_history_start": "2018-07-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 858,
+      "first_date": "2017-03-30",
+      "last_date": "2020-09-25",
+      "issues": {
+        "inconsistent_ohlc": 250,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "266140",
+      "expected_history_start": "2017-03-30",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 772,
+      "first_date": "2017-04-25",
+      "last_date": "2020-06-22",
+      "issues": {
+        "inconsistent_ohlc": 310,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "267300",
+      "expected_history_start": "2017-04-25",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1541,
+      "first_date": "2010-02-08",
+      "last_date": "2016-04-28",
+      "issues": {
+        "inconsistent_ohlc": 317,
+        "nonpositive_ohlc": 9
+      },
+      "ticker": "122390",
+      "expected_history_start": "2010-02-08",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1621,
+      "first_date": "2012-05-16",
+      "last_date": "2018-12-17",
+      "issues": {
+        "inconsistent_ohlc": 653,
+        "nonpositive_ohlc": 28
+      },
+      "ticker": "157520",
+      "expected_history_start": "2012-05-16",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 317,
+      "first_date": "2025-04-29",
+      "last_date": "2026-08-18",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "0036D0",
+      "expected_history_start": "2025-04-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 3000,
+      "first_date": "2008-05-07",
+      "last_date": "2020-06-22",
+      "issues": {
+        "inconsistent_ohlc": 1062,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "097750",
+      "expected_history_start": "2010-01-01",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1037,
+      "first_date": "2022-03-29",
+      "last_date": "2026-06-24",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "422260",
+      "expected_history_start": "2022-03-29",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 795,
+      "first_date": "2023-02-21",
+      "last_date": "2026-05-28",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "452440",
+      "expected_history_start": "2023-02-21",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 474,
+      "first_date": "2023-10-19",
+      "last_date": "2025-09-25",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "468820",
+      "expected_history_start": "2023-10-19",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 3000,
+      "first_date": "2011-08-23",
+      "last_date": "2023-10-26",
+      "issues": {
+        "inconsistent_ohlc": 196,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "137930",
+      "expected_history_start": "2011-02-15",
+      "starts_after_required_date": true,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1423,
+      "first_date": "2018-03-20",
+      "last_date": "2023-12-26",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "292340",
+      "expected_history_start": "2018-03-20",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 1386,
+      "first_date": "2014-12-12",
+      "last_date": "2020-08-03",
+      "issues": {
+        "inconsistent_ohlc": 794,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "211210",
+      "expected_history_start": "2014-12-12",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 921,
+      "first_date": "2015-08-26",
+      "last_date": "2019-05-30",
+      "issues": {
+        "nonpositive_ohlc": 1,
+        "inconsistent_ohlc": 1
+      },
+      "ticker": "226810",
+      "expected_history_start": "2015-08-26",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 722,
+      "first_date": "2017-07-11",
+      "last_date": "2020-06-22",
+      "issues": {
+        "inconsistent_ohlc": 79,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "275540",
+      "expected_history_start": "2017-07-11",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 2253,
+      "first_date": "2013-05-22",
+      "last_date": "2022-07-19",
+      "issues": {
+        "inconsistent_ohlc": 1920,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "176710",
+      "expected_history_start": "2013-05-22",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    },
+    {
+      "rows": 271,
+      "first_date": "2023-08-17",
+      "last_date": "2024-09-26",
+      "issues": {
+        "inconsistent_ohlc": 4,
+        "nonpositive_ohlc": 1
+      },
+      "ticker": "464230",
+      "expected_history_start": "2023-08-17",
+      "starts_after_required_date": false,
+      "coverage_certified": false
+    }
+  ],
+  "adjustment_verified": false,
+  "settlement_records_verified": 0,
+  "historical_selection_evidence_verified": false,
+  "worklist": "reports/krx_pit_evidence_worklist.csv",
+  "blockers": [
+    "Independently reconcile historical universe counts and dated eligibility changes",
+    "Verify corporate actions and complete executable prices, including active candidates",
+    "Verify actual redemption amounts, payment dates and unit basis for relevant holdings",
+    "Resolve vendor integrity flags and reconcile an official trading calendar",
+    "Run survivor/PIT comparison with identical dates, costs and frozen parameters"
+  ],
+  "methodology_note": "A post-hoc rule can be tested without survivorship bias; this does not establish pre-registration or eliminate selection overfitting",
+  "survivorship_bias_resolved": false
+}

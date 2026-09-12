@@ -11,11 +11,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backtester import BacktestEngine
 from etf_universe import ETFUniverse
+from pit_price_evidence import require_adjusted_price_evidence
 from stock_db import StockDB
 from strategy_catalog import ETF_ASSETS, ETF_STRATEGY_KEYS
 
 
-def evaluate(prices, benchmark, universe_history=None):
+def evaluate(prices, benchmark, universe_history=None, price_evidence=None):
     if not benchmark:
         raise ValueError('KOSPI benchmark is unavailable')
     available = {t: {r['date'] for r in rows} for t, rows in prices.items()}
@@ -23,6 +24,7 @@ def evaluate(prices, benchmark, universe_history=None):
     if universe_history is not None:
         if not universe_history.is_point_in_time_complete:
             raise ValueError('point-in-time universe coverage is incomplete')
+        require_adjusted_price_evidence(universe_history, prices, price_evidence)
         all_dates = set().union(*available.values()) if available else set()
         common = sorted(all_dates & benchmark_dates)
     else:
@@ -48,6 +50,7 @@ def evaluate(prices, benchmark, universe_history=None):
             last,
             base_risk_budget=base_risk_budget,
             universe_history=universe_history,
+            delisting_policy='verified' if universe_history is not None else 'cash',
         )
         return engine.get_results()
 
@@ -146,13 +149,16 @@ def main():
     parser.add_argument('--cached', action='store_true', help='Evaluate the already downloaded snapshot')
     parser.add_argument('--universe-file', default='data/etf_universe_history.csv')
     parser.add_argument('--universe-mode', choices=('survivor', 'point_in_time', 'both'), default='both')
+    parser.add_argument('--selection-policy', choices=('explicit_schedule', 'oldest_listing_v1'),
+                        default='explicit_schedule')
+    parser.add_argument('--price-evidence', type=Path, help='Verified adjustment sources and hashes for exact input rows')
     args = parser.parse_args()
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     try:
         db = StockDB(args.db)
         survivor_names = {a.ticker: a.name for a in ETF_ASSETS.values()}
-        universe = ETFUniverse.from_csv(args.universe_file)
+        universe = ETFUniverse.from_csv(args.universe_file, selection_policy=args.selection_policy)
         names = dict(survivor_names)
         names.update({item.ticker: item.name for item in universe.listings})
         tickers = sorted(names)
@@ -180,13 +186,18 @@ def main():
                     'universe_file': str(args.universe_file),
                 }
             else:
-                pit_report = evaluate(prices, benchmark, universe_history=universe)
+                try:
+                    evidence = json.loads(args.price_evidence.read_text()) if args.price_evidence else None
+                    pit_report = evaluate(prices, benchmark, universe_history=universe,
+                                          price_evidence=evidence)
+                except (ValueError, OSError) as exc:
+                    pit_report = {'status': 'blocked', 'error': str(exc), 'universe_mode': 'point_in_time'}
         if args.universe_mode == 'survivor':
             report = survivor_report
         elif args.universe_mode == 'point_in_time':
             report = pit_report
         else:
-            report = survivor_report
+            report = dict(survivor_report)
             report['universe_comparison'] = {
                 'universe_file': str(args.universe_file),
                 'survivor_only': survivor_report,
@@ -195,9 +206,11 @@ def main():
             report['bias_controls'] = {
                 'date_versioned_universe': True,
                 'point_in_time_eligibility': pit_report.get('status') != 'blocked',
-                'delisting_liquidation': 'cash',
+                'delisting_liquidation': 'verified_receivable',
                 'comparison_status': pit_report.get('status'),
             }
+            if pit_report.get('status') == 'blocked':
+                report['status'] = 'blocked'
     except Exception as exc:  # noqa: BLE001
         report = {'status': 'blocked', 'error': str(exc), 'source': 'yfinance_auto_adjust',
                       'requested_end': args.end}

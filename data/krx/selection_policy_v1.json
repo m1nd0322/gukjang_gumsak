@@ -1,0 +1,19 @@
+{
+  "version": "oldest_listing_v1",
+  "defined_at": "2026-09-11",
+  "historical_status": "reconstructed_research_rule_not_pre_registered",
+  "rebalance": "first benchmark session of each month; previous-close information only",
+  "candidate_mapping": "Explicit logical key, asset_class, role, max_weight and dated official source; no current-name inference",
+  "knowledge_cutoff": "known_from must precede decision date",
+  "warmup": 253,
+  "ranking": ["earliest valid_from", "ascending ticker"],
+  "missing_candidates": "error; never silently omit a missing price series",
+  "unfilled_slot": "cash",
+  "delisting": "non-tradable receivable; documented proceeds credited at payment-date close",
+  "unverified_prices_or_settlement": "block full validation",
+  "limitations": [
+    "Current KIND classifications are snapshots, not historical membership evidence",
+    "A rule defined in 2026 cannot establish that historical selection was pre-registered",
+    "Explicit schedule valid_from must describe listing inception for oldest-listing ranking"
+  ]
+}

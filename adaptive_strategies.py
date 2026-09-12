@@ -423,15 +423,17 @@ def build_allocation_for_universe(
         if active is None:
             continue
         ticker = getattr(active, "ticker")
-        if ticker in closes_by_ticker:
+        if ticker in closes_by_ticker and len(closes_by_ticker[ticker]) >= 253:
             canonical_histories[canonical.ticker] = closes_by_ticker[ticker]
             ticker_map[canonical.ticker] = ticker
 
     decision = build_allocation(strategy_key, canonical_histories)
     remapped = {
-        ticker_map.get(ticker, ticker): weight
+        ticker_map[ticker]: min(weight, active_by_key[next(
+            spec.key for spec in ETF_ASSETS.values() if spec.ticker == ticker
+        )].max_weight)
         for ticker, weight in decision.target_weights.items()
-        if ticker_map.get(ticker, ticker) in closes_by_ticker
+        if ticker in ticker_map
     }
     from dataclasses import replace
 

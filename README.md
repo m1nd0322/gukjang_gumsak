@@ -447,7 +447,81 @@ uv run --isolated --managed-python --python 3.11 --with-requirements requirement
 추가로 적용합니다. 상세 결과는
 [평가 보고서](reports/adaptive_evaluation.md)에 있습니다.
 표본외 구간에는 예산 선택 결과를 반영하지 않고 고정된 값을 사용했습니다.
-# 생존편향 완전 검증 준비
+## 생존편향 검증 데이터와 실행 조건
+
+### 2026-09-12 인증 수집 후속 결과
+
+**현재 판정: 생존편향 완전 검증 미완료.** 상장일은 1,434개 종목 모두 확보했고 상장폐지 종목은 266개지만, 실제 청산금액, 전체 기업행동을 반영한 수정주가, 과거 선정 규칙의 근거와 동일 조건의 비교 검증은 아직 필요합니다. 공식 시세 수집과 자동 후속 대조는 별도로 진행 중이며, 중간 대조 결과를 최종 검증 결과로 해석하면 안 됩니다.
+
+저장소에는 재현용 스크립트, 최종 메타데이터 CSV, 입력 템플릿과 검증 보고서를 보관합니다. 대용량 KRX/KIND 원본 응답, 시세 원본, 공시 다운로드와 실행 로그는 로컬 생성물로 제외합니다. 보고서에 기록된 원본 경로와 해시를 확인하려면 해당 원본을 별도로 수집해야 합니다. 로그인 계정 파일과 세션 정보는 저장소에 포함하지 않습니다.
+
+공식 시세의 연도별 수집과 원천가격 대조는 다음 명령으로 재개할 수 있습니다.
+첫 명령은 기간 내 상장폐지 ETF 256종목을 대상으로 하며, 날짜별 범위가 같은
+원본 파일은 재사용합니다. HTTP 오류나 인증 실패 시 무한 재시도하지 않습니다.
+
+```bash
+python scripts/sync_krx_official_prices.py --workers 2
+python scripts/reconcile_krx_official_prices.py
+```
+
+수집 결과는 `data/krx/official_prices/year_manifest.json`, 대조 결과는
+`reports/krx_price_reconciliation.json`에 기록합니다. `all_years_nonempty`는
+요청한 연도별 응답에 데이터가 있다는 뜻이며, 모든 거래일의 완전성이나
+수정주가 검증을 의미하지 않습니다. 정규화된 원천가격은 `normalized_raw/`에
+별도로 저장하며 기존 vendor 가격을 덮어쓰지 않습니다.
+
+운용사 공지에서 확인한 `322120`의 2023년 220원, 2024년 225원 분배금과
+분배락일은 `data/krx/disclosures/ace/322120_distribution_evidence.json`에
+보관합니다. 이 두 공지로 전체 존속기간의 기업행사 이력이나 실제 청산금액이
+입증되는 것은 아닙니다. 실제 지급 확인과 예정 지급일 역시 구분합니다.
+
+후속 정합성 감사는 아래 명령으로 재현합니다. 종료코드 1은 미확보 증빙으로
+완전 검증을 차단했다는 의미입니다. 이 감사 자체는 완전 검증 인증기가 아닙니다.
+
+```bash
+python scripts/audit_krx_pit_data.py --start 2010-01-01 --end 2026-09-11
+```
+
+해당 범위에 겹치는 종목은 1,424개, 상장폐지 종목은 256개입니다.
+상장폐지 256종목 모두 vendor 가격 파일이 있지만, 각 파일에 OHLC 관계,
+비양수 가격 등 최소 한 가지 점검 항목이 발견되어 원천자료 대조가 필요합니다.
+상장일 증빙 파일의 SHA256 불일치는 0건이며, 해시 일치는 내용의 정확성이나
+역대 ETF 목록의 완전성을 보증하지 않습니다. 가격이 전혀 없던 4종목은
+이 평가 범위 이전에 상장폐지됐습니다. 초기 보유자산이 없는 평가를 전제로 합니다.
+
+종목별 필요 증빙은 `reports/krx_pit_evidence_worklist.csv`, 상세 감사 결과는
+`reports/krx_pit_validation.json`에 기록합니다. KRX 장기 시세는 한 번의 조회가
+HTTP 400을 반환했으나 연도별 조회는 성공해, `322120`의 2019~2024년 공식
+시세 1,301건을 `data/krx/official_prices/`에 보관했습니다. 이는 수정주가나
+실제 청산금액 검증 완료를 의미하지 않습니다. 상장폐지 예정 일정 공시 역시
+실제 지급 확인과 구분하여 `data/krx/disclosures/`에 보관합니다.
+
+사후 정의한 규칙도 과거 시점 정보만 사용하여 생존편향을 통제할 수 있지만,
+그것이 과거 사전등록이나 전략 선택 과적합의 부재를 증명하지는 않습니다.
+최종 비교는 동일 평가기간, 비용, 고정 파라미터로 실행해야 합니다.
+
+KRX 계정 인증 후 현재 ETF 기본정보 1,168건을 내려받아 상장일 599건을
+보완했고, KIND에서 남은 상장폐지 종목 94건의 상장일을 추가 확보했습니다.
+수집 목록 기준 총 1,434종목(상장폐지 266종목)의 상장일이 모두 확보됐으며,
+`data/krx/etf_inventory_reconciled.csv`를 inventory-only로 import한 결과는
+`data/krx/etf_listing_registry_complete.csv`입니다. 상장일 누락은 0건입니다.
+이는 거래소의 역대 모든 ETF가 빠짐없이 포함됐다는 독립적인 증명이나
+생존편향 완전 검증을 뜻하지 않습니다. 수정주가, 실제 청산금액과 지급일,
+과거 종목 선정 근거는 여전히 추가 검증이 필요합니다.
+
+인증 수집은 `scripts/sync_krx_authenticated_master.py`로 재실행할 수 있습니다.
+계정 파일 기본 경로는 `/Users/songhear/APIs/krx_login_account.txt`이며,
+계정과 비밀번호를 순서대로 두 줄에서 읽습니다. 계정값과 세션 쿠키는
+저장하거나 출력하지 않습니다. KRX 단일 세션 정책으로 재로그인 시 기존
+세션이 종료될 수 있으며, 인증 실패 시 반복 시도하지 않습니다.
+`--cached`는 저장된 기본정보를 사용하므로 로그인하지 않습니다.
+이 스크립트의 기본 출력은 현재 종목 정보 병합본이며, 최종 KIND 보완본과
+구분됩니다. 아래의 741건/693건 수치는 인증 수집 이전 기록입니다.
+
+후속 증거: `reports/krx_authenticated_metadata.json`,
+`reports/krx_kind_followup.json`, `reports/krx_listing_quarantine_complete.json`.
+대상 코드 테스트는 API 테스트를 포함해 35건 통과했으며,
+`reports/krx_pit_tests_20260912.xml`에 이전 실행 결과가 있습니다.
 
 ETF 백테스트의 생존편향을 분리해 검증하는 경로를 준비했다.
 
@@ -456,16 +530,27 @@ ETF 백테스트의 생존편향을 분리해 검증하는 경로를 준비했�
 - `scripts/import_krx_etf_universe.py`: KRX ETF 검색 결과를 검토 가능한 정규화 CSV로 변환한다. KRX 검색에서 상장폐지종목 포함 옵션으로 내보낸 자료를 입력해야 한다.
 - `scripts/validate_etf_universe.py`: 정규화 파일의 무결성과 `coverage` 상태를 검사한다.
 - `scripts/evaluate_adaptive_strategies.py`: `--universe-mode survivor|point_in_time|both`를 지원한다. `both`는 `universe_comparison.survivor_only`와 `universe_comparison.point_in_time`을 같은 보고서에 기록한다.
-- `backtester.py`: PIT 유니버스에서 활성 종목만 신호·리밸런싱 대상으로 사용하고, 비활성 보유 종목은 마지막 가격으로 현금청산하며 `data_quality.delisting_liquidations`에 기록한다.
+- `backtester.py`: PIT 평가의 `verified` 청산 정책은 상장폐지 보유분을 매매 불가능한 미수금으로 옮긴다. 공시된 금액의 확인일에 평가금액을 갱신하고 실제 지급일 종가 시점에 현금으로 전환한다. 시장 매도 수수료를 추가 부과하지 않는다. 기존 `cash` 정책은 마지막 종가를 사용하는 추정 실험이며 완전 검증에 사용하지 않는다.
 
-현재 저장소의 기본 CSV는 기존 현재 종목 목록을 `coverage=survivor_only`로 표시한 준비 파일이다. 실제 무편향 숫자를 산출하려면 KRX의 상장폐지종목 포함 ETF 목록에서 listing history를 가져와 다음처럼 변환·검증해야 한다.
+2026-09-11 수집 결과: KRX 목록 1,434종목 중 상장폐지 266종목을 확인했다. KIND 상품개요로 상장일 741개(폐지 종목 172개)를 확보해 `data/krx/etf_listing_registry.csv`에 import했다. 미확보 693개는 `reports/krx_listing_quarantine.json`에 남아 있다. 일부 KIND 요청에서 HTTP 403이 관찰되어 재시도를 중단했다. 상장폐지 종목 262개의 네이버 OHLCV도 확보했지만 분배금·분할 반영을 검증한 수정주가는 아니다. 원본과 SHA-256을 각각 `data/krx/kind_details/`, `data/krx/vendor_prices/`에 보관한다.
+
+메타데이터 import는 `coverage=inventory_only`로 분리한다. 전략용 import는 명시적인 자산 분류·역할·비중 상한과 당시 공개 시점 `known_from`이 필요하다. 현재 상품명으로 과거 역할을 자동 추정하지 않는다. 기본 전략 CSV는 계속 `survivor_only`이다.
 
 ```bash
-python scripts/import_krx_etf_universe.py \
-  --input /path/to/krx_etf_issues_with_delisted.csv \
-  --output data/etf_universe_history.csv
-python scripts/validate_etf_universe.py data/etf_universe_history.csv
-python scripts/evaluate_adaptive_strategies.py --universe-mode both
+python3 scripts/sync_krx_etf_details.py --offline
+python3 scripts/import_krx_etf_universe.py \
+  --input data/krx/etf_inventory_enriched.csv \
+  --output data/krx/etf_listing_registry.csv --inventory-only \
+  --quarantine-output reports/krx_listing_quarantine.json
+python3 scripts/audit_krx_pit_data.py
 ```
 
-`coverage=survivor_only` 또는 `mixed`이면 PIT 결과는 `blocked`로 남는다. 이 상태에서 생존자 전용 수익률을 완전 검증 결과로 해석하지 않는다. 원천 자료는 [KRX ETF 데이터 검색](https://data.krx.co.kr/comm/finder/finder_dataetfisu.jsp)과 [KRX ETF 상장폐지 기준](https://listing.krx.co.kr/contents/LST/06/06010600/LST06010600.jsp)을 사용한다.
+수집 재개는 `sync_krx_etf_details.py`에서 `--offline`을 제거한다. 미확보 종목이 있으면 metadata import는 확보분만 보관하고 종료 코드 1로 불완전 상태를 알린다. 전략 import는 누락 종목이 있으면 결과를 쓰지 않는다.
+
+`--selection-policy oldest_listing_v1`은 이전 종가까지 253개 관측값과 공개 근거가 있는 후보 중 각 논리 자산군의 최초 상장 종목을 선택하고 동률은 종목코드 순으로 결정한다. 월 첫 거래일에 리밸런싱하며 조건을 충족하지 못한 자산군은 현금으로 남긴다. 이 규칙은 2026-09-11에 정의한 사후 재구성 연구 규칙이다. 과거에 사전 등록된 전략이었다고 주장하지 않는다. 규칙 원문은 `data/krx/selection_policy_v1.json`에 있다.
+
+전략 매핑은 `data/krx/strategy_mapping_template.csv`, 실제 상환은 `data/krx/settlements_template.csv` 형식을 사용해 importer의 `--mapping`, `--settlements`로 병합한다. 상환에는 순지급액, 지급일, 금액 확인일, 원문 출처와 수정주가 단위 변환계수 모두가 필요하다. 계수는 입력 수정주가/원주가 단위의 비율이며 추정값을 채워 넣지 않는다. 합병의 현물 교환은 별도 근거가 없으면 현금 상환으로 가정하지 않는다.
+
+PIT 평가에는 `--price-evidence` JSON도 필요하다. `tickers.<ticker>`마다 `adjustment_verified: true`, `source`, `corporate_actions_source`, `prices_sha256`을 요구한다. 해시는 `pit_price_evidence.price_digest()`로 실제 입력 행을 해시하며, 분배금·분할의 완전한 검증 근거가 확보된 가격에만 사용한다. 원시 OHLCV를 다운로드했다는 이유로 검증 완료 표시를 하지 않는다.
+
+원본 출처는 [KRX ETF 데이터 검색](https://data.krx.co.kr/comm/finder/finder_dataetfisu.jsp), [KIND ETF 상품개요](https://kind.krx.co.kr/disclosure/etfisudetail.do?method=searchEtfIsuSummary&strIsurCd=22681)다. 상환은 상품별 발행사 공시의 실제 금액·지급일을 사용해야 하며, [KIND의 해지 안내 사례](https://kind.krx.co.kr/external/2025/02/28/000974/20250228002264/68210.htm)처럼 상장폐지일과 지급일이 다를 수 있다. 현재 미해결 항목은 `reports/krx_pit_validation.json`에 기록하고 PIT 결과는 `blocked`로 유지한다.

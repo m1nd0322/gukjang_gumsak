@@ -19,3 +19,12 @@ stock_screening_result.html
 .omc/
 .claude/
 .worktrees/
+
+# KRX acquisition artifacts stay local; retain compact reproducibility inputs.
+data/krx/*
+!data/krx/etf_inventory_reconciled.csv
+!data/krx/etf_listing_registry_complete.csv
+!data/krx/selection_policy_v1.json
+!data/krx/settlements_template.csv
+!data/krx/strategy_mapping_template.csv
+reports/krx_official_collection_followup.log

@@ -1,0 +1,5489 @@
+{
+  "status": "unverified_adjustments",
+  "source_manifest": "data/krx/official_prices/interim_manifest.json",
+  "tickers": 65,
+  "official_rows": 85082,
+  "all_requested_years_nonempty": 65,
+  "tickers_with_price_differences": 59,
+  "adjustment_verified": false,
+  "survivorship_bias_resolved": false,
+  "warning": "Raw KRX and vendor adjusted prices may legitimately differ. Ratios alone do not prove corporate-action coverage. Never use NAV as actual redemption payment.",
+  "records": [
+    {
+      "ticker": "097750",
+      "all_requested_years_nonempty": true,
+      "official_rows": 2583,
+      "vendor_rows_in_scope": 2583,
+      "overlapping_dates": 2583,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 2546,
+        "high": 2546,
+        "low": 2546,
+        "close": 2546
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 5540.0,
+          "vendor": 4707.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 5625.0,
+          "vendor": 4779.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 5540.0,
+          "vendor": 4707.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 5625.0,
+          "vendor": 4784.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 5630.0,
+          "vendor": 4784.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.8501818181818181,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 2568,
+      "last_observed_positive_volume_date": "2020-06-19",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/097750.csv",
+      "normalized_sha256": "dcbab727f2417e7edebf3cbf8d43fb21bcab5be902662836488200ab39f300a0",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "161520",
+      "all_requested_years_nonempty": true,
+      "official_rows": 609,
+      "vendor_rows_in_scope": 609,
+      "overlapping_dates": 609,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 412,
+        "high": 412,
+        "low": 412,
+        "close": 412
+      },
+      "difference_examples": [
+        {
+          "date": "2012-08-29",
+          "field": "open",
+          "krx": 9880.0,
+          "vendor": 9757.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "high",
+          "krx": 9985.0,
+          "vendor": 9861.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "low",
+          "krx": 9880.0,
+          "vendor": 9757.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "close",
+          "krx": 9940.0,
+          "vendor": 9818.0
+        },
+        {
+          "date": "2012-08-30",
+          "field": "open",
+          "krx": 9895.0,
+          "vendor": 9772.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9875513799177922,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 608,
+      "last_observed_positive_volume_date": "2015-02-16",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/161520.csv",
+      "normalized_sha256": "3469a7ee32033b5405959885b0606e36edaa5c494f9fd6b4292b51596aec0662",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "097740",
+      "all_requested_years_nonempty": true,
+      "official_rows": 93,
+      "vendor_rows_in_scope": 93,
+      "overlapping_dates": 93,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 81,
+        "high": 81,
+        "low": 81,
+        "close": 81
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 13170.0,
+          "vendor": 12986.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 13200.0,
+          "vendor": 13015.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 13100.0,
+          "vendor": 12917.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 13200.0,
+          "vendor": 13017.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 13225.0,
+          "vendor": 13041.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9860826852230864,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 92,
+      "last_observed_positive_volume_date": "2010-05-14",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/097740.csv",
+      "normalized_sha256": "7d4e01fc8091b0169aaf3546edf72eb5a1b602a71a675e221ac3431715f03823",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "161530",
+      "all_requested_years_nonempty": true,
+      "official_rows": 609,
+      "vendor_rows_in_scope": 609,
+      "overlapping_dates": 609,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 412,
+        "high": 412,
+        "low": 412,
+        "close": 412
+      },
+      "difference_examples": [
+        {
+          "date": "2012-08-29",
+          "field": "open",
+          "krx": 4705.0,
+          "vendor": 4644.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "high",
+          "krx": 4710.0,
+          "vendor": 4649.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "low",
+          "krx": 4665.0,
+          "vendor": 4605.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "close",
+          "krx": 4675.0,
+          "vendor": 4616.0
+        },
+        {
+          "date": "2012-08-30",
+          "field": "open",
+          "krx": 4660.0,
+          "vendor": 4600.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9870619946091644,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 608,
+      "last_observed_positive_volume_date": "2015-02-16",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/161530.csv",
+      "normalized_sha256": "757a95c20132716415f580edc1d876662612c4ebc98d1935aeff2063f926d16f",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "120210",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1476,
+      "vendor_rows_in_scope": 1476,
+      "overlapping_dates": 1476,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1386,
+        "high": 1386,
+        "low": 1386,
+        "close": 1319
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 7815.0,
+          "vendor": 7462.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 7815.0,
+          "vendor": 7462.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 7785.0,
+          "vendor": 7432.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 7810.0,
+          "vendor": 7460.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 7850.0,
+          "vendor": 7495.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9549560853199498,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 959,
+      "last_observed_positive_volume_date": "2015-11-27",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/120210.csv",
+      "normalized_sha256": "d7b7bc82f024ea1936e50107cd6e3c1360c87c817f8a030ad18f49c68e378069",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "161500",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1295,
+      "vendor_rows_in_scope": 1295,
+      "overlapping_dates": 1295,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1150,
+        "high": 1150,
+        "low": 1150,
+        "close": 1150
+      },
+      "difference_examples": [
+        {
+          "date": "2012-08-29",
+          "field": "open",
+          "krx": 5405.0,
+          "vendor": 5110.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "high",
+          "krx": 5465.0,
+          "vendor": 5166.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "low",
+          "krx": 5395.0,
+          "vendor": 5101.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "close",
+          "krx": 5450.0,
+          "vendor": 5155.0
+        },
+        {
+          "date": "2012-08-30",
+          "field": "open",
+          "krx": 5410.0,
+          "vendor": 5114.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9454705364995603,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1293,
+      "last_observed_positive_volume_date": "2017-11-30",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/161500.csv",
+      "normalized_sha256": "19bd419d96731480eae7ec5c831e3b527371f86e4099cb151ad86c077b5ae03a",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "196220",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1441,
+      "vendor_rows_in_scope": 1441,
+      "overlapping_dates": 1441,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "volume": 1,
+        "open": 3,
+        "high": 3,
+        "low": 3
+      },
+      "difference_examples": [
+        {
+          "date": "2016-06-30",
+          "field": "volume",
+          "krx": 211683.0,
+          "vendor": 11683.0
+        },
+        {
+          "date": "2019-10-17",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 14840.0
+        },
+        {
+          "date": "2019-10-17",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 14840.0
+        },
+        {
+          "date": "2019-10-17",
+          "field": "low",
+          "krx": 0.0,
+          "vendor": 14840.0
+        },
+        {
+          "date": "2019-10-22",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 14795.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1437,
+      "last_observed_positive_volume_date": "2020-04-23",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/196220.csv",
+      "normalized_sha256": "d6458c6bf01bc6c292ed13f8fde3ee9c016d600c7dfb3f2ee3a83887d5061bc3",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "144750",
+      "all_requested_years_nonempty": true,
+      "official_rows": 476,
+      "vendor_rows_in_scope": 476,
+      "overlapping_dates": 476,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 437,
+        "high": 437,
+        "low": 437,
+        "close": 437
+      },
+      "difference_examples": [
+        {
+          "date": "2011-07-27",
+          "field": "open",
+          "krx": 29875.0,
+          "vendor": 29470.0
+        },
+        {
+          "date": "2011-07-27",
+          "field": "high",
+          "krx": 30030.0,
+          "vendor": 29624.0
+        },
+        {
+          "date": "2011-07-27",
+          "field": "low",
+          "krx": 29730.0,
+          "vendor": 29328.0
+        },
+        {
+          "date": "2011-07-27",
+          "field": "close",
+          "krx": 29940.0,
+          "vendor": 29536.0
+        },
+        {
+          "date": "2011-07-28",
+          "field": "open",
+          "krx": 29410.0,
+          "vendor": 29013.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9864585955197583,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 475,
+      "last_observed_positive_volume_date": "2013-06-24",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/144750.csv",
+      "normalized_sha256": "6c19f0073df02de4a59a1b122d588c579f3dcf0597e41c0ccd22fa9b7d68bd01",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "161490",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1295,
+      "vendor_rows_in_scope": 1295,
+      "overlapping_dates": 1295,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1151,
+        "high": 1151,
+        "low": 1151,
+        "close": 1150
+      },
+      "difference_examples": [
+        {
+          "date": "2012-08-29",
+          "field": "open",
+          "krx": 4775.0,
+          "vendor": 4488.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "high",
+          "krx": 4775.0,
+          "vendor": 4488.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "low",
+          "krx": 4735.0,
+          "vendor": 4451.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "close",
+          "krx": 4740.0,
+          "vendor": 4457.0
+        },
+        {
+          "date": "2012-08-30",
+          "field": "open",
+          "krx": 4715.0,
+          "vendor": 4432.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.940042372881356,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1293,
+      "last_observed_positive_volume_date": "2017-11-30",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/161490.csv",
+      "normalized_sha256": "e07ec800ff9b1b723262788e22d1d42bcdebd7cd4a1068b8800a9a8efd642010",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "108630",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1533,
+      "vendor_rows_in_scope": 1533,
+      "overlapping_dates": 1533,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1324,
+        "high": 1324,
+        "low": 1324,
+        "close": 1319
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 16690.0,
+          "vendor": 16132.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 17200.0,
+          "vendor": 16624.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 16690.0,
+          "vendor": 16132.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 17200.0,
+          "vendor": 16628.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 17275.0,
+          "vendor": 16698.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9666057282145033,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1329,
+      "last_observed_positive_volume_date": "2016-03-10",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/108630.csv",
+      "normalized_sha256": "217b66008562557a9a7d92af29720a69625badcdb1384f3a0b5c11ff039bc50f",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "143460",
+      "all_requested_years_nonempty": true,
+      "official_rows": 3324,
+      "vendor_rows_in_scope": 3000,
+      "overlapping_dates": 3000,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [
+        "2011-06-21",
+        "2011-06-22",
+        "2011-06-23",
+        "2011-06-24",
+        "2011-06-27",
+        "2011-06-28",
+        "2011-06-29",
+        "2011-06-30",
+        "2011-07-01",
+        "2011-07-04",
+        "2011-07-05",
+        "2011-07-06",
+        "2011-07-07",
+        "2011-07-08",
+        "2011-07-11",
+        "2011-07-12",
+        "2011-07-13",
+        "2011-07-14",
+        "2011-07-15",
+        "2011-07-18",
+        "2011-07-19",
+        "2011-07-20",
+        "2011-07-21",
+        "2011-07-22",
+        "2011-07-25",
+        "2011-07-26",
+        "2011-07-27",
+        "2011-07-28",
+        "2011-07-29",
+        "2011-08-01",
+        "2011-08-02",
+        "2011-08-03",
+        "2011-08-04",
+        "2011-08-05",
+        "2011-08-08",
+        "2011-08-09",
+        "2011-08-10",
+        "2011-08-11",
+        "2011-08-12",
+        "2011-08-16",
+        "2011-08-17",
+        "2011-08-18",
+        "2011-08-19",
+        "2011-08-22",
+        "2011-08-23",
+        "2011-08-24",
+        "2011-08-25",
+        "2011-08-26",
+        "2011-08-29",
+        "2011-08-30",
+        "2011-08-31",
+        "2011-09-01",
+        "2011-09-02",
+        "2011-09-05",
+        "2011-09-06",
+        "2011-09-07",
+        "2011-09-08",
+        "2011-09-09",
+        "2011-09-14",
+        "2011-09-15",
+        "2011-09-16",
+        "2011-09-19",
+        "2011-09-20",
+        "2011-09-21",
+        "2011-09-22",
+        "2011-09-23",
+        "2011-09-26",
+        "2011-09-27",
+        "2011-09-28",
+        "2011-09-29",
+        "2011-09-30",
+        "2011-10-04",
+        "2011-10-05",
+        "2011-10-06",
+        "2011-10-07",
+        "2011-10-10",
+        "2011-10-11",
+        "2011-10-12",
+        "2011-10-13",
+        "2011-10-14",
+        "2011-10-17",
+        "2011-10-18",
+        "2011-10-19",
+        "2011-10-20",
+        "2011-10-21",
+        "2011-10-24",
+        "2011-10-25",
+        "2011-10-26",
+        "2011-10-27",
+        "2011-10-28",
+        "2011-10-31",
+        "2011-11-01",
+        "2011-11-02",
+        "2011-11-03",
+        "2011-11-04",
+        "2011-11-07",
+        "2011-11-08",
+        "2011-11-09",
+        "2011-11-10",
+        "2011-11-11",
+        "2011-11-14",
+        "2011-11-15",
+        "2011-11-16",
+        "2011-11-17",
+        "2011-11-18",
+        "2011-11-21",
+        "2011-11-22",
+        "2011-11-23",
+        "2011-11-24",
+        "2011-11-25",
+        "2011-11-28",
+        "2011-11-29",
+        "2011-11-30",
+        "2011-12-01",
+        "2011-12-02",
+        "2011-12-05",
+        "2011-12-06",
+        "2011-12-07",
+        "2011-12-08",
+        "2011-12-09",
+        "2011-12-12",
+        "2011-12-13",
+        "2011-12-14",
+        "2011-12-15",
+        "2011-12-16",
+        "2011-12-19",
+        "2011-12-20",
+        "2011-12-21",
+        "2011-12-22",
+        "2011-12-23",
+        "2011-12-26",
+        "2011-12-27",
+        "2011-12-28",
+        "2011-12-29",
+        "2012-01-02",
+        "2012-01-03",
+        "2012-01-04",
+        "2012-01-05",
+        "2012-01-06",
+        "2012-01-09",
+        "2012-01-10",
+        "2012-01-11",
+        "2012-01-12",
+        "2012-01-13",
+        "2012-01-16",
+        "2012-01-17",
+        "2012-01-18",
+        "2012-01-19",
+        "2012-01-20",
+        "2012-01-25",
+        "2012-01-26",
+        "2012-01-27",
+        "2012-01-30",
+        "2012-01-31",
+        "2012-02-01",
+        "2012-02-02",
+        "2012-02-03",
+        "2012-02-06",
+        "2012-02-07",
+        "2012-02-08",
+        "2012-02-09",
+        "2012-02-10",
+        "2012-02-13",
+        "2012-02-14",
+        "2012-02-15",
+        "2012-02-16",
+        "2012-02-17",
+        "2012-02-20",
+        "2012-02-21",
+        "2012-02-22",
+        "2012-02-23",
+        "2012-02-24",
+        "2012-02-27",
+        "2012-02-28",
+        "2012-02-29",
+        "2012-03-02",
+        "2012-03-05",
+        "2012-03-06",
+        "2012-03-07",
+        "2012-03-08",
+        "2012-03-09",
+        "2012-03-12",
+        "2012-03-13",
+        "2012-03-14",
+        "2012-03-15",
+        "2012-03-16",
+        "2012-03-19",
+        "2012-03-20",
+        "2012-03-21",
+        "2012-03-22",
+        "2012-03-23",
+        "2012-03-26",
+        "2012-03-27",
+        "2012-03-28",
+        "2012-03-29",
+        "2012-03-30",
+        "2012-04-02",
+        "2012-04-03",
+        "2012-04-04",
+        "2012-04-05",
+        "2012-04-06",
+        "2012-04-09",
+        "2012-04-10",
+        "2012-04-12",
+        "2012-04-13",
+        "2012-04-16",
+        "2012-04-17",
+        "2012-04-18",
+        "2012-04-19",
+        "2012-04-20",
+        "2012-04-23",
+        "2012-04-24",
+        "2012-04-25",
+        "2012-04-26",
+        "2012-04-27",
+        "2012-04-30",
+        "2012-05-02",
+        "2012-05-03",
+        "2012-05-04",
+        "2012-05-07",
+        "2012-05-08",
+        "2012-05-09",
+        "2012-05-10",
+        "2012-05-11",
+        "2012-05-14",
+        "2012-05-15",
+        "2012-05-16",
+        "2012-05-17",
+        "2012-05-18",
+        "2012-05-21",
+        "2012-05-22",
+        "2012-05-23",
+        "2012-05-24",
+        "2012-05-25",
+        "2012-05-29",
+        "2012-05-30",
+        "2012-05-31",
+        "2012-06-01",
+        "2012-06-04",
+        "2012-06-05",
+        "2012-06-07",
+        "2012-06-08",
+        "2012-06-11",
+        "2012-06-12",
+        "2012-06-13",
+        "2012-06-14",
+        "2012-06-15",
+        "2012-06-18",
+        "2012-06-19",
+        "2012-06-20",
+        "2012-06-21",
+        "2012-06-22",
+        "2012-06-25",
+        "2012-06-26",
+        "2012-06-27",
+        "2012-06-28",
+        "2012-06-29",
+        "2012-07-02",
+        "2012-07-03",
+        "2012-07-04",
+        "2012-07-05",
+        "2012-07-06",
+        "2012-07-09",
+        "2012-07-10",
+        "2012-07-11",
+        "2012-07-12",
+        "2012-07-13",
+        "2012-07-16",
+        "2012-07-17",
+        "2012-07-18",
+        "2012-07-19",
+        "2012-07-20",
+        "2012-07-23",
+        "2012-07-24",
+        "2012-07-25",
+        "2012-07-26",
+        "2012-07-27",
+        "2012-07-30",
+        "2012-07-31",
+        "2012-08-01",
+        "2012-08-02",
+        "2012-08-03",
+        "2012-08-06",
+        "2012-08-07",
+        "2012-08-08",
+        "2012-08-09",
+        "2012-08-10",
+        "2012-08-13",
+        "2012-08-14",
+        "2012-08-16",
+        "2012-08-17",
+        "2012-08-20",
+        "2012-08-21",
+        "2012-08-22",
+        "2012-08-23",
+        "2012-08-24",
+        "2012-08-27",
+        "2012-08-28",
+        "2012-08-29",
+        "2012-08-30",
+        "2012-08-31",
+        "2012-09-03",
+        "2012-09-04",
+        "2012-09-05",
+        "2012-09-06",
+        "2012-09-07",
+        "2012-09-10",
+        "2012-09-11",
+        "2012-09-12",
+        "2012-09-13",
+        "2012-09-14",
+        "2012-09-17",
+        "2012-09-18",
+        "2012-09-19",
+        "2012-09-20",
+        "2012-09-21",
+        "2012-09-24",
+        "2012-09-25",
+        "2012-09-26",
+        "2012-09-27",
+        "2012-09-28",
+        "2012-10-02",
+        "2012-10-04",
+        "2012-10-05"
+      ],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 2844,
+        "high": 2844,
+        "low": 2844,
+        "close": 2844,
+        "volume": 2555
+      },
+      "difference_examples": [
+        {
+          "date": "2012-10-08",
+          "field": "open",
+          "krx": 6140.0,
+          "vendor": 4780.0
+        },
+        {
+          "date": "2012-10-08",
+          "field": "high",
+          "krx": 6165.0,
+          "vendor": 4802.0
+        },
+        {
+          "date": "2012-10-08",
+          "field": "low",
+          "krx": 6095.0,
+          "vendor": 4746.0
+        },
+        {
+          "date": "2012-10-08",
+          "field": "close",
+          "krx": 6115.0,
+          "vendor": 4766.0
+        },
+        {
+          "date": "2012-10-08",
+          "field": "volume",
+          "krx": 10309.0,
+          "vendor": 12060.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.778956228956229,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 3323,
+      "last_observed_positive_volume_date": "2024-12-16",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/143460.csv",
+      "normalized_sha256": "0a85e9f2617a05a0700ffb5291a07e64014c625bec506186d8c9cbc661dd847d",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "176710",
+      "all_requested_years_nonempty": true,
+      "official_rows": 2253,
+      "vendor_rows_in_scope": 2253,
+      "overlapping_dates": 2253,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 2199,
+        "high": 2199,
+        "low": 2199,
+        "close": 2160,
+        "volume": 231
+      },
+      "difference_examples": [
+        {
+          "date": "2013-05-22",
+          "field": "open",
+          "krx": 105150.0,
+          "vendor": 83454.0
+        },
+        {
+          "date": "2013-05-22",
+          "field": "high",
+          "krx": 105155.0,
+          "vendor": 83458.0
+        },
+        {
+          "date": "2013-05-22",
+          "field": "low",
+          "krx": 105045.0,
+          "vendor": 83371.0
+        },
+        {
+          "date": "2013-05-22",
+          "field": "close",
+          "krx": 105060.0,
+          "vendor": 83399.0
+        },
+        {
+          "date": "2013-05-22",
+          "field": "volume",
+          "krx": 2002.0,
+          "vendor": 2522.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.7938088186117613,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1218,
+      "last_observed_positive_volume_date": "2022-07-14",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/176710.csv",
+      "normalized_sha256": "5cdc229b5d50cc9b341d74b8231c8cc1b063f76365f3bd0154fc08725597aca5",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "0010E0",
+      "all_requested_years_nonempty": true,
+      "official_rows": 286,
+      "vendor_rows_in_scope": 286,
+      "overlapping_dates": 286,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 190,
+        "high": 190,
+        "low": 190,
+        "close": 190,
+        "volume": 71
+      },
+      "difference_examples": [
+        {
+          "date": "2025-02-18",
+          "field": "open",
+          "krx": 100190.0,
+          "vendor": 99059.0
+        },
+        {
+          "date": "2025-02-18",
+          "field": "high",
+          "krx": 100255.0,
+          "vendor": 99124.0
+        },
+        {
+          "date": "2025-02-18",
+          "field": "low",
+          "krx": 100080.0,
+          "vendor": 98951.0
+        },
+        {
+          "date": "2025-02-18",
+          "field": "close",
+          "krx": 100080.0,
+          "vendor": 98951.0
+        },
+        {
+          "date": "2025-02-18",
+          "field": "volume",
+          "krx": 1049.0,
+          "vendor": 1060.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9887104718746922,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 276,
+      "last_observed_positive_volume_date": "2026-04-17",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/0010E0.csv",
+      "normalized_sha256": "df4e1d56b0ddf7be4d0b6f4ec4dd34e3b06b7f285e2ba0bc491e4b0c4c0f1f99",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "122390",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1541,
+      "vendor_rows_in_scope": 1541,
+      "overlapping_dates": 1541,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1292,
+        "high": 1292,
+        "low": 1292,
+        "close": 1294
+      },
+      "difference_examples": [
+        {
+          "date": "2010-02-08",
+          "field": "open",
+          "krx": 14730.0,
+          "vendor": 13983.0
+        },
+        {
+          "date": "2010-02-08",
+          "field": "high",
+          "krx": 14805.0,
+          "vendor": 14051.0
+        },
+        {
+          "date": "2010-02-08",
+          "field": "low",
+          "krx": 14335.0,
+          "vendor": 13606.0
+        },
+        {
+          "date": "2010-02-08",
+          "field": "close",
+          "krx": 14365.0,
+          "vendor": 13638.0
+        },
+        {
+          "date": "2010-02-09",
+          "field": "open",
+          "krx": 14320.0,
+          "vendor": 13593.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9492605980939862,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1522,
+      "last_observed_positive_volume_date": "2016-04-27",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/122390.csv",
+      "normalized_sha256": "2b93ad0a0778d51a82ec363a23d23a49b463018e7a824350dc7c02533ce140ca",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "170350",
+      "all_requested_years_nonempty": true,
+      "official_rows": 2041,
+      "vendor_rows_in_scope": 2041,
+      "overlapping_dates": 2041,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1928,
+        "high": 1928,
+        "low": 1928,
+        "close": 1912
+      },
+      "difference_examples": [
+        {
+          "date": "2013-01-17",
+          "field": "open",
+          "krx": 11820.0,
+          "vendor": 10576.0
+        },
+        {
+          "date": "2013-01-17",
+          "field": "high",
+          "krx": 11820.0,
+          "vendor": 10576.0
+        },
+        {
+          "date": "2013-01-17",
+          "field": "low",
+          "krx": 11675.0,
+          "vendor": 10446.0
+        },
+        {
+          "date": "2013-01-17",
+          "field": "close",
+          "krx": 11720.0,
+          "vendor": 10491.0
+        },
+        {
+          "date": "2013-01-18",
+          "field": "open",
+          "krx": 11765.0,
+          "vendor": 10526.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.8949340144742444,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1296,
+      "last_observed_positive_volume_date": "2021-05-04",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/170350.csv",
+      "normalized_sha256": "741c57e5f8dd12745aed58914d4febee40e352c7db5ca0b1466adb99e7260c26",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "097710",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1476,
+      "vendor_rows_in_scope": 1476,
+      "overlapping_dates": 1476,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1340,
+        "high": 1340,
+        "low": 1340,
+        "close": 1319
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 13425.0,
+          "vendor": 12198.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 13450.0,
+          "vendor": 12219.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 13425.0,
+          "vendor": 12198.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 13450.0,
+          "vendor": 12223.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 13480.0,
+          "vendor": 12246.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9086513033622969,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1361,
+      "last_observed_positive_volume_date": "2015-12-10",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/097710.csv",
+      "normalized_sha256": "9414b79b99cc8cf9fb82aa01362be00c1dfd9b2d2faa4669bd29d8a9daaa8c88",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "097720",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1476,
+      "vendor_rows_in_scope": 1476,
+      "overlapping_dates": 1476,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1307,
+        "high": 1307,
+        "low": 1307,
+        "close": 1319
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 7075.0,
+          "vendor": 6617.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 7080.0,
+          "vendor": 6622.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 7070.0,
+          "vendor": 6613.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 7075.0,
+          "vendor": 6623.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 7095.0,
+          "vendor": 6638.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9358024691358025,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1147,
+      "last_observed_positive_volume_date": "2015-12-10",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/097720.csv",
+      "normalized_sha256": "390e2a0bfa71076bdc4151557a03bb953ea4d4216efcfc2b25da955c4e4ca8a6",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "105020",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1272,
+      "vendor_rows_in_scope": 1272,
+      "overlapping_dates": 1272,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 170,
+        "high": 170,
+        "low": 170,
+        "close": 161
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 5710.0,
+          "vendor": 5592.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 5900.0,
+          "vendor": 5778.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 5710.0,
+          "vendor": 5592.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 5895.0,
+          "vendor": 5775.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 5920.0,
+          "vendor": 5798.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9794871794871794,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1261,
+      "last_observed_positive_volume_date": "2015-02-16",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/105020.csv",
+      "normalized_sha256": "cc810fca0540fae1e18321d6a68ac03ba33f743dbee7829b413682028e0afd43",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "161550",
+      "all_requested_years_nonempty": true,
+      "official_rows": 609,
+      "vendor_rows_in_scope": 609,
+      "overlapping_dates": 609,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 417,
+        "high": 417,
+        "low": 417,
+        "close": 412
+      },
+      "difference_examples": [
+        {
+          "date": "2012-08-29",
+          "field": "open",
+          "krx": 6245.0,
+          "vendor": 6076.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "high",
+          "krx": 6245.0,
+          "vendor": 6076.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "low",
+          "krx": 6155.0,
+          "vendor": 5989.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "close",
+          "krx": 6200.0,
+          "vendor": 6033.0
+        },
+        {
+          "date": "2012-08-30",
+          "field": "open",
+          "krx": 6155.0,
+          "vendor": 5989.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9729296527159395,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 603,
+      "last_observed_positive_volume_date": "2015-02-16",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/161550.csv",
+      "normalized_sha256": "e3bb2a96681c9e12bc213a78594e52e8b6c1e8bf189e684b11ead901107934cc",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "161540",
+      "all_requested_years_nonempty": true,
+      "official_rows": 609,
+      "vendor_rows_in_scope": 609,
+      "overlapping_dates": 609,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 428,
+        "high": 428,
+        "low": 428,
+        "close": 412
+      },
+      "difference_examples": [
+        {
+          "date": "2012-08-29",
+          "field": "open",
+          "krx": 7540.0,
+          "vendor": 7342.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "high",
+          "krx": 7540.0,
+          "vendor": 7342.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "low",
+          "krx": 7480.0,
+          "vendor": 7282.0
+        },
+        {
+          "date": "2012-08-29",
+          "field": "close",
+          "krx": 7480.0,
+          "vendor": 7284.0
+        },
+        {
+          "date": "2012-08-30",
+          "field": "open",
+          "krx": 7430.0,
+          "vendor": 7234.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9736356003358523,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 592,
+      "last_observed_positive_volume_date": "2015-02-13",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/161540.csv",
+      "normalized_sha256": "3d7bb3867785484a4818a6e5cf17dd20057d14e70a1e9ea93608c18b318a098a",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "107560",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1668,
+      "vendor_rows_in_scope": 1668,
+      "overlapping_dates": 1668,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1569,
+        "high": 1569,
+        "low": 1569,
+        "close": 1565
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 12235.0,
+          "vendor": 12006.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 12335.0,
+          "vendor": 12103.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 12140.0,
+          "vendor": 11912.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 12335.0,
+          "vendor": 12106.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 12335.0,
+          "vendor": 12103.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9813642443156487,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1656,
+      "last_observed_positive_volume_date": "2016-09-27",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/107560.csv",
+      "normalized_sha256": "d8d91610847dfa664a58f346c259dd956c293a8d907b7ff63fdad90e179e443a",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "181450",
+      "all_requested_years_nonempty": true,
+      "official_rows": 673,
+      "vendor_rows_in_scope": 673,
+      "overlapping_dates": 673,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 33,
+        "high": 33,
+        "low": 33
+      },
+      "difference_examples": [
+        {
+          "date": "2015-10-08",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 99335.0
+        },
+        {
+          "date": "2015-10-08",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 99335.0
+        },
+        {
+          "date": "2015-10-08",
+          "field": "low",
+          "krx": 0.0,
+          "vendor": 99335.0
+        },
+        {
+          "date": "2015-10-28",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 101060.0
+        },
+        {
+          "date": "2015-10-28",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 101060.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 639,
+      "last_observed_positive_volume_date": "2016-04-27",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/181450.csv",
+      "normalized_sha256": "111178636089a782e42b2c7bf4759fbbfbf07373895ee74052f7f1005ae4aa11",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "143570",
+      "all_requested_years_nonempty": true,
+      "official_rows": 483,
+      "vendor_rows_in_scope": 483,
+      "overlapping_dates": 483,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 114,
+        "high": 114,
+        "low": 114
+      },
+      "difference_examples": [
+        {
+          "date": "2012-10-11",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 10020.0
+        },
+        {
+          "date": "2012-10-11",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 10020.0
+        },
+        {
+          "date": "2012-10-11",
+          "field": "low",
+          "krx": 0.0,
+          "vendor": 10020.0
+        },
+        {
+          "date": "2012-10-15",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 10035.0
+        },
+        {
+          "date": "2012-10-15",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 10035.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 267,
+      "last_observed_positive_volume_date": "2013-06-24",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/143570.csv",
+      "normalized_sha256": "188ab4591db5de5d46e9448a9ce921771385d792e08b64daeea13f9087123456",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "098560",
+      "all_requested_years_nonempty": true,
+      "official_rows": 3921,
+      "vendor_rows_in_scope": 3000,
+      "overlapping_dates": 3000,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [
+        "2010-01-04",
+        "2010-01-05",
+        "2010-01-06",
+        "2010-01-07",
+        "2010-01-08",
+        "2010-01-11",
+        "2010-01-12",
+        "2010-01-13",
+        "2010-01-14",
+        "2010-01-15",
+        "2010-01-18",
+        "2010-01-19",
+        "2010-01-20",
+        "2010-01-21",
+        "2010-01-22",
+        "2010-01-25",
+        "2010-01-26",
+        "2010-01-27",
+        "2010-01-28",
+        "2010-01-29",
+        "2010-02-01",
+        "2010-02-02",
+        "2010-02-03",
+        "2010-02-04",
+        "2010-02-05",
+        "2010-02-08",
+        "2010-02-09",
+        "2010-02-10",
+        "2010-02-11",
+        "2010-02-12",
+        "2010-02-16",
+        "2010-02-17",
+        "2010-02-18",
+        "2010-02-19",
+        "2010-02-22",
+        "2010-02-23",
+        "2010-02-24",
+        "2010-02-25",
+        "2010-02-26",
+        "2010-03-02",
+        "2010-03-03",
+        "2010-03-04",
+        "2010-03-05",
+        "2010-03-08",
+        "2010-03-09",
+        "2010-03-10",
+        "2010-03-11",
+        "2010-03-12",
+        "2010-03-15",
+        "2010-03-16",
+        "2010-03-17",
+        "2010-03-18",
+        "2010-03-19",
+        "2010-03-22",
+        "2010-03-23",
+        "2010-03-24",
+        "2010-03-25",
+        "2010-03-26",
+        "2010-03-29",
+        "2010-03-30",
+        "2010-03-31",
+        "2010-04-01",
+        "2010-04-02",
+        "2010-04-05",
+        "2010-04-06",
+        "2010-04-07",
+        "2010-04-08",
+        "2010-04-09",
+        "2010-04-12",
+        "2010-04-13",
+        "2010-04-14",
+        "2010-04-15",
+        "2010-04-16",
+        "2010-04-19",
+        "2010-04-20",
+        "2010-04-21",
+        "2010-04-22",
+        "2010-04-23",
+        "2010-04-26",
+        "2010-04-27",
+        "2010-04-28",
+        "2010-04-29",
+        "2010-04-30",
+        "2010-05-03",
+        "2010-05-04",
+        "2010-05-06",
+        "2010-05-07",
+        "2010-05-10",
+        "2010-05-11",
+        "2010-05-12",
+        "2010-05-13",
+        "2010-05-14",
+        "2010-05-17",
+        "2010-05-18",
+        "2010-05-19",
+        "2010-05-20",
+        "2010-05-24",
+        "2010-05-25",
+        "2010-05-26",
+        "2010-05-27",
+        "2010-05-28",
+        "2010-05-31",
+        "2010-06-01",
+        "2010-06-03",
+        "2010-06-04",
+        "2010-06-07",
+        "2010-06-08",
+        "2010-06-09",
+        "2010-06-10",
+        "2010-06-11",
+        "2010-06-14",
+        "2010-06-15",
+        "2010-06-16",
+        "2010-06-17",
+        "2010-06-18",
+        "2010-06-21",
+        "2010-06-22",
+        "2010-06-23",
+        "2010-06-24",
+        "2010-06-25",
+        "2010-06-28",
+        "2010-06-29",
+        "2010-06-30",
+        "2010-07-01",
+        "2010-07-02",
+        "2010-07-05",
+        "2010-07-06",
+        "2010-07-07",
+        "2010-07-08",
+        "2010-07-09",
+        "2010-07-12",
+        "2010-07-13",
+        "2010-07-14",
+        "2010-07-15",
+        "2010-07-16",
+        "2010-07-19",
+        "2010-07-20",
+        "2010-07-21",
+        "2010-07-22",
+        "2010-07-23",
+        "2010-07-26",
+        "2010-07-27",
+        "2010-07-28",
+        "2010-07-29",
+        "2010-07-30",
+        "2010-08-02",
+        "2010-08-03",
+        "2010-08-04",
+        "2010-08-05",
+        "2010-08-06",
+        "2010-08-09",
+        "2010-08-10",
+        "2010-08-11",
+        "2010-08-12",
+        "2010-08-13",
+        "2010-08-16",
+        "2010-08-17",
+        "2010-08-18",
+        "2010-08-19",
+        "2010-08-20",
+        "2010-08-23",
+        "2010-08-24",
+        "2010-08-25",
+        "2010-08-26",
+        "2010-08-27",
+        "2010-08-30",
+        "2010-08-31",
+        "2010-09-01",
+        "2010-09-02",
+        "2010-09-03",
+        "2010-09-06",
+        "2010-09-07",
+        "2010-09-08",
+        "2010-09-09",
+        "2010-09-10",
+        "2010-09-13",
+        "2010-09-14",
+        "2010-09-15",
+        "2010-09-16",
+        "2010-09-17",
+        "2010-09-20",
+        "2010-09-24",
+        "2010-09-27",
+        "2010-09-28",
+        "2010-09-29",
+        "2010-09-30",
+        "2010-10-01",
+        "2010-10-04",
+        "2010-10-05",
+        "2010-10-06",
+        "2010-10-07",
+        "2010-10-08",
+        "2010-10-11",
+        "2010-10-12",
+        "2010-10-13",
+        "2010-10-14",
+        "2010-10-15",
+        "2010-10-18",
+        "2010-10-19",
+        "2010-10-20",
+        "2010-10-21",
+        "2010-10-22",
+        "2010-10-25",
+        "2010-10-26",
+        "2010-10-27",
+        "2010-10-28",
+        "2010-10-29",
+        "2010-11-01",
+        "2010-11-02",
+        "2010-11-03",
+        "2010-11-04",
+        "2010-11-05",
+        "2010-11-08",
+        "2010-11-09",
+        "2010-11-10",
+        "2010-11-11",
+        "2010-11-12",
+        "2010-11-15",
+        "2010-11-16",
+        "2010-11-17",
+        "2010-11-18",
+        "2010-11-19",
+        "2010-11-22",
+        "2010-11-23",
+        "2010-11-24",
+        "2010-11-25",
+        "2010-11-26",
+        "2010-11-29",
+        "2010-11-30",
+        "2010-12-01",
+        "2010-12-02",
+        "2010-12-03",
+        "2010-12-06",
+        "2010-12-07",
+        "2010-12-08",
+        "2010-12-09",
+        "2010-12-10",
+        "2010-12-13",
+        "2010-12-14",
+        "2010-12-15",
+        "2010-12-16",
+        "2010-12-17",
+        "2010-12-20",
+        "2010-12-21",
+        "2010-12-22",
+        "2010-12-23",
+        "2010-12-24",
+        "2010-12-27",
+        "2010-12-28",
+        "2010-12-29",
+        "2010-12-30",
+        "2011-01-03",
+        "2011-01-04",
+        "2011-01-05",
+        "2011-01-06",
+        "2011-01-07",
+        "2011-01-10",
+        "2011-01-11",
+        "2011-01-12",
+        "2011-01-13",
+        "2011-01-14",
+        "2011-01-17",
+        "2011-01-18",
+        "2011-01-19",
+        "2011-01-20",
+        "2011-01-21",
+        "2011-01-24",
+        "2011-01-25",
+        "2011-01-26",
+        "2011-01-27",
+        "2011-01-28",
+        "2011-01-31",
+        "2011-02-01",
+        "2011-02-07",
+        "2011-02-08",
+        "2011-02-09",
+        "2011-02-10",
+        "2011-02-11",
+        "2011-02-14",
+        "2011-02-15",
+        "2011-02-16",
+        "2011-02-17",
+        "2011-02-18",
+        "2011-02-21",
+        "2011-02-22",
+        "2011-02-23",
+        "2011-02-24",
+        "2011-02-25",
+        "2011-02-28",
+        "2011-03-02",
+        "2011-03-03",
+        "2011-03-04",
+        "2011-03-07",
+        "2011-03-08",
+        "2011-03-09",
+        "2011-03-10",
+        "2011-03-11",
+        "2011-03-14",
+        "2011-03-15",
+        "2011-03-16",
+        "2011-03-17",
+        "2011-03-18",
+        "2011-03-21",
+        "2011-03-22",
+        "2011-03-23",
+        "2011-03-24",
+        "2011-03-25",
+        "2011-03-28",
+        "2011-03-29",
+        "2011-03-30",
+        "2011-03-31",
+        "2011-04-01",
+        "2011-04-04",
+        "2011-04-05",
+        "2011-04-06",
+        "2011-04-07",
+        "2011-04-08",
+        "2011-04-11",
+        "2011-04-12",
+        "2011-04-13",
+        "2011-04-14",
+        "2011-04-15",
+        "2011-04-18",
+        "2011-04-19",
+        "2011-04-20",
+        "2011-04-21",
+        "2011-04-22",
+        "2011-04-25",
+        "2011-04-26",
+        "2011-04-27",
+        "2011-04-28",
+        "2011-04-29",
+        "2011-05-02",
+        "2011-05-03",
+        "2011-05-04",
+        "2011-05-06",
+        "2011-05-09",
+        "2011-05-11",
+        "2011-05-12",
+        "2011-05-13",
+        "2011-05-16",
+        "2011-05-17",
+        "2011-05-18",
+        "2011-05-19",
+        "2011-05-20",
+        "2011-05-23",
+        "2011-05-24",
+        "2011-05-25",
+        "2011-05-26",
+        "2011-05-27",
+        "2011-05-30",
+        "2011-05-31",
+        "2011-06-01",
+        "2011-06-02",
+        "2011-06-03",
+        "2011-06-07",
+        "2011-06-08",
+        "2011-06-09",
+        "2011-06-10",
+        "2011-06-13",
+        "2011-06-14",
+        "2011-06-15",
+        "2011-06-16",
+        "2011-06-17",
+        "2011-06-20",
+        "2011-06-21",
+        "2011-06-22",
+        "2011-06-23",
+        "2011-06-24",
+        "2011-06-27",
+        "2011-06-28",
+        "2011-06-29",
+        "2011-06-30",
+        "2011-07-01",
+        "2011-07-04",
+        "2011-07-05",
+        "2011-07-06",
+        "2011-07-07",
+        "2011-07-08",
+        "2011-07-11",
+        "2011-07-12",
+        "2011-07-13",
+        "2011-07-14",
+        "2011-07-15",
+        "2011-07-18",
+        "2011-07-19",
+        "2011-07-20",
+        "2011-07-21",
+        "2011-07-22",
+        "2011-07-25",
+        "2011-07-26",
+        "2011-07-27",
+        "2011-07-28",
+        "2011-07-29",
+        "2011-08-01",
+        "2011-08-02",
+        "2011-08-03",
+        "2011-08-04",
+        "2011-08-05",
+        "2011-08-08",
+        "2011-08-09",
+        "2011-08-10",
+        "2011-08-11",
+        "2011-08-12",
+        "2011-08-16",
+        "2011-08-17",
+        "2011-08-18",
+        "2011-08-19",
+        "2011-08-22",
+        "2011-08-23",
+        "2011-08-24",
+        "2011-08-25",
+        "2011-08-26",
+        "2011-08-29",
+        "2011-08-30",
+        "2011-08-31",
+        "2011-09-01",
+        "2011-09-02",
+        "2011-09-05",
+        "2011-09-06",
+        "2011-09-07",
+        "2011-09-08",
+        "2011-09-09",
+        "2011-09-14",
+        "2011-09-15",
+        "2011-09-16",
+        "2011-09-19",
+        "2011-09-20",
+        "2011-09-21",
+        "2011-09-22",
+        "2011-09-23",
+        "2011-09-26",
+        "2011-09-27",
+        "2011-09-28",
+        "2011-09-29",
+        "2011-09-30",
+        "2011-10-04",
+        "2011-10-05",
+        "2011-10-06",
+        "2011-10-07",
+        "2011-10-10",
+        "2011-10-11",
+        "2011-10-12",
+        "2011-10-13",
+        "2011-10-14",
+        "2011-10-17",
+        "2011-10-18",
+        "2011-10-19",
+        "2011-10-20",
+        "2011-10-21",
+        "2011-10-24",
+        "2011-10-25",
+        "2011-10-26",
+        "2011-10-27",
+        "2011-10-28",
+        "2011-10-31",
+        "2011-11-01",
+        "2011-11-02",
+        "2011-11-03",
+        "2011-11-04",
+        "2011-11-07",
+        "2011-11-08",
+        "2011-11-09",
+        "2011-11-10",
+        "2011-11-11",
+        "2011-11-14",
+        "2011-11-15",
+        "2011-11-16",
+        "2011-11-17",
+        "2011-11-18",
+        "2011-11-21",
+        "2011-11-22",
+        "2011-11-23",
+        "2011-11-24",
+        "2011-11-25",
+        "2011-11-28",
+        "2011-11-29",
+        "2011-11-30",
+        "2011-12-01",
+        "2011-12-02",
+        "2011-12-05",
+        "2011-12-06",
+        "2011-12-07",
+        "2011-12-08",
+        "2011-12-09",
+        "2011-12-12",
+        "2011-12-13",
+        "2011-12-14",
+        "2011-12-15",
+        "2011-12-16",
+        "2011-12-19",
+        "2011-12-20",
+        "2011-12-21",
+        "2011-12-22",
+        "2011-12-23",
+        "2011-12-26",
+        "2011-12-27",
+        "2011-12-28",
+        "2011-12-29",
+        "2012-01-02",
+        "2012-01-03",
+        "2012-01-04",
+        "2012-01-05",
+        "2012-01-06",
+        "2012-01-09",
+        "2012-01-10",
+        "2012-01-11",
+        "2012-01-12",
+        "2012-01-13",
+        "2012-01-16",
+        "2012-01-17",
+        "2012-01-18",
+        "2012-01-19",
+        "2012-01-20",
+        "2012-01-25",
+        "2012-01-26",
+        "2012-01-27",
+        "2012-01-30",
+        "2012-01-31",
+        "2012-02-01",
+        "2012-02-02",
+        "2012-02-03",
+        "2012-02-06",
+        "2012-02-07",
+        "2012-02-08",
+        "2012-02-09",
+        "2012-02-10",
+        "2012-02-13",
+        "2012-02-14",
+        "2012-02-15",
+        "2012-02-16",
+        "2012-02-17",
+        "2012-02-20",
+        "2012-02-21",
+        "2012-02-22",
+        "2012-02-23",
+        "2012-02-24",
+        "2012-02-27",
+        "2012-02-28",
+        "2012-02-29",
+        "2012-03-02",
+        "2012-03-05",
+        "2012-03-06",
+        "2012-03-07",
+        "2012-03-08",
+        "2012-03-09",
+        "2012-03-12",
+        "2012-03-13",
+        "2012-03-14",
+        "2012-03-15",
+        "2012-03-16",
+        "2012-03-19",
+        "2012-03-20",
+        "2012-03-21",
+        "2012-03-22",
+        "2012-03-23",
+        "2012-03-26",
+        "2012-03-27",
+        "2012-03-28",
+        "2012-03-29",
+        "2012-03-30",
+        "2012-04-02",
+        "2012-04-03",
+        "2012-04-04",
+        "2012-04-05",
+        "2012-04-06",
+        "2012-04-09",
+        "2012-04-10",
+        "2012-04-12",
+        "2012-04-13",
+        "2012-04-16",
+        "2012-04-17",
+        "2012-04-18",
+        "2012-04-19",
+        "2012-04-20",
+        "2012-04-23",
+        "2012-04-24",
+        "2012-04-25",
+        "2012-04-26",
+        "2012-04-27",
+        "2012-04-30",
+        "2012-05-02",
+        "2012-05-03",
+        "2012-05-04",
+        "2012-05-07",
+        "2012-05-08",
+        "2012-05-09",
+        "2012-05-10",
+        "2012-05-11",
+        "2012-05-14",
+        "2012-05-15",
+        "2012-05-16",
+        "2012-05-17",
+        "2012-05-18",
+        "2012-05-21",
+        "2012-05-22",
+        "2012-05-23",
+        "2012-05-24",
+        "2012-05-25",
+        "2012-05-29",
+        "2012-05-30",
+        "2012-05-31",
+        "2012-06-01",
+        "2012-06-04",
+        "2012-06-05",
+        "2012-06-07",
+        "2012-06-08",
+        "2012-06-11",
+        "2012-06-12",
+        "2012-06-13",
+        "2012-06-14",
+        "2012-06-15",
+        "2012-06-18",
+        "2012-06-19",
+        "2012-06-20",
+        "2012-06-21",
+        "2012-06-22",
+        "2012-06-25",
+        "2012-06-26",
+        "2012-06-27",
+        "2012-06-28",
+        "2012-06-29",
+        "2012-07-02",
+        "2012-07-03",
+        "2012-07-04",
+        "2012-07-05",
+        "2012-07-06",
+        "2012-07-09",
+        "2012-07-10",
+        "2012-07-11",
+        "2012-07-12",
+        "2012-07-13",
+        "2012-07-16",
+        "2012-07-17",
+        "2012-07-18",
+        "2012-07-19",
+        "2012-07-20",
+        "2012-07-23",
+        "2012-07-24",
+        "2012-07-25",
+        "2012-07-26",
+        "2012-07-27",
+        "2012-07-30",
+        "2012-07-31",
+        "2012-08-01",
+        "2012-08-02",
+        "2012-08-03",
+        "2012-08-06",
+        "2012-08-07",
+        "2012-08-08",
+        "2012-08-09",
+        "2012-08-10",
+        "2012-08-13",
+        "2012-08-14",
+        "2012-08-16",
+        "2012-08-17",
+        "2012-08-20",
+        "2012-08-21",
+        "2012-08-22",
+        "2012-08-23",
+        "2012-08-24",
+        "2012-08-27",
+        "2012-08-28",
+        "2012-08-29",
+        "2012-08-30",
+        "2012-08-31",
+        "2012-09-03",
+        "2012-09-04",
+        "2012-09-05",
+        "2012-09-06",
+        "2012-09-07",
+        "2012-09-10",
+        "2012-09-11",
+        "2012-09-12",
+        "2012-09-13",
+        "2012-09-14",
+        "2012-09-17",
+        "2012-09-18",
+        "2012-09-19",
+        "2012-09-20",
+        "2012-09-21",
+        "2012-09-24",
+        "2012-09-25",
+        "2012-09-26",
+        "2012-09-27",
+        "2012-09-28",
+        "2012-10-02",
+        "2012-10-04",
+        "2012-10-05",
+        "2012-10-08",
+        "2012-10-09",
+        "2012-10-10",
+        "2012-10-11",
+        "2012-10-12",
+        "2012-10-15",
+        "2012-10-16",
+        "2012-10-17",
+        "2012-10-18",
+        "2012-10-19",
+        "2012-10-22",
+        "2012-10-23",
+        "2012-10-24",
+        "2012-10-25",
+        "2012-10-26",
+        "2012-10-29",
+        "2012-10-30",
+        "2012-10-31",
+        "2012-11-01",
+        "2012-11-02",
+        "2012-11-05",
+        "2012-11-06",
+        "2012-11-07",
+        "2012-11-08",
+        "2012-11-09",
+        "2012-11-12",
+        "2012-11-13",
+        "2012-11-14",
+        "2012-11-15",
+        "2012-11-16",
+        "2012-11-19",
+        "2012-11-20",
+        "2012-11-21",
+        "2012-11-22",
+        "2012-11-23",
+        "2012-11-26",
+        "2012-11-27",
+        "2012-11-28",
+        "2012-11-29",
+        "2012-11-30",
+        "2012-12-03",
+        "2012-12-04",
+        "2012-12-05",
+        "2012-12-06",
+        "2012-12-07",
+        "2012-12-10",
+        "2012-12-11",
+        "2012-12-12",
+        "2012-12-13",
+        "2012-12-14",
+        "2012-12-17",
+        "2012-12-18",
+        "2012-12-20",
+        "2012-12-21",
+        "2012-12-24",
+        "2012-12-26",
+        "2012-12-27",
+        "2012-12-28",
+        "2013-01-02",
+        "2013-01-03",
+        "2013-01-04",
+        "2013-01-07",
+        "2013-01-08",
+        "2013-01-09",
+        "2013-01-10",
+        "2013-01-11",
+        "2013-01-14",
+        "2013-01-15",
+        "2013-01-16",
+        "2013-01-17",
+        "2013-01-18",
+        "2013-01-21",
+        "2013-01-22",
+        "2013-01-23",
+        "2013-01-24",
+        "2013-01-25",
+        "2013-01-28",
+        "2013-01-29",
+        "2013-01-30",
+        "2013-01-31",
+        "2013-02-01",
+        "2013-02-04",
+        "2013-02-05",
+        "2013-02-06",
+        "2013-02-07",
+        "2013-02-08",
+        "2013-02-12",
+        "2013-02-13",
+        "2013-02-14",
+        "2013-02-15",
+        "2013-02-18",
+        "2013-02-19",
+        "2013-02-20",
+        "2013-02-21",
+        "2013-02-22",
+        "2013-02-25",
+        "2013-02-26",
+        "2013-02-27",
+        "2013-02-28",
+        "2013-03-04",
+        "2013-03-05",
+        "2013-03-06",
+        "2013-03-07",
+        "2013-03-08",
+        "2013-03-11",
+        "2013-03-12",
+        "2013-03-13",
+        "2013-03-14",
+        "2013-03-15",
+        "2013-03-18",
+        "2013-03-19",
+        "2013-03-20",
+        "2013-03-21",
+        "2013-03-22",
+        "2013-03-25",
+        "2013-03-26",
+        "2013-03-27",
+        "2013-03-28",
+        "2013-03-29",
+        "2013-04-01",
+        "2013-04-02",
+        "2013-04-03",
+        "2013-04-04",
+        "2013-04-05",
+        "2013-04-08",
+        "2013-04-09",
+        "2013-04-10",
+        "2013-04-11",
+        "2013-04-12",
+        "2013-04-15",
+        "2013-04-16",
+        "2013-04-17",
+        "2013-04-18",
+        "2013-04-19",
+        "2013-04-22",
+        "2013-04-23",
+        "2013-04-24",
+        "2013-04-25",
+        "2013-04-26",
+        "2013-04-29",
+        "2013-04-30",
+        "2013-05-02",
+        "2013-05-03",
+        "2013-05-06",
+        "2013-05-07",
+        "2013-05-08",
+        "2013-05-09",
+        "2013-05-10",
+        "2013-05-13",
+        "2013-05-14",
+        "2013-05-15",
+        "2013-05-16",
+        "2013-05-20",
+        "2013-05-21",
+        "2013-05-22",
+        "2013-05-23",
+        "2013-05-24",
+        "2013-05-27",
+        "2013-05-28",
+        "2013-05-29",
+        "2013-05-30",
+        "2013-05-31",
+        "2013-06-03",
+        "2013-06-04",
+        "2013-06-05",
+        "2013-06-07",
+        "2013-06-10",
+        "2013-06-11",
+        "2013-06-12",
+        "2013-06-13",
+        "2013-06-14",
+        "2013-06-17",
+        "2013-06-18",
+        "2013-06-19",
+        "2013-06-20",
+        "2013-06-21",
+        "2013-06-24",
+        "2013-06-25",
+        "2013-06-26",
+        "2013-06-27",
+        "2013-06-28",
+        "2013-07-01",
+        "2013-07-02",
+        "2013-07-03",
+        "2013-07-04",
+        "2013-07-05",
+        "2013-07-08",
+        "2013-07-09",
+        "2013-07-10",
+        "2013-07-11",
+        "2013-07-12",
+        "2013-07-15",
+        "2013-07-16",
+        "2013-07-17",
+        "2013-07-18",
+        "2013-07-19",
+        "2013-07-22",
+        "2013-07-23",
+        "2013-07-24",
+        "2013-07-25",
+        "2013-07-26",
+        "2013-07-29",
+        "2013-07-30",
+        "2013-07-31",
+        "2013-08-01",
+        "2013-08-02",
+        "2013-08-05",
+        "2013-08-06",
+        "2013-08-07",
+        "2013-08-08",
+        "2013-08-09",
+        "2013-08-12",
+        "2013-08-13",
+        "2013-08-14",
+        "2013-08-16",
+        "2013-08-19",
+        "2013-08-20",
+        "2013-08-21",
+        "2013-08-22",
+        "2013-08-23",
+        "2013-08-26",
+        "2013-08-27",
+        "2013-08-28",
+        "2013-08-29",
+        "2013-08-30",
+        "2013-09-02",
+        "2013-09-03",
+        "2013-09-04",
+        "2013-09-05",
+        "2013-09-06",
+        "2013-09-09",
+        "2013-09-10"
+      ],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 2975,
+        "high": 2975,
+        "low": 2975,
+        "close": 2975,
+        "volume": 2879
+      },
+      "difference_examples": [
+        {
+          "date": "2013-09-11",
+          "field": "open",
+          "krx": 9370.0,
+          "vendor": 6831.0
+        },
+        {
+          "date": "2013-09-11",
+          "field": "high",
+          "krx": 9370.0,
+          "vendor": 6831.0
+        },
+        {
+          "date": "2013-09-11",
+          "field": "low",
+          "krx": 9275.0,
+          "vendor": 6760.0
+        },
+        {
+          "date": "2013-09-11",
+          "field": "close",
+          "krx": 9280.0,
+          "vendor": 6764.0
+        },
+        {
+          "date": "2013-09-11",
+          "field": "volume",
+          "krx": 101000.0,
+          "vendor": 125843.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.7285796434732605,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 3874,
+      "last_observed_positive_volume_date": "2025-12-02",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/098560.csv",
+      "normalized_sha256": "2dc860388cd083a33bb3109763a648cc2b9b000758434e461c2759d9b9e94aee",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "157520",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1621,
+      "vendor_rows_in_scope": 1621,
+      "overlapping_dates": 1621,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1438,
+        "high": 1438,
+        "low": 1438,
+        "close": 1465
+      },
+      "difference_examples": [
+        {
+          "date": "2012-05-16",
+          "field": "open",
+          "krx": 10235.0,
+          "vendor": 9635.0
+        },
+        {
+          "date": "2012-05-16",
+          "field": "high",
+          "krx": 10425.0,
+          "vendor": 9815.0
+        },
+        {
+          "date": "2012-05-16",
+          "field": "low",
+          "krx": 10200.0,
+          "vendor": 9603.0
+        },
+        {
+          "date": "2012-05-16",
+          "field": "close",
+          "krx": 10210.0,
+          "vendor": 9615.0
+        },
+        {
+          "date": "2012-05-17",
+          "field": "open",
+          "krx": 10320.0,
+          "vendor": 9716.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9415841584158415,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1410,
+      "last_observed_positive_volume_date": "2018-12-14",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/157520.csv",
+      "normalized_sha256": "4d38f72c8ab824c447ed00b8c2ed7019ca4b91d8bf198a7ab0ed8940e4a54fbe",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "144670",
+      "all_requested_years_nonempty": true,
+      "official_rows": 939,
+      "vendor_rows_in_scope": 939,
+      "overlapping_dates": 939,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 699,
+        "high": 699,
+        "low": 699,
+        "close": 691
+      },
+      "difference_examples": [
+        {
+          "date": "2011-07-18",
+          "field": "open",
+          "krx": 6630.0,
+          "vendor": 6462.0
+        },
+        {
+          "date": "2011-07-18",
+          "field": "high",
+          "krx": 6630.0,
+          "vendor": 6462.0
+        },
+        {
+          "date": "2011-07-18",
+          "field": "low",
+          "krx": 6525.0,
+          "vendor": 6360.0
+        },
+        {
+          "date": "2011-07-18",
+          "field": "close",
+          "krx": 6545.0,
+          "vendor": 6380.0
+        },
+        {
+          "date": "2011-07-19",
+          "field": "open",
+          "krx": 6500.0,
+          "vendor": 6335.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9747163695299838,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 871,
+      "last_observed_positive_volume_date": "2015-04-30",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/144670.csv",
+      "normalized_sha256": "9399d1dcb8dd71c8143ee08c1153ef29e47262f1d25d6c9fa725c7460f4ddfa2",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "157510",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1621,
+      "vendor_rows_in_scope": 1621,
+      "overlapping_dates": 1621,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1464,
+        "high": 1464,
+        "low": 1464,
+        "close": 1465
+      },
+      "difference_examples": [
+        {
+          "date": "2012-05-16",
+          "field": "open",
+          "krx": 20240.0,
+          "vendor": 18921.0
+        },
+        {
+          "date": "2012-05-16",
+          "field": "high",
+          "krx": 20240.0,
+          "vendor": 18921.0
+        },
+        {
+          "date": "2012-05-16",
+          "field": "low",
+          "krx": 19435.0,
+          "vendor": 18170.0
+        },
+        {
+          "date": "2012-05-16",
+          "field": "close",
+          "krx": 19435.0,
+          "vendor": 18171.0
+        },
+        {
+          "date": "2012-05-17",
+          "field": "open",
+          "krx": 19415.0,
+          "vendor": 18151.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9349167180752622,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1493,
+      "last_observed_positive_volume_date": "2018-12-14",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/157510.csv",
+      "normalized_sha256": "f9bb1ca9253d0108d4112e75d90e7e78595e44ac6cd2aef4876f63a3490d39c3",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "091200",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1272,
+      "vendor_rows_in_scope": 1272,
+      "overlapping_dates": 1272,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1078,
+        "high": 1078,
+        "low": 1078,
+        "close": 1075
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 12200.0,
+          "vendor": 11820.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 12800.0,
+          "vendor": 12402.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 12115.0,
+          "vendor": 11737.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 12300.0,
+          "vendor": 11919.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 12945.0,
+          "vendor": 12541.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9689082278481013,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1253,
+      "last_observed_positive_volume_date": "2015-02-16",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/091200.csv",
+      "normalized_sha256": "cf57ce9273f3c112f0820f7943738fd7294843cf3d21fb32ed715b236773d740",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "136280",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1596,
+      "vendor_rows_in_scope": 1596,
+      "overlapping_dates": 1596,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1580,
+        "high": 1580,
+        "low": 1580,
+        "close": 1580
+      },
+      "difference_examples": [
+        {
+          "date": "2010-12-07",
+          "field": "open",
+          "krx": 14435.0,
+          "vendor": 13935.0
+        },
+        {
+          "date": "2010-12-07",
+          "field": "high",
+          "krx": 14440.0,
+          "vendor": 13940.0
+        },
+        {
+          "date": "2010-12-07",
+          "field": "low",
+          "krx": 14260.0,
+          "vendor": 13766.0
+        },
+        {
+          "date": "2010-12-07",
+          "field": "close",
+          "krx": 14315.0,
+          "vendor": 13823.0
+        },
+        {
+          "date": "2010-12-08",
+          "field": "open",
+          "krx": 14355.0,
+          "vendor": 13858.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.965491270112975,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1591,
+      "last_observed_positive_volume_date": "2017-05-23",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/136280.csv",
+      "normalized_sha256": "7e11742c47a70a0520ada458338006bd592f70c981c14c52da1beb7e31ed8fe2",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "091210",
+      "all_requested_years_nonempty": true,
+      "official_rows": 2397,
+      "vendor_rows_in_scope": 2397,
+      "overlapping_dates": 2397,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 2301,
+        "high": 2301,
+        "low": 2301,
+        "close": 2299
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 36100.0,
+          "vendor": 31389.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 36435.0,
+          "vendor": 31683.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 36100.0,
+          "vendor": 31389.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 36430.0,
+          "vendor": 31687.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 36500.0,
+          "vendor": 31735.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.8697018181818181,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1808,
+      "last_observed_positive_volume_date": "2019-09-11",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/091210.csv",
+      "normalized_sha256": "4e4362327aaf7e4a6718c980abe706d0a40cb22ece794249d64663662eb544c2",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "105450",
+      "all_requested_years_nonempty": true,
+      "official_rows": 70,
+      "vendor_rows_in_scope": 70,
+      "overlapping_dates": 70,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {},
+      "difference_examples": [],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 69,
+      "last_observed_positive_volume_date": "2010-04-12",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/105450.csv",
+      "normalized_sha256": "12d8dbf2e372cc434544c70b44675c7e63f608c4f4fd5e39b613f991f5a424a5",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "168300",
+      "all_requested_years_nonempty": true,
+      "official_rows": 2730,
+      "vendor_rows_in_scope": 2730,
+      "overlapping_dates": 2730,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 2576,
+        "high": 2576,
+        "low": 2576,
+        "close": 2574,
+        "volume": 2148
+      },
+      "difference_examples": [
+        {
+          "date": "2012-11-12",
+          "field": "open",
+          "krx": 16195.0,
+          "vendor": 13811.0
+        },
+        {
+          "date": "2012-11-12",
+          "field": "high",
+          "krx": 16225.0,
+          "vendor": 13835.0
+        },
+        {
+          "date": "2012-11-12",
+          "field": "low",
+          "krx": 16075.0,
+          "vendor": 13707.0
+        },
+        {
+          "date": "2012-11-12",
+          "field": "close",
+          "krx": 16200.0,
+          "vendor": 13820.0
+        },
+        {
+          "date": "2012-11-12",
+          "field": "volume",
+          "krx": 6956.0,
+          "vendor": 8153.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.852908756889161,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 2449,
+      "last_observed_positive_volume_date": "2023-12-12",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/168300.csv",
+      "normalized_sha256": "4437ab3a286804dfa4e0664927eb6ac1a227f6bbe712c8d71b50ffff697749d9",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "152280",
+      "all_requested_years_nonempty": true,
+      "official_rows": 2259,
+      "vendor_rows_in_scope": 2259,
+      "overlapping_dates": 2259,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 9,
+        "high": 9,
+        "low": 9
+      },
+      "difference_examples": [
+        {
+          "date": "2013-05-30",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 10850.0
+        },
+        {
+          "date": "2013-05-30",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 10850.0
+        },
+        {
+          "date": "2013-05-30",
+          "field": "low",
+          "krx": 0.0,
+          "vendor": 10850.0
+        },
+        {
+          "date": "2013-07-02",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 10000.0
+        },
+        {
+          "date": "2013-07-02",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 10000.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 2247,
+      "last_observed_positive_volume_date": "2021-03-19",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/152280.csv",
+      "normalized_sha256": "191fcc60ba5c0cc0d7b68f4b2797115d3e29d6fe8717b2604d49bff240bc2b43",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "138210",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1093,
+      "vendor_rows_in_scope": 1093,
+      "overlapping_dates": 1093,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1056,
+        "high": 1056,
+        "low": 1056,
+        "close": 1050
+      },
+      "difference_examples": [
+        {
+          "date": "2011-01-27",
+          "field": "open",
+          "krx": 12425.0,
+          "vendor": 12067.0
+        },
+        {
+          "date": "2011-01-27",
+          "field": "high",
+          "krx": 12425.0,
+          "vendor": 12067.0
+        },
+        {
+          "date": "2011-01-27",
+          "field": "low",
+          "krx": 12300.0,
+          "vendor": 11945.0
+        },
+        {
+          "date": "2011-01-27",
+          "field": "close",
+          "krx": 12300.0,
+          "vendor": 11948.0
+        },
+        {
+          "date": "2011-01-28",
+          "field": "open",
+          "krx": 14100.0,
+          "vendor": 13694.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9711453744493392,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 924,
+      "last_observed_positive_volume_date": "2015-06-30",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/138210.csv",
+      "normalized_sha256": "217466575979ac89883b1d7486da33abe9c7115e3a8a8c5499d4b6c78ed98250",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "157650",
+      "all_requested_years_nonempty": true,
+      "official_rows": 880,
+      "vendor_rows_in_scope": 880,
+      "overlapping_dates": 880,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 861,
+        "high": 861,
+        "low": 861,
+        "close": 875
+      },
+      "difference_examples": [
+        {
+          "date": "2012-05-23",
+          "field": "open",
+          "krx": 123405.0,
+          "vendor": 116604.0
+        },
+        {
+          "date": "2012-05-23",
+          "field": "high",
+          "krx": 123405.0,
+          "vendor": 116604.0
+        },
+        {
+          "date": "2012-05-23",
+          "field": "low",
+          "krx": 122000.0,
+          "vendor": 115275.0
+        },
+        {
+          "date": "2012-05-23",
+          "field": "close",
+          "krx": 122315.0,
+          "vendor": 115576.0
+        },
+        {
+          "date": "2012-05-24",
+          "field": "open",
+          "krx": 122300.0,
+          "vendor": 115559.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9448900700652332,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 548,
+      "last_observed_positive_volume_date": "2015-11-17",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/157650.csv",
+      "normalized_sha256": "973750000e122a714bf4c89182ffe725f225a042c8ba228d38a607df850cb529",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "108440",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1566,
+      "vendor_rows_in_scope": 1566,
+      "overlapping_dates": 1566,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1272,
+        "high": 1272,
+        "low": 1272,
+        "close": 1319
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 13025.0,
+          "vendor": 11988.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 13285.0,
+          "vendor": 12227.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 13025.0,
+          "vendor": 11988.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 13285.0,
+          "vendor": 12231.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 15275.0,
+          "vendor": 14060.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9204761904761904,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1518,
+      "last_observed_positive_volume_date": "2016-04-27",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/108440.csv",
+      "normalized_sha256": "793604bcc53957f15f7d6c44399b30646b37347ba46e6d2ab9f55882e93fca14",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "137990",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1207,
+      "vendor_rows_in_scope": 1207,
+      "overlapping_dates": 1207,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1059,
+        "high": 1059,
+        "low": 1059,
+        "close": 1050
+      },
+      "difference_examples": [
+        {
+          "date": "2011-01-27",
+          "field": "open",
+          "krx": 12400.0,
+          "vendor": 12046.0
+        },
+        {
+          "date": "2011-01-27",
+          "field": "high",
+          "krx": 12400.0,
+          "vendor": 12046.0
+        },
+        {
+          "date": "2011-01-27",
+          "field": "low",
+          "krx": 12295.0,
+          "vendor": 11945.0
+        },
+        {
+          "date": "2011-01-27",
+          "field": "close",
+          "krx": 12305.0,
+          "vendor": 11956.0
+        },
+        {
+          "date": "2011-01-28",
+          "field": "open",
+          "krx": 12345.0,
+          "vendor": 11993.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9715107913669064,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1180,
+      "last_observed_positive_volume_date": "2015-12-11",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/137990.csv",
+      "normalized_sha256": "5192beb28798155aa1c63cc88839a16b5f36e33fecab606a0e35cd73d6b724ce",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "200020",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1295,
+      "vendor_rows_in_scope": 1295,
+      "overlapping_dates": 1295,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {},
+      "difference_examples": [],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1294,
+      "last_observed_positive_volume_date": "2019-09-18",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/200020.csv",
+      "normalized_sha256": "3eafbb95570ead724cdeff9af14b5b76206cd8a69422ecdb3363218ebfa22aa2",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "123760",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1618,
+      "vendor_rows_in_scope": 1618,
+      "overlapping_dates": 1618,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "volume": 1
+      },
+      "difference_examples": [
+        {
+          "date": "2016-06-30",
+          "field": "volume",
+          "krx": 11012.0,
+          "vendor": 11007.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1617,
+      "last_observed_positive_volume_date": "2016-10-21",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/123760.csv",
+      "normalized_sha256": "66735e9349adf5042fa6ae0547ac32123a7403b7a0e743d7c07fdc936fff9335",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "152180",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1702,
+      "vendor_rows_in_scope": 1702,
+      "overlapping_dates": 1702,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1543,
+        "high": 1543,
+        "low": 1543,
+        "close": 1546
+      },
+      "difference_examples": [
+        {
+          "date": "2012-01-17",
+          "field": "open",
+          "krx": 7455.0,
+          "vendor": 7275.0
+        },
+        {
+          "date": "2012-01-17",
+          "field": "high",
+          "krx": 7565.0,
+          "vendor": 7382.0
+        },
+        {
+          "date": "2012-01-17",
+          "field": "low",
+          "krx": 7445.0,
+          "vendor": 7266.0
+        },
+        {
+          "date": "2012-01-17",
+          "field": "close",
+          "krx": 7450.0,
+          "vendor": 7273.0
+        },
+        {
+          "date": "2012-01-18",
+          "field": "open",
+          "krx": 7445.0,
+          "vendor": 7266.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9760053619302949,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1675,
+      "last_observed_positive_volume_date": "2018-12-14",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/152180.csv",
+      "normalized_sha256": "3981b10f01ee7b6304834b4279321220d0a7ff529730ad7145022d91b069bc19",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "190150",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1349,
+      "vendor_rows_in_scope": 1349,
+      "overlapping_dates": 1349,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 312,
+        "high": 312,
+        "low": 312
+      },
+      "difference_examples": [
+        {
+          "date": "2014-12-08",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 105010.0
+        },
+        {
+          "date": "2014-12-08",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 105010.0
+        },
+        {
+          "date": "2014-12-08",
+          "field": "low",
+          "krx": 0.0,
+          "vendor": 105010.0
+        },
+        {
+          "date": "2014-12-15",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 105350.0
+        },
+        {
+          "date": "2014-12-15",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 105350.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1036,
+      "last_observed_positive_volume_date": "2019-06-19",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/190150.csv",
+      "normalized_sha256": "5e49398a3bf67cf0154646dcf5a067802e9ebd024bcdbd294f1a0107a20af17f",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "139310",
+      "all_requested_years_nonempty": true,
+      "official_rows": 3523,
+      "vendor_rows_in_scope": 3000,
+      "overlapping_dates": 3000,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [
+        "2011-04-08",
+        "2011-04-11",
+        "2011-04-12",
+        "2011-04-13",
+        "2011-04-14",
+        "2011-04-15",
+        "2011-04-18",
+        "2011-04-19",
+        "2011-04-20",
+        "2011-04-21",
+        "2011-04-22",
+        "2011-04-25",
+        "2011-04-26",
+        "2011-04-27",
+        "2011-04-28",
+        "2011-04-29",
+        "2011-05-02",
+        "2011-05-03",
+        "2011-05-04",
+        "2011-05-06",
+        "2011-05-09",
+        "2011-05-11",
+        "2011-05-12",
+        "2011-05-13",
+        "2011-05-16",
+        "2011-05-17",
+        "2011-05-18",
+        "2011-05-19",
+        "2011-05-20",
+        "2011-05-23",
+        "2011-05-24",
+        "2011-05-25",
+        "2011-05-26",
+        "2011-05-27",
+        "2011-05-30",
+        "2011-05-31",
+        "2011-06-01",
+        "2011-06-02",
+        "2011-06-03",
+        "2011-06-07",
+        "2011-06-08",
+        "2011-06-09",
+        "2011-06-10",
+        "2011-06-13",
+        "2011-06-14",
+        "2011-06-15",
+        "2011-06-16",
+        "2011-06-17",
+        "2011-06-20",
+        "2011-06-21",
+        "2011-06-22",
+        "2011-06-23",
+        "2011-06-24",
+        "2011-06-27",
+        "2011-06-28",
+        "2011-06-29",
+        "2011-06-30",
+        "2011-07-01",
+        "2011-07-04",
+        "2011-07-05",
+        "2011-07-06",
+        "2011-07-07",
+        "2011-07-08",
+        "2011-07-11",
+        "2011-07-12",
+        "2011-07-13",
+        "2011-07-14",
+        "2011-07-15",
+        "2011-07-18",
+        "2011-07-19",
+        "2011-07-20",
+        "2011-07-21",
+        "2011-07-22",
+        "2011-07-25",
+        "2011-07-26",
+        "2011-07-27",
+        "2011-07-28",
+        "2011-07-29",
+        "2011-08-01",
+        "2011-08-02",
+        "2011-08-03",
+        "2011-08-04",
+        "2011-08-05",
+        "2011-08-08",
+        "2011-08-09",
+        "2011-08-10",
+        "2011-08-11",
+        "2011-08-12",
+        "2011-08-16",
+        "2011-08-17",
+        "2011-08-18",
+        "2011-08-19",
+        "2011-08-22",
+        "2011-08-23",
+        "2011-08-24",
+        "2011-08-25",
+        "2011-08-26",
+        "2011-08-29",
+        "2011-08-30",
+        "2011-08-31",
+        "2011-09-01",
+        "2011-09-02",
+        "2011-09-05",
+        "2011-09-06",
+        "2011-09-07",
+        "2011-09-08",
+        "2011-09-09",
+        "2011-09-14",
+        "2011-09-15",
+        "2011-09-16",
+        "2011-09-19",
+        "2011-09-20",
+        "2011-09-21",
+        "2011-09-22",
+        "2011-09-23",
+        "2011-09-26",
+        "2011-09-27",
+        "2011-09-28",
+        "2011-09-29",
+        "2011-09-30",
+        "2011-10-04",
+        "2011-10-05",
+        "2011-10-06",
+        "2011-10-07",
+        "2011-10-10",
+        "2011-10-11",
+        "2011-10-12",
+        "2011-10-13",
+        "2011-10-14",
+        "2011-10-17",
+        "2011-10-18",
+        "2011-10-19",
+        "2011-10-20",
+        "2011-10-21",
+        "2011-10-24",
+        "2011-10-25",
+        "2011-10-26",
+        "2011-10-27",
+        "2011-10-28",
+        "2011-10-31",
+        "2011-11-01",
+        "2011-11-02",
+        "2011-11-03",
+        "2011-11-04",
+        "2011-11-07",
+        "2011-11-08",
+        "2011-11-09",
+        "2011-11-10",
+        "2011-11-11",
+        "2011-11-14",
+        "2011-11-15",
+        "2011-11-16",
+        "2011-11-17",
+        "2011-11-18",
+        "2011-11-21",
+        "2011-11-22",
+        "2011-11-23",
+        "2011-11-24",
+        "2011-11-25",
+        "2011-11-28",
+        "2011-11-29",
+        "2011-11-30",
+        "2011-12-01",
+        "2011-12-02",
+        "2011-12-05",
+        "2011-12-06",
+        "2011-12-07",
+        "2011-12-08",
+        "2011-12-09",
+        "2011-12-12",
+        "2011-12-13",
+        "2011-12-14",
+        "2011-12-15",
+        "2011-12-16",
+        "2011-12-19",
+        "2011-12-20",
+        "2011-12-21",
+        "2011-12-22",
+        "2011-12-23",
+        "2011-12-26",
+        "2011-12-27",
+        "2011-12-28",
+        "2011-12-29",
+        "2012-01-02",
+        "2012-01-03",
+        "2012-01-04",
+        "2012-01-05",
+        "2012-01-06",
+        "2012-01-09",
+        "2012-01-10",
+        "2012-01-11",
+        "2012-01-12",
+        "2012-01-13",
+        "2012-01-16",
+        "2012-01-17",
+        "2012-01-18",
+        "2012-01-19",
+        "2012-01-20",
+        "2012-01-25",
+        "2012-01-26",
+        "2012-01-27",
+        "2012-01-30",
+        "2012-01-31",
+        "2012-02-01",
+        "2012-02-02",
+        "2012-02-03",
+        "2012-02-06",
+        "2012-02-07",
+        "2012-02-08",
+        "2012-02-09",
+        "2012-02-10",
+        "2012-02-13",
+        "2012-02-14",
+        "2012-02-15",
+        "2012-02-16",
+        "2012-02-17",
+        "2012-02-20",
+        "2012-02-21",
+        "2012-02-22",
+        "2012-02-23",
+        "2012-02-24",
+        "2012-02-27",
+        "2012-02-28",
+        "2012-02-29",
+        "2012-03-02",
+        "2012-03-05",
+        "2012-03-06",
+        "2012-03-07",
+        "2012-03-08",
+        "2012-03-09",
+        "2012-03-12",
+        "2012-03-13",
+        "2012-03-14",
+        "2012-03-15",
+        "2012-03-16",
+        "2012-03-19",
+        "2012-03-20",
+        "2012-03-21",
+        "2012-03-22",
+        "2012-03-23",
+        "2012-03-26",
+        "2012-03-27",
+        "2012-03-28",
+        "2012-03-29",
+        "2012-03-30",
+        "2012-04-02",
+        "2012-04-03",
+        "2012-04-04",
+        "2012-04-05",
+        "2012-04-06",
+        "2012-04-09",
+        "2012-04-10",
+        "2012-04-12",
+        "2012-04-13",
+        "2012-04-16",
+        "2012-04-17",
+        "2012-04-18",
+        "2012-04-19",
+        "2012-04-20",
+        "2012-04-23",
+        "2012-04-24",
+        "2012-04-25",
+        "2012-04-26",
+        "2012-04-27",
+        "2012-04-30",
+        "2012-05-02",
+        "2012-05-03",
+        "2012-05-04",
+        "2012-05-07",
+        "2012-05-08",
+        "2012-05-09",
+        "2012-05-10",
+        "2012-05-11",
+        "2012-05-14",
+        "2012-05-15",
+        "2012-05-16",
+        "2012-05-17",
+        "2012-05-18",
+        "2012-05-21",
+        "2012-05-22",
+        "2012-05-23",
+        "2012-05-24",
+        "2012-05-25",
+        "2012-05-29",
+        "2012-05-30",
+        "2012-05-31",
+        "2012-06-01",
+        "2012-06-04",
+        "2012-06-05",
+        "2012-06-07",
+        "2012-06-08",
+        "2012-06-11",
+        "2012-06-12",
+        "2012-06-13",
+        "2012-06-14",
+        "2012-06-15",
+        "2012-06-18",
+        "2012-06-19",
+        "2012-06-20",
+        "2012-06-21",
+        "2012-06-22",
+        "2012-06-25",
+        "2012-06-26",
+        "2012-06-27",
+        "2012-06-28",
+        "2012-06-29",
+        "2012-07-02",
+        "2012-07-03",
+        "2012-07-04",
+        "2012-07-05",
+        "2012-07-06",
+        "2012-07-09",
+        "2012-07-10",
+        "2012-07-11",
+        "2012-07-12",
+        "2012-07-13",
+        "2012-07-16",
+        "2012-07-17",
+        "2012-07-18",
+        "2012-07-19",
+        "2012-07-20",
+        "2012-07-23",
+        "2012-07-24",
+        "2012-07-25",
+        "2012-07-26",
+        "2012-07-27",
+        "2012-07-30",
+        "2012-07-31",
+        "2012-08-01",
+        "2012-08-02",
+        "2012-08-03",
+        "2012-08-06",
+        "2012-08-07",
+        "2012-08-08",
+        "2012-08-09",
+        "2012-08-10",
+        "2012-08-13",
+        "2012-08-14",
+        "2012-08-16",
+        "2012-08-17",
+        "2012-08-20",
+        "2012-08-21",
+        "2012-08-22",
+        "2012-08-23",
+        "2012-08-24",
+        "2012-08-27",
+        "2012-08-28",
+        "2012-08-29",
+        "2012-08-30",
+        "2012-08-31",
+        "2012-09-03",
+        "2012-09-04",
+        "2012-09-05",
+        "2012-09-06",
+        "2012-09-07",
+        "2012-09-10",
+        "2012-09-11",
+        "2012-09-12",
+        "2012-09-13",
+        "2012-09-14",
+        "2012-09-17",
+        "2012-09-18",
+        "2012-09-19",
+        "2012-09-20",
+        "2012-09-21",
+        "2012-09-24",
+        "2012-09-25",
+        "2012-09-26",
+        "2012-09-27",
+        "2012-09-28",
+        "2012-10-02",
+        "2012-10-04",
+        "2012-10-05",
+        "2012-10-08",
+        "2012-10-09",
+        "2012-10-10",
+        "2012-10-11",
+        "2012-10-12",
+        "2012-10-15",
+        "2012-10-16",
+        "2012-10-17",
+        "2012-10-18",
+        "2012-10-19",
+        "2012-10-22",
+        "2012-10-23",
+        "2012-10-24",
+        "2012-10-25",
+        "2012-10-26",
+        "2012-10-29",
+        "2012-10-30",
+        "2012-10-31",
+        "2012-11-01",
+        "2012-11-02",
+        "2012-11-05",
+        "2012-11-06",
+        "2012-11-07",
+        "2012-11-08",
+        "2012-11-09",
+        "2012-11-12",
+        "2012-11-13",
+        "2012-11-14",
+        "2012-11-15",
+        "2012-11-16",
+        "2012-11-19",
+        "2012-11-20",
+        "2012-11-21",
+        "2012-11-22",
+        "2012-11-23",
+        "2012-11-26",
+        "2012-11-27",
+        "2012-11-28",
+        "2012-11-29",
+        "2012-11-30",
+        "2012-12-03",
+        "2012-12-04",
+        "2012-12-05",
+        "2012-12-06",
+        "2012-12-07",
+        "2012-12-10",
+        "2012-12-11",
+        "2012-12-12",
+        "2012-12-13",
+        "2012-12-14",
+        "2012-12-17",
+        "2012-12-18",
+        "2012-12-20",
+        "2012-12-21",
+        "2012-12-24",
+        "2012-12-26",
+        "2012-12-27",
+        "2012-12-28",
+        "2013-01-02",
+        "2013-01-03",
+        "2013-01-04",
+        "2013-01-07",
+        "2013-01-08",
+        "2013-01-09",
+        "2013-01-10",
+        "2013-01-11",
+        "2013-01-14",
+        "2013-01-15",
+        "2013-01-16",
+        "2013-01-17",
+        "2013-01-18",
+        "2013-01-21",
+        "2013-01-22",
+        "2013-01-23",
+        "2013-01-24",
+        "2013-01-25",
+        "2013-01-28",
+        "2013-01-29",
+        "2013-01-30",
+        "2013-01-31",
+        "2013-02-01",
+        "2013-02-04",
+        "2013-02-05",
+        "2013-02-06",
+        "2013-02-07",
+        "2013-02-08",
+        "2013-02-12",
+        "2013-02-13",
+        "2013-02-14",
+        "2013-02-15",
+        "2013-02-18",
+        "2013-02-19",
+        "2013-02-20",
+        "2013-02-21",
+        "2013-02-22",
+        "2013-02-25",
+        "2013-02-26",
+        "2013-02-27",
+        "2013-02-28",
+        "2013-03-04",
+        "2013-03-05",
+        "2013-03-06",
+        "2013-03-07",
+        "2013-03-08",
+        "2013-03-11",
+        "2013-03-12",
+        "2013-03-13",
+        "2013-03-14",
+        "2013-03-15",
+        "2013-03-18",
+        "2013-03-19",
+        "2013-03-20",
+        "2013-03-21",
+        "2013-03-22",
+        "2013-03-25",
+        "2013-03-26",
+        "2013-03-27",
+        "2013-03-28",
+        "2013-03-29",
+        "2013-04-01",
+        "2013-04-02",
+        "2013-04-03",
+        "2013-04-04",
+        "2013-04-05",
+        "2013-04-08",
+        "2013-04-09",
+        "2013-04-10",
+        "2013-04-11",
+        "2013-04-12",
+        "2013-04-15",
+        "2013-04-16",
+        "2013-04-17",
+        "2013-04-18",
+        "2013-04-19",
+        "2013-04-22",
+        "2013-04-23",
+        "2013-04-24",
+        "2013-04-25",
+        "2013-04-26",
+        "2013-04-29",
+        "2013-04-30",
+        "2013-05-02",
+        "2013-05-03",
+        "2013-05-06",
+        "2013-05-07",
+        "2013-05-08",
+        "2013-05-09",
+        "2013-05-10",
+        "2013-05-13",
+        "2013-05-14"
+      ],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 100,
+        "high": 100,
+        "low": 100
+      },
+      "difference_examples": [
+        {
+          "date": "2013-05-27",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 6640.0
+        },
+        {
+          "date": "2013-05-27",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 6640.0
+        },
+        {
+          "date": "2013-05-27",
+          "field": "low",
+          "krx": 0.0,
+          "vendor": 6640.0
+        },
+        {
+          "date": "2013-05-28",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 6640.0
+        },
+        {
+          "date": "2013-05-28",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 6640.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 3418,
+      "last_observed_positive_volume_date": "2025-07-31",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/139310.csv",
+      "normalized_sha256": "d23088572db3d9c3ec7b45eb5ba6a55ef0beb13d2ab895057a34baa092a8a0de",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "124090",
+      "all_requested_years_nonempty": true,
+      "official_rows": 404,
+      "vendor_rows_in_scope": 404,
+      "overlapping_dates": 404,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 244,
+        "high": 244,
+        "low": 244,
+        "close": 244
+      },
+      "difference_examples": [
+        {
+          "date": "2010-05-07",
+          "field": "open",
+          "krx": 10030.0,
+          "vendor": 9997.0
+        },
+        {
+          "date": "2010-05-07",
+          "field": "high",
+          "krx": 10030.0,
+          "vendor": 9997.0
+        },
+        {
+          "date": "2010-05-07",
+          "field": "low",
+          "krx": 7420.0,
+          "vendor": 7396.0
+        },
+        {
+          "date": "2010-05-07",
+          "field": "close",
+          "krx": 8495.0,
+          "vendor": 8468.0
+        },
+        {
+          "date": "2010-05-10",
+          "field": "open",
+          "krx": 8600.0,
+          "vendor": 8572.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9967316153362665,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 390,
+      "last_observed_positive_volume_date": "2011-12-14",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/124090.csv",
+      "normalized_sha256": "d18d05fcaf20f347ec137a664c5f6c5a0988c1eb428423d40a5b9a109de48111",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "139300",
+      "all_requested_years_nonempty": true,
+      "official_rows": 551,
+      "vendor_rows_in_scope": 551,
+      "overlapping_dates": 551,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 515,
+        "high": 515,
+        "low": 515,
+        "close": 512
+      },
+      "difference_examples": [
+        {
+          "date": "2011-04-08",
+          "field": "open",
+          "krx": 8605.0,
+          "vendor": 8540.0
+        },
+        {
+          "date": "2011-04-08",
+          "field": "high",
+          "krx": 8685.0,
+          "vendor": 8619.0
+        },
+        {
+          "date": "2011-04-08",
+          "field": "low",
+          "krx": 8605.0,
+          "vendor": 8540.0
+        },
+        {
+          "date": "2011-04-08",
+          "field": "close",
+          "krx": 8670.0,
+          "vendor": 8605.0
+        },
+        {
+          "date": "2011-04-11",
+          "field": "open",
+          "krx": 8665.0,
+          "vendor": 8599.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9923980649619903,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 542,
+      "last_observed_positive_volume_date": "2013-06-24",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/139300.csv",
+      "normalized_sha256": "7b06c93fcb03f4293a445e1785d7fc14cba99329487c93a15b718cb3d95f9a75",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "110550",
+      "all_requested_years_nonempty": true,
+      "official_rows": 490,
+      "vendor_rows_in_scope": 490,
+      "overlapping_dates": 490,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {},
+      "difference_examples": [],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 489,
+      "last_observed_positive_volume_date": "2011-12-15",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/110550.csv",
+      "normalized_sha256": "814f8095caee73029d0f92c46c6d417eecc838306547cae7000cac55ad9e155a",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "129270",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1210,
+      "vendor_rows_in_scope": 1210,
+      "overlapping_dates": 1210,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1011,
+        "high": 1011,
+        "low": 1011,
+        "close": 962
+      },
+      "difference_examples": [
+        {
+          "date": "2010-06-17",
+          "field": "open",
+          "krx": 5475.0,
+          "vendor": 5232.0
+        },
+        {
+          "date": "2010-06-17",
+          "field": "high",
+          "krx": 5490.0,
+          "vendor": 5247.0
+        },
+        {
+          "date": "2010-06-17",
+          "field": "low",
+          "krx": 5445.0,
+          "vendor": 5204.0
+        },
+        {
+          "date": "2010-06-17",
+          "field": "close",
+          "krx": 5455.0,
+          "vendor": 5216.0
+        },
+        {
+          "date": "2010-06-18",
+          "field": "open",
+          "krx": 5485.0,
+          "vendor": 5242.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9558845299777943,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1119,
+      "last_observed_positive_volume_date": "2015-04-28",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/129270.csv",
+      "normalized_sha256": "7bd770231c64183f68ec0790973e70be85df67c97d2e8fada58ec87c50f2fbdf",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "200050",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1054,
+      "vendor_rows_in_scope": 1054,
+      "overlapping_dates": 1054,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {},
+      "difference_examples": [],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1053,
+      "last_observed_positive_volume_date": "2018-09-20",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/200050.csv",
+      "normalized_sha256": "7a0899ce464f7ce834efe07bd8f6a4569319278291181b25f1f69e9b67dd431e",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "105270",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1566,
+      "vendor_rows_in_scope": 1566,
+      "overlapping_dates": 1566,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "close": 1319,
+        "open": 1193,
+        "high": 1193,
+        "low": 1193
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 5835.0,
+          "vendor": 5485.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 5860.0,
+          "vendor": 5506.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "high",
+          "krx": 5860.0,
+          "vendor": 5506.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "low",
+          "krx": 5860.0,
+          "vendor": 5506.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "close",
+          "krx": 5860.0,
+          "vendor": 5509.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9397402597402598,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1433,
+      "last_observed_positive_volume_date": "2016-04-22",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/105270.csv",
+      "normalized_sha256": "ed3feb7536470b7c581368b305d9e867fd728e7c65bdd72cddf532aab6f3dede",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "200040",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1295,
+      "vendor_rows_in_scope": 1295,
+      "overlapping_dates": 1295,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 6,
+        "high": 6,
+        "low": 6
+      },
+      "difference_examples": [
+        {
+          "date": "2016-04-07",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 11055.0
+        },
+        {
+          "date": "2016-04-07",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 11055.0
+        },
+        {
+          "date": "2016-04-07",
+          "field": "low",
+          "krx": 0.0,
+          "vendor": 11055.0
+        },
+        {
+          "date": "2016-04-19",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 11260.0
+        },
+        {
+          "date": "2016-04-19",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 11260.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1288,
+      "last_observed_positive_volume_date": "2019-09-18",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/200040.csv",
+      "normalized_sha256": "5456004960a7be9055d72f99ba6b21fcb1077927654b1b78f3725c3ff0b41ca5",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "190160",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1644,
+      "vendor_rows_in_scope": 1644,
+      "overlapping_dates": 1644,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 196,
+        "high": 196,
+        "low": 196
+      },
+      "difference_examples": [
+        {
+          "date": "2014-06-02",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 101195.0
+        },
+        {
+          "date": "2014-06-02",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 101195.0
+        },
+        {
+          "date": "2014-06-02",
+          "field": "low",
+          "krx": 0.0,
+          "vendor": 101195.0
+        },
+        {
+          "date": "2014-11-10",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 102535.0
+        },
+        {
+          "date": "2014-11-10",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 102535.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1447,
+      "last_observed_positive_volume_date": "2020-08-27",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/190160.csv",
+      "normalized_sha256": "b44089ade3cf011f445b981edc7844d23f7a6473c50f358618ef5e8f5f856052",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "0021D0",
+      "all_requested_years_nonempty": true,
+      "official_rows": 323,
+      "vendor_rows_in_scope": 323,
+      "overlapping_dates": 323,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 197,
+        "high": 197,
+        "low": 197,
+        "close": 197,
+        "volume": 197
+      },
+      "difference_examples": [
+        {
+          "date": "2025-03-11",
+          "field": "open",
+          "krx": 10000.0,
+          "vendor": 9937.0
+        },
+        {
+          "date": "2025-03-11",
+          "field": "high",
+          "krx": 10000.0,
+          "vendor": 9937.0
+        },
+        {
+          "date": "2025-03-11",
+          "field": "low",
+          "krx": 9895.0,
+          "vendor": 9832.0
+        },
+        {
+          "date": "2025-03-11",
+          "field": "close",
+          "krx": 9930.0,
+          "vendor": 9867.0
+        },
+        {
+          "date": "2025-03-11",
+          "field": "volume",
+          "krx": 119204.0,
+          "vendor": 119957.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9936213991769547,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 322,
+      "last_observed_positive_volume_date": "2026-07-03",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/0021D0.csv",
+      "normalized_sha256": "2a3df62f119b25302d3eae1c720e7a63e3f3cbef54c112522b6a71e5d2a6d66a",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "137930",
+      "all_requested_years_nonempty": true,
+      "official_rows": 3130,
+      "vendor_rows_in_scope": 3000,
+      "overlapping_dates": 3000,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [
+        "2011-02-15",
+        "2011-02-16",
+        "2011-02-17",
+        "2011-02-18",
+        "2011-02-21",
+        "2011-02-22",
+        "2011-02-23",
+        "2011-02-24",
+        "2011-02-25",
+        "2011-02-28",
+        "2011-03-02",
+        "2011-03-03",
+        "2011-03-04",
+        "2011-03-07",
+        "2011-03-08",
+        "2011-03-09",
+        "2011-03-10",
+        "2011-03-11",
+        "2011-03-14",
+        "2011-03-15",
+        "2011-03-16",
+        "2011-03-17",
+        "2011-03-18",
+        "2011-03-21",
+        "2011-03-22",
+        "2011-03-23",
+        "2011-03-24",
+        "2011-03-25",
+        "2011-03-28",
+        "2011-03-29",
+        "2011-03-30",
+        "2011-03-31",
+        "2011-04-01",
+        "2011-04-04",
+        "2011-04-05",
+        "2011-04-06",
+        "2011-04-07",
+        "2011-04-08",
+        "2011-04-11",
+        "2011-04-12",
+        "2011-04-13",
+        "2011-04-14",
+        "2011-04-15",
+        "2011-04-18",
+        "2011-04-19",
+        "2011-04-20",
+        "2011-04-21",
+        "2011-04-22",
+        "2011-04-25",
+        "2011-04-26",
+        "2011-04-27",
+        "2011-04-28",
+        "2011-04-29",
+        "2011-05-02",
+        "2011-05-03",
+        "2011-05-04",
+        "2011-05-06",
+        "2011-05-09",
+        "2011-05-11",
+        "2011-05-12",
+        "2011-05-13",
+        "2011-05-16",
+        "2011-05-17",
+        "2011-05-18",
+        "2011-05-19",
+        "2011-05-20",
+        "2011-05-23",
+        "2011-05-24",
+        "2011-05-25",
+        "2011-05-26",
+        "2011-05-27",
+        "2011-05-30",
+        "2011-05-31",
+        "2011-06-01",
+        "2011-06-02",
+        "2011-06-03",
+        "2011-06-07",
+        "2011-06-08",
+        "2011-06-09",
+        "2011-06-10",
+        "2011-06-13",
+        "2011-06-14",
+        "2011-06-15",
+        "2011-06-16",
+        "2011-06-17",
+        "2011-06-20",
+        "2011-06-21",
+        "2011-06-22",
+        "2011-06-23",
+        "2011-06-24",
+        "2011-06-27",
+        "2011-06-28",
+        "2011-06-29",
+        "2011-06-30",
+        "2011-07-01",
+        "2011-07-04",
+        "2011-07-05",
+        "2011-07-06",
+        "2011-07-07",
+        "2011-07-08",
+        "2011-07-11",
+        "2011-07-12",
+        "2011-07-13",
+        "2011-07-14",
+        "2011-07-15",
+        "2011-07-18",
+        "2011-07-19",
+        "2011-07-20",
+        "2011-07-21",
+        "2011-07-22",
+        "2011-07-25",
+        "2011-07-26",
+        "2011-07-27",
+        "2011-07-28",
+        "2011-07-29",
+        "2011-08-01",
+        "2011-08-02",
+        "2011-08-03",
+        "2011-08-04",
+        "2011-08-05",
+        "2011-08-08",
+        "2011-08-09",
+        "2011-08-10",
+        "2011-08-11",
+        "2011-08-12",
+        "2011-08-16",
+        "2011-08-17",
+        "2011-08-18",
+        "2011-08-19",
+        "2011-08-22"
+      ],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1170,
+        "high": 1170,
+        "low": 1170,
+        "close": 666
+      },
+      "difference_examples": [
+        {
+          "date": "2011-08-23",
+          "field": "open",
+          "krx": 8530.0,
+          "vendor": 8469.0
+        },
+        {
+          "date": "2011-08-23",
+          "field": "high",
+          "krx": 8735.0,
+          "vendor": 8673.0
+        },
+        {
+          "date": "2011-08-23",
+          "field": "low",
+          "krx": 8480.0,
+          "vendor": 8420.0
+        },
+        {
+          "date": "2011-08-23",
+          "field": "close",
+          "krx": 8725.0,
+          "vendor": 8664.0
+        },
+        {
+          "date": "2011-08-24",
+          "field": "open",
+          "krx": 8745.0,
+          "vendor": 8683.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9929222520107238,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 2625,
+      "last_observed_positive_volume_date": "2023-10-25",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/137930.csv",
+      "normalized_sha256": "505d2950b7a1d2668cfbf411a6c63dd66d52bf6ff606c1b85c07d2c8d294b99b",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "0021E0",
+      "all_requested_years_nonempty": true,
+      "official_rows": 325,
+      "vendor_rows_in_scope": 325,
+      "overlapping_dates": 325,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 197,
+        "high": 197,
+        "low": 197,
+        "close": 197,
+        "volume": 197
+      },
+      "difference_examples": [
+        {
+          "date": "2025-03-11",
+          "field": "open",
+          "krx": 10000.0,
+          "vendor": 9966.0
+        },
+        {
+          "date": "2025-03-11",
+          "field": "high",
+          "krx": 10000.0,
+          "vendor": 9966.0
+        },
+        {
+          "date": "2025-03-11",
+          "field": "low",
+          "krx": 9840.0,
+          "vendor": 9807.0
+        },
+        {
+          "date": "2025-03-11",
+          "field": "close",
+          "krx": 9865.0,
+          "vendor": 9832.0
+        },
+        {
+          "date": "2025-03-11",
+          "field": "volume",
+          "krx": 98171.0,
+          "vendor": 98497.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9965856182100362,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 324,
+      "last_observed_positive_volume_date": "2026-07-07",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/0021E0.csv",
+      "normalized_sha256": "4042b5c8a0207dff44629f262dcd456cffa48b7d4c285af0f06f08a24bd9810d",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "166060",
+      "all_requested_years_nonempty": true,
+      "official_rows": 581,
+      "vendor_rows_in_scope": 581,
+      "overlapping_dates": 581,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 120,
+        "high": 120,
+        "low": 120
+      },
+      "difference_examples": [
+        {
+          "date": "2013-03-22",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 9520.0
+        },
+        {
+          "date": "2013-03-22",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 9520.0
+        },
+        {
+          "date": "2013-03-22",
+          "field": "low",
+          "krx": 0.0,
+          "vendor": 9520.0
+        },
+        {
+          "date": "2013-04-24",
+          "field": "open",
+          "krx": 0.0,
+          "vendor": 8875.0
+        },
+        {
+          "date": "2013-04-24",
+          "field": "high",
+          "krx": 0.0,
+          "vendor": 8875.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 460,
+      "last_observed_positive_volume_date": "2015-02-13",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/166060.csv",
+      "normalized_sha256": "d8220d975ebc698c7d762106ea9efc73bb53c82568679f54b9c73f0e7f546e30",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "141240",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1844,
+      "vendor_rows_in_scope": 1844,
+      "overlapping_dates": 1844,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1531,
+        "high": 1531,
+        "low": 1531,
+        "close": 1714
+      },
+      "difference_examples": [
+        {
+          "date": "2011-05-18",
+          "field": "open",
+          "krx": 9990.0,
+          "vendor": 9327.0
+        },
+        {
+          "date": "2011-05-18",
+          "field": "high",
+          "krx": 10125.0,
+          "vendor": 9452.0
+        },
+        {
+          "date": "2011-05-18",
+          "field": "low",
+          "krx": 9990.0,
+          "vendor": 9327.0
+        },
+        {
+          "date": "2011-05-18",
+          "field": "close",
+          "krx": 10125.0,
+          "vendor": 9456.0
+        },
+        {
+          "date": "2011-05-19",
+          "field": "open",
+          "krx": 10120.0,
+          "vendor": 9448.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9337334933973589,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1650,
+      "last_observed_positive_volume_date": "2018-11-06",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/141240.csv",
+      "normalized_sha256": "3c2b9b3edd592088fc051e9413de7bd38a1b7833132d1a787d6af5b85bbee8cb",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "0001S0",
+      "all_requested_years_nonempty": true,
+      "official_rows": 320,
+      "vendor_rows_in_scope": 320,
+      "overlapping_dates": 320,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 223,
+        "high": 223,
+        "low": 223,
+        "close": 223,
+        "volume": 223
+      },
+      "difference_examples": [
+        {
+          "date": "2024-12-24",
+          "field": "open",
+          "krx": 50040.0,
+          "vendor": 49317.0
+        },
+        {
+          "date": "2024-12-24",
+          "field": "high",
+          "krx": 50040.0,
+          "vendor": 49317.0
+        },
+        {
+          "date": "2024-12-24",
+          "field": "low",
+          "krx": 50010.0,
+          "vendor": 49287.0
+        },
+        {
+          "date": "2024-12-24",
+          "field": "close",
+          "krx": 50020.0,
+          "vendor": 49297.0
+        },
+        {
+          "date": "2024-12-24",
+          "field": "volume",
+          "krx": 22487.0,
+          "vendor": 22816.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9855325914149443,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 319,
+      "last_observed_positive_volume_date": "2026-04-20",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/0001S0.csv",
+      "normalized_sha256": "41b5dd9b57c062fe4bf7032ac04916f5e8c0f631dcf8fbc796b51291ebc1684d",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "141250",
+      "all_requested_years_nonempty": true,
+      "official_rows": 981,
+      "vendor_rows_in_scope": 981,
+      "overlapping_dates": 981,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 579,
+        "high": 579,
+        "low": 579,
+        "close": 733
+      },
+      "difference_examples": [
+        {
+          "date": "2011-05-18",
+          "field": "open",
+          "krx": 9540.0,
+          "vendor": 9313.0
+        },
+        {
+          "date": "2011-05-18",
+          "field": "high",
+          "krx": 9620.0,
+          "vendor": 9391.0
+        },
+        {
+          "date": "2011-05-18",
+          "field": "low",
+          "krx": 9540.0,
+          "vendor": 9313.0
+        },
+        {
+          "date": "2011-05-18",
+          "field": "close",
+          "krx": 9615.0,
+          "vendor": 9389.0
+        },
+        {
+          "date": "2011-05-19",
+          "field": "open",
+          "krx": 9650.0,
+          "vendor": 9421.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9762837480148226,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 714,
+      "last_observed_positive_volume_date": "2015-04-24",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/141250.csv",
+      "normalized_sha256": "992538811313e201e2b0e24b930c7d61c5f7190731e36922cbe3a80338590285",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "104580",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1272,
+      "vendor_rows_in_scope": 1272,
+      "overlapping_dates": 1272,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 139,
+        "high": 139,
+        "low": 139,
+        "close": 139
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 8305.0,
+          "vendor": 8207.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 8495.0,
+          "vendor": 8395.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 8305.0,
+          "vendor": 8207.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 8490.0,
+          "vendor": 8391.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 8560.0,
+          "vendor": 8459.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9882273342354533,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1271,
+      "last_observed_positive_volume_date": "2015-02-16",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/104580.csv",
+      "normalized_sha256": "29793a57c8c9b0afed17d13d5fad0f67e27637e9de3aefc474bb049a214cb552",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "123930",
+      "all_requested_years_nonempty": true,
+      "official_rows": 796,
+      "vendor_rows_in_scope": 796,
+      "overlapping_dates": 796,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "volume": 1
+      },
+      "difference_examples": [
+        {
+          "date": "2010-08-11",
+          "field": "volume",
+          "krx": 10998.0,
+          "vendor": 10997.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        1.0,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 795,
+      "last_observed_positive_volume_date": "2013-06-24",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/123930.csv",
+      "normalized_sha256": "0345a0d7e7ce393c9cd57de0181193e05cdf048a0ca14083a2cd61f68e46fb34",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "108480",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1476,
+      "vendor_rows_in_scope": 1476,
+      "overlapping_dates": 1476,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1320,
+        "high": 1320,
+        "low": 1320,
+        "close": 1319
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 1760.0,
+          "vendor": 1686.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 1815.0,
+          "vendor": 1739.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 1760.0,
+          "vendor": 1686.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 1815.0,
+          "vendor": 1742.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 1815.0,
+          "vendor": 1739.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.95858310626703,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1474,
+      "last_observed_positive_volume_date": "2015-12-11",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/108480.csv",
+      "normalized_sha256": "a06bcd07428ef6446a0254a66164eb432ad80fd73b3eaafa97452a496769731b",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "0021C0",
+      "all_requested_years_nonempty": true,
+      "official_rows": 325,
+      "vendor_rows_in_scope": 325,
+      "overlapping_dates": 325,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 197,
+        "high": 197,
+        "low": 197,
+        "close": 197,
+        "volume": 168
+      },
+      "difference_examples": [
+        {
+          "date": "2025-03-11",
+          "field": "open",
+          "krx": 10000.0,
+          "vendor": 9976.0
+        },
+        {
+          "date": "2025-03-11",
+          "field": "high",
+          "krx": 10000.0,
+          "vendor": 9976.0
+        },
+        {
+          "date": "2025-03-11",
+          "field": "low",
+          "krx": 9765.0,
+          "vendor": 9741.0
+        },
+        {
+          "date": "2025-03-11",
+          "field": "close",
+          "krx": 9820.0,
+          "vendor": 9796.0
+        },
+        {
+          "date": "2025-03-11",
+          "field": "volume",
+          "krx": 126495.0,
+          "vendor": 126797.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9975141242937853,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 324,
+      "last_observed_positive_volume_date": "2026-07-07",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/0021C0.csv",
+      "normalized_sha256": "9b713d7edcca7eadf4ac5e5c19520abd2a47beb68b1d36c66ed82acf83a20505",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "0036D0",
+      "all_requested_years_nonempty": true,
+      "official_rows": 317,
+      "vendor_rows_in_scope": 317,
+      "overlapping_dates": 317,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 293,
+        "high": 293,
+        "low": 293,
+        "close": 293,
+        "volume": 293
+      },
+      "difference_examples": [
+        {
+          "date": "2025-04-29",
+          "field": "open",
+          "krx": 10035.0,
+          "vendor": 9371.0
+        },
+        {
+          "date": "2025-04-29",
+          "field": "high",
+          "krx": 10037.0,
+          "vendor": 9373.0
+        },
+        {
+          "date": "2025-04-29",
+          "field": "low",
+          "krx": 10005.0,
+          "vendor": 9342.0
+        },
+        {
+          "date": "2025-04-29",
+          "field": "close",
+          "krx": 10015.0,
+          "vendor": 9352.0
+        },
+        {
+          "date": "2025-04-29",
+          "field": "volume",
+          "krx": 598263.0,
+          "vendor": 640184.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9337423312883436,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 316,
+      "last_observed_positive_volume_date": "2026-08-14",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/0036D0.csv",
+      "normalized_sha256": "99ba8ab00eab6474ac66ea1925a93a542c093e9f1be699c4843fe6e3d80c03a0",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "117740",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1323,
+      "vendor_rows_in_scope": 1323,
+      "overlapping_dates": 1323,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1115,
+        "high": 1115,
+        "low": 1115,
+        "close": 1075
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 11190.0,
+          "vendor": 10731.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 11395.0,
+          "vendor": 10928.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 11190.0,
+          "vendor": 10731.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 11395.0,
+          "vendor": 10930.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 13100.0,
+          "vendor": 12563.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9591074681238616,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 1281,
+      "last_observed_positive_volume_date": "2015-05-04",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/117740.csv",
+      "normalized_sha256": "d0014206bb23ee3aaa36996a4d68115660d87a3bd4620dfbc3fa5e3397b4ec08",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "091190",
+      "all_requested_years_nonempty": true,
+      "official_rows": 867,
+      "vendor_rows_in_scope": 867,
+      "overlapping_dates": 867,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 814,
+        "high": 814,
+        "low": 814,
+        "close": 828
+      },
+      "difference_examples": [
+        {
+          "date": "2010-01-04",
+          "field": "open",
+          "krx": 9180.0,
+          "vendor": 8722.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "high",
+          "krx": 9265.0,
+          "vendor": 8802.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "low",
+          "krx": 9180.0,
+          "vendor": 8722.0
+        },
+        {
+          "date": "2010-01-04",
+          "field": "close",
+          "krx": 9265.0,
+          "vendor": 8805.0
+        },
+        {
+          "date": "2010-01-05",
+          "field": "open",
+          "krx": 9185.0,
+          "vendor": 8727.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9502824858757062,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 829,
+      "last_observed_positive_volume_date": "2013-06-17",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/091190.csv",
+      "normalized_sha256": "f626777b2511e40fe39b853d5167a585535c9aa11876b6e0e3c9c4f51bfd81f5",
+      "adjustment_verified": false
+    },
+    {
+      "ticker": "148040",
+      "all_requested_years_nonempty": true,
+      "official_rows": 1208,
+      "vendor_rows_in_scope": 1208,
+      "overlapping_dates": 1208,
+      "vendor_duplicate_dates": 0,
+      "official_dates_missing_from_vendor": [],
+      "vendor_dates_not_returned_by_krx": [],
+      "field_difference_counts": {
+        "open": 1060,
+        "high": 1060,
+        "low": 1060,
+        "close": 1117
+      },
+      "difference_examples": [
+        {
+          "date": "2011-10-20",
+          "field": "open",
+          "krx": 5105.0,
+          "vendor": 4953.0
+        },
+        {
+          "date": "2011-10-20",
+          "field": "high",
+          "krx": 5110.0,
+          "vendor": 4958.0
+        },
+        {
+          "date": "2011-10-20",
+          "field": "low",
+          "krx": 5040.0,
+          "vendor": 4890.0
+        },
+        {
+          "date": "2011-10-20",
+          "field": "close",
+          "krx": 5040.0,
+          "vendor": 4891.0
+        },
+        {
+          "date": "2011-10-21",
+          "field": "open",
+          "krx": 5005.0,
+          "vendor": 4856.0
+        }
+      ],
+      "vendor_to_official_close_ratio_range": [
+        0.9703237410071942,
+        1.0
+      ],
+      "positive_volume_valid_ohlc_rows": 462,
+      "last_observed_positive_volume_date": "2016-09-06",
+      "last_observation_is_not_official_trading_end_evidence": true,
+      "normalized_raw_file": "data/krx/official_prices/normalized_raw/148040.csv",
+      "normalized_sha256": "6f1147a40832fe4c7e892ae7b36e4bff767bf6439d1da5add33dd9bc72ece1fb",
+      "adjustment_verified": false
+    }
+  ]
+}

@@ -84,6 +84,7 @@ class Portfolio:
         self.initial_capital = initial_capital
         self.cash = initial_capital
         self.positions: dict[str, dict] = {}
+        self.redemptions: dict[str, dict] = {}
         self.equity_history: list[dict] = []
         self.trades: list[TradeRecord] = []
         self.cost = cost_config or CostConfig()
@@ -248,11 +249,40 @@ class Portfolio:
 
     def equity(self, prices: dict[str, float]) -> float:
         """현재 총 자산 평가 (미실현 슬리피지/수수료 미반영 시가평가)"""
-        total = self.cash
+        total = self.cash + sum(item['mark'] * item['shares'] for item in self.redemptions.values())
         for ticker, pos in self.positions.items():
             p = prices.get(ticker, pos['avg_price'])
             total += p * pos['shares']
         return total
+
+    def register_redemption(self, ticker, listing, last_price):
+        """Move a delisted holding to a non-tradable receivable."""
+        if listing.settlement_amount is None:
+            raise ValueError(f'Missing verified settlement: {ticker}')
+        position = self.positions.pop(ticker)
+        self.redemptions[ticker] = {
+            'shares': position['shares'], 'mark': last_price,
+            'amount': listing.settlement_amount * listing.settlement_adjustment_factor,
+            'known_at': listing.settlement_known_at, 'payment_date': listing.settlement_date,
+        }
+
+    def process_redemptions(self, date):
+        """Credit documented proceeds at day end, without market-sale costs."""
+        for ticker, item in list(self.redemptions.items()):
+            if item['known_at'] <= date:
+                item['mark'] = item['amount']
+            if item['payment_date'] > date:
+                continue
+            self.cash += item['shares'] * item['amount']
+            for trade in self.trades:
+                if trade.ticker == ticker and trade.status == 'open':
+                    cost = trade.exec_price * trade.shares + trade.entry_cost
+                    trade.exit_date = date
+                    trade.exit_price = trade.exec_exit_price = item['amount']
+                    trade.pnl = item['amount'] * trade.shares - cost
+                    trade.pnl_pct = trade.pnl / cost * 100 if cost else 0
+                    trade.status = 'closed'
+            del self.redemptions[ticker]
 
     def snapshot(self, date: str, prices: dict[str, float]):
         """일별 자산 스냅샷"""
@@ -478,14 +508,14 @@ class BacktestEngine:
             raise KeyError(strategy_key)
         if not math.isfinite(base_risk_budget) or not 0 <= base_risk_budget <= 1:
             raise ValueError('ETF 기본 위험예산은 0~1 사이여야 합니다')
-        if delisting_policy not in {'cash', 'error'}:
-            raise ValueError("delisting_policy must be 'cash' or 'error'")
+        if delisting_policy not in {'cash', 'error', 'verified'}:
+            raise ValueError("delisting_policy must be 'cash', 'error', or 'verified'")
         if universe_history is not None:
             tickers = list(universe_history.known_tickers)
         else:
             tickers = [a.ticker for a in ETF_ASSETS.values()]
         missing = [t for t in tickers if not self.price_data.get(t)]
-        if missing and universe_history is None:
+        if missing:
             raise ValueError(f"ETF 가격 누락: {', '.join(missing)}")
         tickers = [t for t in tickers if self.price_data.get(t)]
         if not tickers:
@@ -521,6 +551,8 @@ class BacktestEngine:
             if universe_history is not None else 'survivor_only'
         )
         self.data_quality['delisting_liquidations'] = []
+        self.data_quality['settlement_policy'] = delisting_policy
+        self.data_quality['settlement_estimated'] = delisting_policy == 'cash'
         self.data_quality['lifecycle_events'] = []
         self.data_quality['universe_rebalance_history'] = []
         guard = DrawdownGuard(self.initial_capital,
@@ -533,7 +565,7 @@ class BacktestEngine:
         pending = False
         for date in dates:
             active_universe = (
-                universe_history.active_specs_by_ticker(date)
+                universe_history.active_specs_by_ticker(date, histories)
                 if universe_history is not None else None
             )
             active_tickers = set(active_universe) if universe_history is not None else set(tickers)
@@ -556,7 +588,10 @@ class BacktestEngine:
                         ),
                     })
                 last_month = date[:7]
-            weights = decision.target_weights
+            live_tickers = ({item.ticker for item in universe_history.listings
+                             if item.is_active_on(date)}
+                            if universe_history is not None else set(tickers))
+            weights = {t: w for t, w in decision.target_weights.items() if t in live_tickers}
             if (any(t not in tickers or not math.isfinite(w) or w < 0
                     for t, w in weights.items()) or sum(weights.values()) > 1 + 1e-9):
                 raise ValueError('ETF 목표비중 오류')
@@ -579,18 +614,30 @@ class BacktestEngine:
                     raise ValueError(f'ETF 가격 5거래일 연속 누락: {t}, {date}')
             if universe_history is not None:
                 for t, pos in list(self.portfolio.positions.items()):
-                    if t in active_tickers:
+                    if t in live_tickers:
+                        continue
+                    listing = next(item for item in universe_history.listings
+                                   if item.ticker == t and item.valid_to
+                                   and (item.last_trading_date or item.valid_to) < date)
+                    if delisting_policy == 'verified':
+                        self.portfolio.register_redemption(t, listing, last_prices[t])
+                        self.data_quality['delisting_liquidations'].append({
+                            'date': date, 'ticker': t, 'action': 'verified_receivable',
+                            'payment_date': listing.settlement_date,
+                            'source': listing.settlement_source,
+                        })
                         continue
                     liquidation_price = last_prices.get(t)
                     if delisting_policy == 'error':
                         raise ValueError(f'ETF 상장폐지/교체 미처리: {t}, {date}')
                     if not liquidation_price or liquidation_price <= 0:
                         raise ValueError(f'ETF 현금청산 가격 누락: {t}, {date}')
-                    self.portfolio.sell(t, liquidation_price, pos['shares'], date)
+                    sold_shares = pos['shares']
+                    self.portfolio.sell(t, liquidation_price, sold_shares, date)
                     self.data_quality['delisting_liquidations'].append({
                         'date': date,
                         'ticker': t,
-                        'shares': pos['shares'],
+                        'shares': sold_shares,
                         'price': liquidation_price,
                         'action': 'cash_liquidation',
                     })
@@ -637,6 +684,7 @@ class BacktestEngine:
                 if row:
                     last_prices[t] = row['close']
                     histories[t].append(row['close'])
+            self.portfolio.process_redemptions(date)
             self.portfolio.snapshot(date, last_prices)
             previous_equity = self.portfolio.equity(last_prices)
             self.allocation_history.append({

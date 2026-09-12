@@ -1,0 +1,32 @@
+{
+  "as_of": "2026-09-12",
+  "code_validation": {
+    "status": "passed",
+    "passed": 35,
+    "failed": 0,
+    "excluded": 0,
+    "scope": [
+      "tests/test_etf_universe.py",
+      "tests/test_pit_evidence.py",
+      "tests/test_adaptive_execution.py",
+      "tests/test_adaptive_strategies.py"
+    ],
+    "runtime": "Existing application Python 3.11 environment with pytest wheels on sys.path",
+    "junit_report": "reports/krx_pit_tests_20260912.xml",
+    "full_suite_run": false,
+    "live_telegram_test_run": false
+  },
+  "data_validation": {
+    "status": "blocked",
+    "survivorship_bias_resolved": false,
+    "new_data_imported_this_run": false,
+    "krx_login": "Login form still displayed; authenticated session unavailable",
+    "remaining_evidence": [
+      "Missing listing dates",
+      "Verified corporate-action-adjusted delisted price histories",
+      "Actual per-unit redemption amounts, payment dates and adjustment basis",
+      "Historical point-in-time classification and selection evidence"
+    ],
+    "prior_acquisition_report": "reports/krx_pit_validation.json"
+  }
+}

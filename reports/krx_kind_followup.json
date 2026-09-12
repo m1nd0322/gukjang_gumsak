@@ -1,0 +1,11 @@
+{
+  "total": 1434,
+  "listing_dates_added_from_kind": 94,
+  "listing_dates_available": 1434,
+  "listing_dates_missing": 0,
+  "unresolved_tickers": [],
+  "failures": [],
+  "stopped_for_access_limit": false,
+  "output": "data/krx/etf_inventory_reconciled.csv",
+  "survivorship_bias_resolved": false
+}
